@@ -15,5 +15,10 @@
         "symfony/finder": "~2.3.1",
         "symfony/console": "~2.3.1",
         "symfony/event-dispatcher": "~2.3.1"
+    },
+    "autoload": {
+        "psr-0": {
+            "Unteist\\": "src"
+        }
     }
 }
