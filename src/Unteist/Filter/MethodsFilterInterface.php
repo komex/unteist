@@ -2,7 +2,7 @@
 /**
  * This file is a part of Unteist project.
  *
- * @author Andrey Kolchenko <andrey@kolchenko.me>
+ * (c) Andrey Kolchenko <andrey@kolchenko.me>
  */
 
 namespace Unteist\Filter;
@@ -11,6 +11,7 @@ namespace Unteist\Filter;
  * Class MethodsFilterInterface
  *
  * @package Unteist\Filter
+ * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
 interface MethodsFilterInterface
 {
