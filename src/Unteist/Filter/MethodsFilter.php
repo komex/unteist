@@ -26,7 +26,9 @@ class MethodsFilter implements MethodsFilterInterface
     {
         $tests = [];
         foreach ($methods as $test) {
-            if ($test instanceof \ReflectionMethod && $test->isPublic() && !$test->isAbstract()) {
+            if ($test instanceof \ReflectionMethod && $test->isPublic() &&
+                !($test->isAbstract() || $test->isConstructor() || $test->isDestructor())
+            ) {
                 if (strlen($test->name) > 4 && substr($test->name, 0, 4) === 'test') {
                     array_push($tests, $test);
                 }

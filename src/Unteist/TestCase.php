@@ -31,8 +31,10 @@ class TestCase
     private $global_storage;
 
     /**
-     * @param ContainerBuilder $config
-     * @param \ArrayObject $global_storage
+     * Create a new TestCase.
+     *
+     * @param ContainerBuilder $config Project configuration
+     * @param \ArrayObject $global_storage Global variables
      */
     public function __construct(ContainerBuilder $config, \ArrayObject $global_storage)
     {
