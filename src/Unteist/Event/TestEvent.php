@@ -8,6 +8,7 @@
 namespace Unteist\Event;
 
 use Symfony\Component\EventDispatcher\Event;
+use Unteist\Processor\TestRunner;
 
 /**
  * Class TestEvent
@@ -33,6 +34,10 @@ class TestEvent extends Event
      * @var array
      */
     protected $data_set = [];
+    /**
+     * @var int
+     */
+    protected $status;
 
     /**
      * @param string $name Test name
@@ -42,6 +47,27 @@ class TestEvent extends Event
     {
         $this->name = $name;
         $this->test_case_event = $test_case_event;
+        $this->status = TestRunner::TEST_NEW;
+    }
+
+    /**
+     * Get test status.
+     *
+     * @return int
+     */
+    public function getStatus()
+    {
+        return $this->status;
+    }
+
+    /**
+     * Set test status.
+     *
+     * @param int $status
+     */
+    public function setStatus($status)
+    {
+        $this->status = intval($status, 10);
     }
 
     /**
