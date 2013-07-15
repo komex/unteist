@@ -13,29 +13,18 @@ namespace Unteist\Filter;
  * @package Unteist\Filter
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class MethodsFilter implements MethodsFilterInterface
+final class MethodsFilter extends AbstractMethodsFilter
 {
     /**
-     * Filter TestCase methods.
+     * Condition for filter test methods.
      *
-     * @param \ReflectionMethod[] $methods Methods to filter
+     * @param \ReflectionMethod $method Method to check
      *
-     * @return \ReflectionMethod[]
+     * @return bool Is it right method?
      */
-    public function filter(array $methods)
+    public function condition(\ReflectionMethod $method)
     {
-        $tests = [];
-        foreach ($methods as $test) {
-            if ($test instanceof \ReflectionMethod && $test->isPublic() &&
-                !($test->isAbstract() || $test->isConstructor() || $test->isDestructor())
-            ) {
-                if (strlen($test->name) > 4 && substr($test->name, 0, 4) === 'test') {
-                    array_push($tests, $test);
-                }
-            }
-        }
-
-        return $tests;
+        return ($method->isPublic() && !($method->isAbstract() || $method->isConstructor() || $method->isDestructor())
+            && strlen($method->name) > 4 && substr($method->name, 0, 4) === 'test');
     }
-
 }
