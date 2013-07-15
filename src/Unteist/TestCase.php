@@ -32,14 +32,9 @@ class TestCase
 
     /**
      * Create a new TestCase.
-     *
-     * @param ContainerBuilder $config Project configuration
-     * @param \ArrayObject $global_storage Global variables
      */
-    public function __construct(ContainerBuilder $config, \ArrayObject $global_storage)
+    public function __construct()
     {
-        $this->config = $config;
-        $this->global_storage = $global_storage;
         $this->local_storage = new \ArrayObject();
     }
 
@@ -51,6 +46,26 @@ class TestCase
     public function getGlobalStorage()
     {
         return $this->global_storage;
+    }
+
+    /**
+     * Set global storage for variables.
+     *
+     * @param \ArrayObject $global_storage Global variables
+     */
+    public function setGlobalStorage(\ArrayObject $global_storage)
+    {
+        $this->global_storage = $global_storage;
+    }
+
+    /**
+     * Set project configuration.
+     *
+     * @param ContainerBuilder $config Project configuration
+     */
+    public function setConfig(ContainerBuilder $config)
+    {
+        $this->config = $config;
     }
 
     /**
