@@ -58,9 +58,9 @@ class TestRunner
      */
     protected $test_case_event;
     /**
-     * @var array
+     * @var \ArrayObject
      */
-    protected $tests = [];
+    protected $tests;
     /**
      * @var AbstractMethodsFilter[]
      */
@@ -107,6 +107,7 @@ class TestRunner
         $this->precondition = new EventDispatcher();
         $this->global_storage = new \ArrayObject();
         $this->context = new Context();
+        $this->tests = new \ArrayObject();
         $this->switcher = new StatusSwitcher($this->tests, $this->precondition, $this->dispatcher);
     }
 
@@ -309,18 +310,21 @@ class TestRunner
                 $this->resolveDependencies($depends);
             }
 
-            if (empty($modifiers['dataProvider'])) {
-                $dataProvider = [[]];
-            } else {
-                $dataProvider = $this->getDataSet($modifiers['dataProvider']);
-            }
-            $method = new \ReflectionMethod($this->test_case, $test);
-            foreach ($dataProvider as $data_set) {
-                $test_event->setDataSet($data_set);
-                $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $test_event);
-                $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $test_event);
-                $method->invokeArgs($this->test_case, $data_set);
-                $this->switcher->done($test);
+            $status = $this->tests[$test]['status'];
+            if ($status == self::TEST_NEW || $status == self::TEST_MARKED) {
+                if (empty($modifiers['dataProvider'])) {
+                    $dataProvider = [[]];
+                } else {
+                    $dataProvider = $this->getDataSet($modifiers['dataProvider']);
+                }
+                $method = new \ReflectionMethod($this->test_case, $test);
+                foreach ($dataProvider as $data_set) {
+                    $test_event->setDataSet($data_set);
+                    $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $test_event);
+                    $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $test_event);
+                    $method->invokeArgs($this->test_case, $data_set);
+                    $this->switcher->done($test);
+                }
             }
         } catch (SkipException $skip) {
             $this->switcher->skipped($test);

@@ -38,11 +38,11 @@ class StatusSwitcher
     protected $dispatcher;
 
     /**
-     * @param array $tests
+     * @param \ArrayObject $tests
      * @param EventDispatcher $precondition
      * @param EventDispatcher $dispatcher
      */
-    public function __construct(array &$tests, EventDispatcher $precondition, EventDispatcher $dispatcher)
+    public function __construct(\ArrayObject $tests, EventDispatcher $precondition, EventDispatcher $dispatcher)
     {
         $this->tests = $tests;
         $this->precondition = $precondition;
