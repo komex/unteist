@@ -48,6 +48,7 @@ class TestEvent extends Event
         $this->name = $name;
         $this->test_case_event = $test_case_event;
         $this->status = TestRunner::TEST_NEW;
+        $test_case_event->addTestEvent($this);
     }
 
     /**
