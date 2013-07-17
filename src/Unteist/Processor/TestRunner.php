@@ -147,14 +147,14 @@ class TestRunner
         $class = new \ReflectionClass($this->test_case);
         foreach ($class->getMethods() as $method) {
             $is_test_method = true;
-            $modifiers = $this->parseDocBlock($method);
             foreach ($this->filters as $filter) {
                 if (!$filter->condition($method)) {
                     $is_test_method = false;
                     break;
                 }
             }
-            if ($is_test_method || in_array('test', strtolower($modifiers['name']))) {
+            $modifiers = $this->parseDocBlock($method);
+            if ($is_test_method || isset($modifiers['test'])) {
                 $this->tests->attach(
                     $method,
                     [
@@ -163,7 +163,7 @@ class TestRunner
                     ]
                 );
             } else {
-                foreach ($modifiers as $event) {
+                foreach (array_keys($modifiers) as $event) {
                     $this->registerEventListener($event, $method->getName());
                 }
             }
@@ -180,18 +180,28 @@ class TestRunner
     protected function parseDocBlock(\ReflectionMethod $method)
     {
         $doc = $method->getDocComment();
-        if (!empty($doc)) {
-            $keywords = ['beforeTest', 'afterTest', 'beforeCase', 'afterCase', 'group', 'depends', 'dataProvider'];
-            $pattern = sprintf('{\*\s*@(?P<name>%s)(?:\s+(?P<value>[\w,\s]+))?\n(?!\*)}', join('|', $keywords));
-            preg_match_all($pattern, $doc, $matches);
-            unset($matches[0]);
-            unset($matches[1]);
-            unset($matches[2]);
+        if (empty($doc)) {
+            $modifiers = [];
         } else {
-            $matches = [];
+            $keywords = [
+                'beforeTest',
+                'afterTest',
+                'beforeCase',
+                'afterCase',
+                'group',
+                'depends',
+                'dataProvider',
+                'test'
+            ];
+            $pattern = sprintf('{\*\s*@(%s)(?:\s+([\w\s]+))?[\r\n]*(?!\*)}', join('|', $keywords));
+            preg_match_all($pattern, $doc, $matches, PREG_SET_ORDER);
+            $modifiers = [];
+            foreach ($matches as $match) {
+                $modifiers[trim($match[1])] = trim($match[2]) ? : true;
+            }
         }
 
-        return $matches;
+        return $modifiers;
     }
 
     /**
@@ -306,7 +316,12 @@ class TestRunner
                 $this->resolveDependencies($depends);
             }
 
-            foreach ($this->getDataSet($modifiers['dataProvider']) as $data_set) {
+            if (empty($modifiers['dataProvider'])) {
+                $dataProvider = [[]];
+            } else {
+                $dataProvider = $this->getDataSet($modifiers['dataProvider']);
+            }
+            foreach ($dataProvider as $data_set) {
                 $test_event->setDataSet($data_set);
                 $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $test_event);
                 $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $test_event);
@@ -332,29 +347,26 @@ class TestRunner
      */
     protected function getDataSet($method)
     {
-        if (empty($method)) {
-            return [[]];
-        } else {
-            if (empty($this->data_sets[$method])) {
-                $data_set_method = new \ReflectionMethod($this->test_case, $method);
-                $data_set = $data_set_method->invoke($this->test_case);
-                if (is_array($data_set)) {
-                    $this->data_sets[$method] = new \ArrayIterator($data_set);
-                } elseif ($data_set instanceof \Iterator) {
-                    $this->data_sets[$method] = $data_set;
-                } else {
-                    throw new \InvalidArgumentException(sprintf(
-                        'DataProvider %s (%s) must return an array or Iterator object.',
-                        $method,
-                        $this->test_case_event->getName()
-                    ));
-                }
+        if (empty($this->data_sets[$method])) {
+            $data_set_method = new \ReflectionMethod($this->test_case, $method);
+            $data_set = $data_set_method->invoke($this->test_case);
+            if (is_array($data_set)) {
+                $this->data_sets[$method] = new \ArrayIterator($data_set);
+            } elseif ($data_set instanceof \Iterator) {
+                $this->data_sets[$method] = $data_set;
             } else {
-                $this->data_sets[$method]->rewind();
+                throw new \InvalidArgumentException(sprintf(
+                    'DataProvider "%s:%s" must return an array or Iterator object.',
+                    $this->test_case_event->getName(),
+                    $method
+                ));
             }
-
-            return $this->data_sets[$method];
+        } else {
+            $this->data_sets[$method]->rewind();
         }
+
+        return $this->data_sets[$method];
+
     }
 
     /**
@@ -381,26 +393,27 @@ class TestRunner
                         break;
                     case self::TEST_MARKED:
                         throw new \LogicException(sprintf(
-                            'Found infinitive loop in depends for test method %s (%s)',
-                            $method->getName(),
-                            $class->getName()
+                            'Found infinitive loop in depends for test method "%s:%s".',
+                            $class->getName(),
+                            $method->getName()
                         ));
                     case self::TEST_SKIPPED:
                         throw new SkipException(sprintf(
-                            'Test method %s was skipped (%s).',
-                            $method->getName(),
-                            $class->getName()
+                            'Test method "%s:%s" was skipped.',
+                            $class->getName(),
+                            $method->getName()
                         ));
                     case self::TEST_FAILED:
                         throw new SkipException(sprintf(
-                            'Test method %s was failed (%s).',
-                            $method->getName(),
-                            $class->getName()
+                            'Test method "%s:%s" was failed.',
+                            $class->getName(),
+                            $method->getName()
                         ));
                 }
             } else {
                 throw new \InvalidArgumentException(sprintf(
-                    'The depends method %s does not exists.',
+                    'The depends method "%s:%s" does not exists or is not a test.',
+                    $class->getName(),
                     $method->getName()
                 ));
             }
