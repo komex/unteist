@@ -7,6 +7,7 @@
 
 namespace Unteist\Processor;
 
+
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
@@ -45,6 +46,10 @@ class TestRunner
      */
     const TEST_MARKED = 8;
     /**
+     * @var string
+     */
+    protected $name;
+    /**
      * @var TestCase
      */
     protected $test_case;
@@ -53,9 +58,9 @@ class TestRunner
      */
     protected $test_case_event;
     /**
-     * @var \SplObjectStorage
+     * @var array
      */
-    protected $tests;
+    protected $tests = [];
     /**
      * @var AbstractMethodsFilter[]
      */
@@ -99,7 +104,6 @@ class TestRunner
     public function __construct(EventDispatcher $dispatcher)
     {
         $this->dispatcher = $dispatcher;
-        $this->tests = new \SplObjectStorage();
         $this->precondition = new EventDispatcher();
         $this->global_storage = new \ArrayObject();
         $this->context = new Context();
@@ -145,6 +149,7 @@ class TestRunner
     {
         $this->test_case = $test_case;
         $class = new \ReflectionClass($this->test_case);
+        $this->name = $class->getName();
         foreach ($class->getMethods() as $method) {
             $is_test_method = true;
             foreach ($this->filters as $filter) {
@@ -155,13 +160,10 @@ class TestRunner
             }
             $modifiers = $this->parseDocBlock($method);
             if ($is_test_method || isset($modifiers['test'])) {
-                $this->tests->attach(
-                    $method,
-                    [
-                        'status' => self::TEST_NEW,
-                        'modifiers' => $modifiers,
-                    ]
-                );
+                $this->tests[$method->getName()] = [
+                    'status' => self::TEST_NEW,
+                    'modifiers' => $modifiers,
+                ];
             } else {
                 foreach (array_keys($modifiers) as $event) {
                     $this->registerEventListener($event, $method->getName());
@@ -268,24 +270,15 @@ class TestRunner
      */
     public function run()
     {
-        if ($this->tests->count() == 0) {
+        if (empty($this->tests)) {
             return false;
         }
-        $class = new \ReflectionClass($this->test_case);
-        $this->test_case_event = new TestCaseEvent($class->getName());
-        unset($class);
+        $this->test_case_event = new TestCaseEvent($this->name);
         $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
         $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
-        $this->tests->rewind();
-        while ($this->tests->valid()) {
-            /** @var \ReflectionMethod $method */
-            $method = $this->tests->current();
-            /** @var array $data */
-            $data = $this->tests->getInfo();
-
+        foreach ($this->tests as $method => $data) {
             $this->context->setStrategy($this->strategy);
             $this->runTest($method, $data);
-            $this->tests->next();
         }
         $this->precondition->dispatch(EventStorage::EV_AFTER_CASE);
         $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, $this->test_case_event);
@@ -296,20 +289,20 @@ class TestRunner
     /**
      * Run test method.
      *
-     * @param \ReflectionMethod $method
+     * @param string $test Method name
      * @param array $data
      *
      * @throws \Unteist\Exception\SkipException
      * @throws \RuntimeException
      */
-    protected function runTest(\ReflectionMethod $method, array $data)
+    protected function runTest($test, array $data)
     {
-        $test_event = new TestEvent($method->getName(), $this->test_case_event);
+        $test_event = new TestEvent($test, $this->test_case_event);
         $this->switcher->setTestEvent($test_event);
         $modifiers = $data['modifiers'];
         try {
             if (!empty($modifiers['depends'])) {
-                $this->switcher->marked($method);
+                $this->switcher->marked($test);
                 $depends = preg_replace('{[^\w,]}i', '', $modifiers['depends']);
                 $depends = explode(',', $depends);
                 $test_event->setDepends($depends);
@@ -321,19 +314,69 @@ class TestRunner
             } else {
                 $dataProvider = $this->getDataSet($modifiers['dataProvider']);
             }
+            $method = new \ReflectionMethod($this->test_case, $test);
             foreach ($dataProvider as $data_set) {
                 $test_event->setDataSet($data_set);
                 $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $test_event);
                 $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $test_event);
                 $method->invokeArgs($this->test_case, $data_set);
-                $this->switcher->done($method);
+                $this->switcher->done($test);
             }
         } catch (SkipException $skip) {
-            $this->switcher->skipped($method);
+            $this->switcher->skipped($test);
             throw $skip;
         } catch (\Exception $e) {
-            $this->switcher->failed($method);
+            $this->switcher->failed($test);
             $this->context->fail($e);
+        }
+    }
+
+    /**
+     * Check specified depends and run test if necessary.
+     *
+     * @param array $depends
+     *
+     * @throws \LogicException If found infinitive depends loop.
+     * @throws \InvalidArgumentException If depends methods not found.
+     * @throws \Unteist\Exception\SkipException If test method has skipped or failed method in depends.
+     */
+    protected function resolveDependencies(array $depends)
+    {
+        foreach ($depends as $depend) {
+            if (!empty($this->tests[$depend])) {
+                $data = $this->tests[$depend];
+                switch ($data['status']) {
+                    case self::TEST_NEW:
+                        $this->context->setStrategy(Context::STRATEGY_SKIP_FAILS);
+                        $this->runTest($depend, $data);
+                        $this->context->setStrategy($this->strategy);
+                        break;
+                    case self::TEST_MARKED:
+                        throw new \LogicException(sprintf(
+                            'Found infinitive loop in depends for test method "%s:%s".',
+                            $this->name,
+                            $depend
+                        ));
+                    case self::TEST_SKIPPED:
+                        throw new SkipException(sprintf(
+                            'Test method "%s:%s" was skipped.',
+                            $this->name,
+                            $depend
+                        ));
+                    case self::TEST_FAILED:
+                        throw new SkipException(sprintf(
+                            'Test method "%s:%s" was failed.',
+                            $this->name,
+                            $depend
+                        ));
+                }
+            } else {
+                throw new \InvalidArgumentException(sprintf(
+                    'The depends method "%s:%s" does not exists or is not a test.',
+                    $this->name,
+                    $depend
+                ));
+            }
         }
     }
 
@@ -357,7 +400,7 @@ class TestRunner
             } else {
                 throw new \InvalidArgumentException(sprintf(
                     'DataProvider "%s:%s" must return an array or Iterator object.',
-                    $this->test_case_event->getName(),
+                    $this->name,
                     $method
                 ));
             }
@@ -367,56 +410,5 @@ class TestRunner
 
         return $this->data_sets[$method];
 
-    }
-
-    /**
-     * Check specified depends and run test if necessary.
-     *
-     * @param array $depends
-     *
-     * @throws \LogicException If found infinitive depends loop.
-     * @throws \InvalidArgumentException If depends methods not found.
-     * @throws \Unteist\Exception\SkipException If test method has skipped or failed method in depends.
-     */
-    protected function resolveDependencies(array $depends)
-    {
-        $class = new \ReflectionClass($this->test_case);
-        foreach ($depends as $depend) {
-            $method = $class->getMethod($depend);
-            if ($this->tests->offsetExists($method)) {
-                $data = $this->tests->offsetGet($method);
-                switch ($data['status']) {
-                    case self::TEST_NEW:
-                        $this->context->setStrategy(Context::STRATEGY_SKIP_FAILS);
-                        $this->runTest($method, $data);
-                        $this->context->setStrategy($this->strategy);
-                        break;
-                    case self::TEST_MARKED:
-                        throw new \LogicException(sprintf(
-                            'Found infinitive loop in depends for test method "%s:%s".',
-                            $class->getName(),
-                            $method->getName()
-                        ));
-                    case self::TEST_SKIPPED:
-                        throw new SkipException(sprintf(
-                            'Test method "%s:%s" was skipped.',
-                            $class->getName(),
-                            $method->getName()
-                        ));
-                    case self::TEST_FAILED:
-                        throw new SkipException(sprintf(
-                            'Test method "%s:%s" was failed.',
-                            $class->getName(),
-                            $method->getName()
-                        ));
-                }
-            } else {
-                throw new \InvalidArgumentException(sprintf(
-                    'The depends method "%s:%s" does not exists or is not a test.',
-                    $class->getName(),
-                    $method->getName()
-                ));
-            }
-        }
     }
 }
