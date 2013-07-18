@@ -38,11 +38,11 @@ class StatusSwitcher
     protected $dispatcher;
 
     /**
-     * @param \SplObjectStorage $tests
+     * @param \ArrayObject $tests
      * @param EventDispatcher $precondition
      * @param EventDispatcher $dispatcher
      */
-    public function __construct(\SplObjectStorage $tests, EventDispatcher $precondition, EventDispatcher $dispatcher)
+    public function __construct(\ArrayObject $tests, EventDispatcher $precondition, EventDispatcher $dispatcher)
     {
         $this->tests = $tests;
         $this->precondition = $precondition;
@@ -60,47 +60,67 @@ class StatusSwitcher
     }
 
     /**
-     * @param \ReflectionMethod $method
+     * Mark test as currently in work.
+     *
+     * @param string $method
+     *
+     * @throws \InvalidArgumentException If test not found.
      */
-    public function marked(\ReflectionMethod $method)
+    public function marked($method)
     {
-        $data = $this->tests->offsetGet($method);
-        $data['status'] = TestRunner::TEST_MARKED;
-        $this->tests->offsetSet($method, $data);
+        if (empty($this->tests[$method])) {
+            throw new \InvalidArgumentException(sprintf('Test with name "%s" does not found.', $method));
+        }
+        $this->tests[$method]['status'] = TestRunner::TEST_MARKED;
     }
 
     /**
-     * @param \ReflectionMethod $method
+     * Mark test as well done.
+     *
+     * @param string $method
+     *
+     * @throws \InvalidArgumentException If test not found.
      */
-    public function done(\ReflectionMethod $method)
+    public function done($method)
     {
-        $data = $this->tests->offsetGet($method);
-        $data['status'] = TestRunner::TEST_DONE;
-        $this->tests->offsetSet($method, $data);
+        if (empty($this->tests[$method])) {
+            throw new \InvalidArgumentException(sprintf('Test with name "%s" does not found.', $method));
+        }
+        $this->tests[$method]['status'] = TestRunner::TEST_DONE;
         $this->test_event->setStatus(TestRunner::TEST_DONE);
         $this->eventAfterTest();
     }
 
     /**
-     * @param \ReflectionMethod $method
+     * Mark test as skipped.
+     *
+     * @param string $method
+     *
+     * @throws \InvalidArgumentException If test not found.
      */
-    public function skipped(\ReflectionMethod $method)
+    public function skipped($method)
     {
-        $data = $this->tests->offsetGet($method);
-        $data['status'] = TestRunner::TEST_SKIPPED;
-        $this->tests->offsetSet($method, $data);
+        if (empty($this->tests[$method])) {
+            throw new \InvalidArgumentException(sprintf('Test with name "%s" does not found.', $method));
+        }
+        $this->tests[$method]['status'] = TestRunner::TEST_SKIPPED;
         $this->test_event->setStatus(TestRunner::TEST_SKIPPED);
         $this->dispatcher->dispatch(EventStorage::EV_TEST_SKIPPED, $this->test_event);
     }
 
     /**
-     * @param \ReflectionMethod $method
+     * Mark test as failed.
+     *
+     * @param string $method
+     *
+     * @throws \InvalidArgumentException If test not found.
      */
-    public function failed(\ReflectionMethod $method)
+    public function failed($method)
     {
-        $data = $this->tests->offsetGet($method);
-        $data['status'] = TestRunner::TEST_FAILED;
-        $this->tests->offsetSet($method, $data);
+        if (empty($this->tests[$method])) {
+            throw new \InvalidArgumentException(sprintf('Test with name "%s" does not found.', $method));
+        }
+        $this->tests[$method]['status'] = TestRunner::TEST_FAILED;
         $this->test_event->setStatus(TestRunner::TEST_FAILED);
         $this->dispatcher->dispatch(EventStorage::EV_TEST_FAIL, $this->test_event);
         $this->eventAfterTest();
