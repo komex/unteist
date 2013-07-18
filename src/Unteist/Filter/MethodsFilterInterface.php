@@ -32,4 +32,11 @@ interface MethodsFilterInterface
      * @return string
      */
     public function getName();
+
+    /**
+     * Convert filter to string.
+     *
+     * @return string
+     */
+    public function __toString();
 }
