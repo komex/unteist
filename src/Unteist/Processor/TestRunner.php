@@ -13,7 +13,7 @@ use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
 use Unteist\Event\TestEvent;
 use Unteist\Exception\SkipException;
-use Unteist\Filter\AbstractMethodsFilter;
+use Unteist\Filter\MethodsFilterInterface;
 use Unteist\Strategy\Context;
 use Unteist\TestCase;
 
@@ -62,7 +62,7 @@ class TestRunner
      */
     protected $tests;
     /**
-     * @var AbstractMethodsFilter[]
+     * @var MethodsFilterInterface[]
      */
     protected $filters = [];
     /**
@@ -153,14 +153,14 @@ class TestRunner
         $this->name = $class->getName();
         foreach ($class->getMethods() as $method) {
             $is_test_method = true;
+            $modifiers = $this->parseDocBlock($method);
             foreach ($this->filters as $filter) {
-                if (!$filter->condition($method)) {
+                if (!$filter->condition($method, $modifiers)) {
                     $is_test_method = false;
                     break;
                 }
             }
-            $modifiers = $this->parseDocBlock($method);
-            if ($is_test_method || isset($modifiers['test'])) {
+            if ($is_test_method) {
                 $this->tests[$method->getName()] = [
                     'status' => self::TEST_NEW,
                     'modifiers' => $modifiers,
@@ -239,7 +239,7 @@ class TestRunner
     /**
      * Set test method filters.
      *
-     * @param AbstractMethodsFilter[] $filters
+     * @param MethodsFilterInterface[] $filters
      */
     public function setFilters(array $filters)
     {
