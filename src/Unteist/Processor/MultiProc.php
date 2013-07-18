@@ -45,6 +45,14 @@ class MultiProc
      */
     protected $methods_filters = [];
     /**
+     * @var array
+     */
+    protected $current_jobs = [];
+    /**
+     * @var array
+     */
+    protected $signal_queue = [];
+    /**
      * @var \ArrayObject
      */
     protected $global_storage;
@@ -155,30 +163,126 @@ class MultiProc
      */
     public function run()
     {
+        $result = true;
         if ($this->max_procs == 1) {
             foreach ($this->suites as $suite) {
-                // @todo: Load class and run executor
-                $class = TestCaseLoader::load($suite);
-                if (!empty($this->class_filters)) {
-                    $reflection_class = new \ReflectionClass($class);
-                    foreach ($this->class_filters as $filter) {
-                        if (!$filter->filter($reflection_class)) {
-                            continue 2;
-                        }
-                    }
-                }
-                $runner = new TestRunner($this->dispatcher);
-                $runner->setFilters($this->methods_filters);
-                $runner->setGlobalStorage($this->global_storage);
-                $runner->precondition($class);
-                $runner->run();
+                $result = $result && $this->executor($suite);
             }
-
         } else {
-            // @todo: Run all suites in different processes
             pcntl_signal(SIGCHLD, [$this, 'childSignalHandler']);
+            foreach ($this->suites as $suite) {
+                $this->launchJob($suite);
+                while (count($this->current_jobs) >= $this->max_procs) {
+                    echo "Maximum children allowed, waiting...\n";
+                    sleep(1);
+                }
+            }
+            while (count($this->current_jobs)) {
+                echo "Waiting for current jobs to finish... \n";
+                sleep(1);
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Launch TestCase.
+     *
+     * @param SplFileInfo $suite
+     *
+     * @return bool
+     */
+    protected function executor(SplFileInfo $suite)
+    {
+        $class = TestCaseLoader::load($suite);
+        if (!empty($this->class_filters)) {
+            $reflection_class = new \ReflectionClass($class);
+            foreach ($this->class_filters as $filter) {
+                if (!$filter->filter($reflection_class)) {
+                    return false;
+                }
+            }
+        }
+        $runner = new TestRunner($this->dispatcher);
+        $runner->setFilters($this->methods_filters);
+        $runner->setGlobalStorage($this->global_storage);
+        $runner->precondition($class);
+
+        return $runner->run();
+    }
+
+    /**
+     * Launch TestCase in parallel processes.
+     *
+     * @param SplFileInfo $suite TestCase file
+     *
+     * @return bool
+     */
+    protected function launchJob(SplFileInfo $suite)
+    {
+        $pid = pcntl_fork();
+        if ($pid == -1) {
+            //Problem launching the job
+            error_log('Could not launch new job, exiting');
+
+            return false;
+        } else {
+            if ($pid) {
+                // Parent process
+                // Sometimes you can receive a signal to the childSignalHandler function before this code executes if
+                // the child script executes quickly enough!
+                //
+                $this->current_jobs[$pid] = $suite;
+
+                // In the event that a signal for this pid was caught before we get here, it will be in our signal_queue array
+                // So let's go ahead and process it now as if we'd just received the signal
+                if (isset($this->signal_queue[$pid])) {
+                    echo "found $pid in the signal queue, processing it now \n";
+                    $this->childSignalHandler(SIGCHLD, $pid, $this->signal_queue[$pid]);
+                    unset($this->signal_queue[$pid]);
+                }
+            } else {
+                exit($this->executor($suite));
+            }
         }
 
         return true;
+    }
+
+    /**
+     * Handler for process signals.
+     *
+     * @param int $signo
+     * @param int $pid
+     * @param int $status
+     */
+    public function childSignalHandler($signo, $pid = null, $status = null)
+    {
+
+        //If no pid is provided, that means we're getting the signal from the system.  Let's figure out
+        //which child process ended
+        if (!$pid) {
+            $pid = pcntl_waitpid(-1, $status, WNOHANG);
+        }
+
+        //Make sure we get all of the exited children
+        while ($pid > 0) {
+            if ($pid && isset($this->current_jobs[$pid])) {
+                $exit_code = pcntl_wexitstatus($status);
+                if ($exit_code != 0) {
+                    echo "$pid exited with status " . $exit_code . "\n";
+                }
+                unset($this->current_jobs[$pid]);
+            } else {
+                if ($pid) {
+                    //Oh no, our job has finished before this parent process could even note that it had been launched!
+                    //Let's make note of it and handle it when the parent process is ready for it
+                    echo "..... Adding $pid to the signal queue ..... \n";
+                    $this->signal_queue[$pid] = $status;
+                }
+            }
+            $pid = pcntl_waitpid(-1, $status, WNOHANG);
+        }
     }
 }
