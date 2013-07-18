@@ -5,10 +5,13 @@
  * (c) Andrey Kolchenko <andrey@kolchenko.me>
  */
 
+declare(ticks = 1);
+
 namespace Unteist\Processor;
 
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Finder\Finder;
+use Symfony\Component\Finder\SplFileInfo;
 use Unteist\Filter\ClassFilterInterface;
 use Unteist\Filter\MethodsFilterInterface;
 
@@ -24,11 +27,11 @@ class MultiProc
     /**
      * @var int
      */
-    protected $max_procs = 5;
+    protected $max_procs = 1;
     /**
-     * @var Finder
+     * @var Finder|SplFileInfo[]
      */
-    protected $suites;
+    protected $suites = [];
     /**
      * @var EventDispatcher
      */
@@ -41,6 +44,10 @@ class MultiProc
      * @var MethodsFilterInterface[]
      */
     protected $methods_filters = [];
+    /**
+     * @var \ArrayObject
+     */
+    protected $global_storage;
 
     /**
      * @param EventDispatcher $dispatcher
@@ -48,6 +55,7 @@ class MultiProc
     public function __construct(EventDispatcher $dispatcher)
     {
         $this->dispatcher = $dispatcher;
+        $this->global_storage = new \ArrayObject();
     }
 
     /**
@@ -147,6 +155,30 @@ class MultiProc
      */
     public function run()
     {
+        if ($this->max_procs == 1) {
+            foreach ($this->suites as $suite) {
+                // @todo: Load class and run executor
+                $class = TestCaseLoader::load($suite);
+                if (!empty($this->class_filters)) {
+                    $reflection_class = new \ReflectionClass($class);
+                    foreach ($this->class_filters as $filter) {
+                        if (!$filter->filter($reflection_class)) {
+                            continue 2;
+                        }
+                    }
+                }
+                $runner = new TestRunner($this->dispatcher);
+                $runner->setFilters($this->methods_filters);
+                $runner->setGlobalStorage($this->global_storage);
+                $runner->precondition($class);
+                $runner->run();
+            }
+
+        } else {
+            // @todo: Run all suites in different processes
+            pcntl_signal(SIGCHLD, [$this, 'childSignalHandler']);
+        }
+
         return true;
     }
 }

@@ -105,7 +105,6 @@ class TestRunner
     {
         $this->dispatcher = $dispatcher;
         $this->precondition = new EventDispatcher();
-        $this->global_storage = new \ArrayObject();
         $this->context = new Context();
         $this->tests = new \ArrayObject();
         $this->switcher = new StatusSwitcher($this->tests, $this->precondition, $this->dispatcher);
