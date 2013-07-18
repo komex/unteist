@@ -8,6 +8,7 @@
 namespace Unteist\Processor;
 
 
+use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
@@ -97,13 +98,19 @@ class TestRunner
      * @var \ArrayIterator[]
      */
     protected $data_sets = [];
+    /**
+     * @var LoggerInterface
+     */
+    protected $logger;
 
     /**
      * @param EventDispatcher $dispatcher Global event dispatcher
+     * @param LoggerInterface $logger
      */
-    public function __construct(EventDispatcher $dispatcher)
+    public function __construct(EventDispatcher $dispatcher, LoggerInterface $logger)
     {
         $this->dispatcher = $dispatcher;
+        $this->logger = $logger;
         $this->precondition = new EventDispatcher();
         $this->context = new Context();
         $this->tests = new \ArrayObject();

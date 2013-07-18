@@ -27,6 +27,7 @@ class TestCaseLoader
      * @return TestCase
      *
      * @throws \RuntimeException If cannot open file
+     * @throws \RuntimeException If TestCase class does not exists in this file
      */
     public static function load(SplFileInfo $file)
     {
@@ -41,6 +42,7 @@ class TestCaseLoader
             )
         );
         $name = $file->getBasename('.php');
+        /** @var TestCase $class */
         foreach ($loaded_classes as $class) {
             if (preg_match('{^([\w\\\]+\\\)?' . $name . '$}', $class)) {
                 if (is_subclass_of($class, '\\Unteist\\TestCase')) {

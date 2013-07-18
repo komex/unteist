@@ -9,6 +9,7 @@ declare(ticks = 1);
 
 namespace Unteist\Processor;
 
+use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
@@ -56,14 +57,20 @@ class MultiProc
      * @var \ArrayObject
      */
     protected $global_storage;
+    /**
+     * @var LoggerInterface
+     */
+    protected $logger;
 
     /**
      * @param EventDispatcher $dispatcher
+     * @param \Psr\Log\LoggerInterface $logger
      */
-    public function __construct(EventDispatcher $dispatcher)
+    public function __construct(EventDispatcher $dispatcher, LoggerInterface $logger)
     {
         $this->dispatcher = $dispatcher;
         $this->global_storage = new \ArrayObject();
+        $this->logger = $logger;
     }
 
     /**
@@ -163,68 +170,89 @@ class MultiProc
      */
     public function run()
     {
-        $result = true;
         if ($this->max_procs == 1) {
+            $this->logger->info('Run TestCases in single process.');
             foreach ($this->suites as $suite) {
-                $result = $result && $this->executor($suite);
+                $this->executor($suite);
             }
         } else {
+            $this->logger->info('Run TestCases in forked processes.', ['procs' => $this->max_procs]);
             pcntl_signal(SIGCHLD, [$this, 'childSignalHandler']);
             foreach ($this->suites as $suite) {
                 $this->launchJob($suite);
                 while (count($this->current_jobs) >= $this->max_procs) {
-                    echo "Maximum children allowed, waiting...\n";
+                    $this->logger->debug('Maximum children allowed, waiting.', ['jobs' => $this->current_jobs]);
                     sleep(1);
                 }
             }
             while (count($this->current_jobs)) {
-                echo "Waiting for current jobs to finish... \n";
+                $this->logger->debug('Waiting for current jobs to finish.', ['jobs' => $this->current_jobs]);
                 sleep(1);
             }
         }
+        $this->logger->info('All tests done.');
 
-        return $result;
+        return true;
     }
 
     /**
      * Launch TestCase.
      *
-     * @param SplFileInfo $suite
+     * @param SplFileInfo $case
      *
      * @return bool
      */
-    protected function executor(SplFileInfo $suite)
+    protected function executor(SplFileInfo $case)
     {
-        $class = TestCaseLoader::load($suite);
-        if (!empty($this->class_filters)) {
-            $reflection_class = new \ReflectionClass($class);
-            foreach ($this->class_filters as $filter) {
-                if (!$filter->filter($reflection_class)) {
-                    return false;
+        try {
+            $this->logger->debug('Trying to load TestCase.', ['file' => $case->getPathname()]);
+            $class = TestCaseLoader::load($case);
+            if (!empty($this->class_filters)) {
+                $this->logger->debug(
+                    'Filtering classes.',
+                    ['file' => $case->getPathname(), 'filters' => $this->class_filters]
+                );
+                $reflection_class = new \ReflectionClass($class);
+                foreach ($this->class_filters as $filter) {
+                    if (!$filter->filter($reflection_class)) {
+                        $this->logger->info(
+                            'Class was filtered',
+                            [
+                                'class' => $reflection_class->getName(),
+                                'file' => $case->getPathname(),
+                                'filter' => $filter
+                            ]
+                        );
+
+                        return false;
+                    }
                 }
             }
-        }
-        $runner = new TestRunner($this->dispatcher);
-        $runner->setFilters($this->methods_filters);
-        $runner->setGlobalStorage($this->global_storage);
-        $runner->precondition($class);
+            $runner = new TestRunner($this->dispatcher, $this->logger);
+            $runner->setFilters($this->methods_filters);
+            $runner->setGlobalStorage($this->global_storage);
+            $runner->precondition($class);
 
-        return $runner->run();
+            return $runner->run();
+        } catch (\RuntimeException $e) {
+            $this->logger->notice('TestCase class does not found in file', ['file' => $case->getPathname()]);
+
+            return false;
+        }
     }
 
     /**
      * Launch TestCase in parallel processes.
      *
-     * @param SplFileInfo $suite TestCase file
+     * @param SplFileInfo $case TestCase file
      *
      * @return bool
      */
-    protected function launchJob(SplFileInfo $suite)
+    protected function launchJob(SplFileInfo $case)
     {
         $pid = pcntl_fork();
         if ($pid == -1) {
-            //Problem launching the job
-            error_log('Could not launch new job, exiting');
+            $this->logger->critical('Could not launch new job, exiting', ['case' => $case]);
 
             return false;
         } else {
@@ -232,18 +260,20 @@ class MultiProc
                 // Parent process
                 // Sometimes you can receive a signal to the childSignalHandler function before this code executes if
                 // the child script executes quickly enough!
-                //
-                $this->current_jobs[$pid] = $suite;
+                $this->current_jobs[$pid] = $case;
 
                 // In the event that a signal for this pid was caught before we get here, it will be in our signal_queue array
                 // So let's go ahead and process it now as if we'd just received the signal
                 if (isset($this->signal_queue[$pid])) {
-                    echo "found $pid in the signal queue, processing it now \n";
+                    $this->logger->info(
+                        'Found new pid in the signal queue, processing it now.',
+                        ['case' => $case, 'pid' => $pid]
+                    );
                     $this->childSignalHandler(SIGCHLD, $pid, $this->signal_queue[$pid]);
                     unset($this->signal_queue[$pid]);
                 }
             } else {
-                exit($this->executor($suite));
+                exit($this->executor($case));
             }
         }
 
@@ -257,9 +287,8 @@ class MultiProc
      * @param int $pid
      * @param int $status
      */
-    public function childSignalHandler($signo, $pid = null, $status = null)
+    public function childSignalHandler($signo = null, $pid = null, $status = null)
     {
-
         //If no pid is provided, that means we're getting the signal from the system.  Let's figure out
         //which child process ended
         if (!$pid) {
@@ -271,14 +300,20 @@ class MultiProc
             if ($pid && isset($this->current_jobs[$pid])) {
                 $exit_code = pcntl_wexitstatus($status);
                 if ($exit_code != 0) {
-                    echo "$pid exited with status " . $exit_code . "\n";
+                    $this->logger->notice(
+                        'Process exited with status != 0.',
+                        ['pid' => $pid, 'exit_code' => $exit_code, 'case' => $this->current_jobs[$pid]]
+                    );
                 }
                 unset($this->current_jobs[$pid]);
             } else {
                 if ($pid) {
                     //Oh no, our job has finished before this parent process could even note that it had been launched!
                     //Let's make note of it and handle it when the parent process is ready for it
-                    echo "..... Adding $pid to the signal queue ..... \n";
+                    $this->logger->debug(
+                        'Adding process to signal queue.',
+                        ['pid' => $pid, 'case' => $this->current_jobs[$pid]]
+                    );
                     $this->signal_queue[$pid] = $status;
                 }
             }
