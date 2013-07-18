@@ -31,4 +31,13 @@ class ClassFilter implements ClassFilterInterface
             ) && strlen($name > 4) && substr($name, -4) !== 'Test');
     }
 
+    /**
+     * Get name of this class filter.
+     *
+     * @return string
+     */
+    public function getName()
+    {
+        return 'named';
+    }
 }
