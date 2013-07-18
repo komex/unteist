@@ -305,7 +305,7 @@ class TestRunner
             if (!empty($modifiers['depends'])) {
                 $this->switcher->marked($test);
                 $depends = preg_replace('{[^\w,]}i', '', $modifiers['depends']);
-                $depends = explode(',', $depends);
+                $depends = array_unique(explode(',', $depends));
                 $test_event->setDepends($depends);
                 $this->resolveDependencies($depends);
             }
