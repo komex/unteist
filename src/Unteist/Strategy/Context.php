@@ -16,8 +16,17 @@ namespace Unteist\Strategy;
  */
 class Context
 {
+    /**
+     * Ignore test fails and go to next one.
+     */
     const STRATEGY_IGNORE_FAILS = 0;
+    /**
+     * Throw Exception on test fail.
+     */
     const STRATEGY_STOP_ON_FAILS = 1;
+    /**
+     * Mark test as skipped on fail.
+     */
     const STRATEGY_SKIP_FAILS = 2;
     /**
      * @var IgnoreFailsStrategy
@@ -29,7 +38,7 @@ class Context
      */
     public function __construct()
     {
-        $this->setStrategy(self::STRATEGY_IGNORE_FAILS);
+        $this->setStrategy(self::STRATEGY_STOP_ON_FAILS);
     }
 
     /**
