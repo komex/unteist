@@ -127,6 +127,15 @@ class StatusSwitcher
     }
 
     /**
+     * Generate EventStorage::EV_BEFORE_TEST event.
+     */
+    public function eventBeforeTest()
+    {
+        $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $this->test_event);
+        $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $this->test_event);
+    }
+
+    /**
      * Generate EventStorage::EV_AFTER_TEST event.
      */
     public function eventAfterTest()

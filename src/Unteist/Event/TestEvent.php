@@ -38,6 +38,10 @@ class TestEvent extends Event
      * @var int
      */
     protected $status;
+    /**
+     * @var int
+     */
+    protected $asserts;
 
     /**
      * @param string $name Test name
@@ -129,5 +133,25 @@ class TestEvent extends Event
     public function getTestCaseEvent()
     {
         return $this->test_case_event;
+    }
+
+    /**
+     * Get count of asserts in this test.
+     *
+     * @return int
+     */
+    public function getAsserts()
+    {
+        return $this->asserts;
+    }
+
+    /**
+     * Set number of asserts in this test.
+     *
+     * @param int $asserts
+     */
+    public function setAsserts($asserts)
+    {
+        $this->asserts = intval($asserts, 10);
     }
 }

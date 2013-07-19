@@ -13,6 +13,7 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
 use Unteist\Event\TestEvent;
+use Unteist\Exception\AssertException;
 use Unteist\Exception\SkipException;
 use Unteist\Filter\MethodsFilterInterface;
 use Unteist\Strategy\Context;
@@ -74,10 +75,6 @@ class TestRunner
      * @var EventDispatcher
      */
     protected $precondition;
-    /**
-     * @var int
-     */
-    protected $asserts_count = 0;
     /**
      * @var \ArrayObject
      */
@@ -177,7 +174,7 @@ class TestRunner
             }
             if ($is_test_method) {
                 $this->logger->debug(
-                    'Registering a test method.',
+                    'Registering a new test method.',
                     ['pid' => getmypid(), 'method' => $method->getName(), 'modifiers' => $modifiers]
                 );
                 $this->tests[$method->getName()] = [
@@ -270,24 +267,6 @@ class TestRunner
     }
 
     /**
-     * Increase the count of used asserts in TestCase.
-     */
-    public function incAssertCount()
-    {
-        $this->asserts_count++;
-    }
-
-    /**
-     * Get the current number of used asserts in TestCase.
-     *
-     * @return int
-     */
-    public function getAssertCount()
-    {
-        return $this->asserts_count;
-    }
-
-    /**
      * Run TestCase.
      *
      * @return bool
@@ -349,8 +328,7 @@ class TestRunner
                 $method = new \ReflectionMethod($this->test_case, $test);
                 foreach ($dataProvider as $data_set) {
                     $test_event->setDataSet($data_set);
-                    $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $test_event);
-                    $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $test_event);
+                    $this->switcher->eventBeforeTest();
                     $method->invokeArgs($this->test_case, $data_set);
                     $this->switcher->done($test);
                 }
@@ -358,6 +336,13 @@ class TestRunner
         } catch (SkipException $skip) {
             $this->switcher->skipped($test);
             throw $skip;
+        } catch (AssertException $e) {
+            $this->logger->debug(
+                'Assert fail.',
+                ['pid' => getmypid(), 'test' => $test, 'exception' => $e->getMessage()]
+            );
+            $this->switcher->failed($test);
+            $this->context->fail($e);
         } catch (\Exception $e) {
             $this->switcher->failed($test);
             $this->context->fail($e);

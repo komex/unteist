@@ -15,6 +15,7 @@ use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
 use Unteist\Filter\ClassFilterInterface;
 use Unteist\Filter\MethodsFilterInterface;
+use Unteist\Strategy\Context;
 
 
 /**
@@ -61,6 +62,10 @@ class MultiProc
      * @var LoggerInterface
      */
     protected $logger;
+    /**
+     * @var int
+     */
+    protected $strategy = Context::STRATEGY_IGNORE_FAILS;
 
     /**
      * @param EventDispatcher $dispatcher
@@ -229,20 +234,22 @@ class MultiProc
                             ]
                         );
 
-                        return false;
+                        return 1;
                     }
                 }
             }
             $runner = new TestRunner($this->dispatcher, $this->logger);
+            $runner->setStrategy($this->strategy);
             $runner->setFilters($this->methods_filters);
             $runner->setGlobalStorage($this->global_storage);
             $runner->precondition($class);
+            $runner->run();
 
-            return $runner->run();
+            return 0;
         } catch (\RuntimeException $e) {
             $this->logger->notice('TestCase class does not found in file', ['pid' => getmypid()]);
 
-            return false;
+            return 2;
         }
     }
 
