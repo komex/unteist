@@ -38,14 +38,4 @@ class ClassFilter implements ClassFilterInterface
     {
         return 'named';
     }
-
-    /**
-     * Convert filter to string.
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        return $this->getName();
-    }
 }

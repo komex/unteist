@@ -30,16 +30,6 @@ final class MethodsFilter implements MethodsFilterInterface
     }
 
     /**
-     * Convert filter to string.
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        return $this->getName();
-    }
-
-    /**
      * Get name of this methods filter.
      *
      * @return string
