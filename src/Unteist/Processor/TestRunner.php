@@ -165,7 +165,7 @@ class TestRunner
                     $this->logger->debug(
                         'Method is NOT a test.',
                         [
-                            'class' => $this->name,
+                            'pid' => getmypid(),
                             'method' => $method->getName(),
                             'modifiers' => $modifiers,
                             'filter' => $filter->getName()
@@ -178,7 +178,7 @@ class TestRunner
             if ($is_test_method) {
                 $this->logger->debug(
                     'Registering a test method.',
-                    ['class' => $this->name, 'method' => $method->getName(), 'modifiers' => $modifiers]
+                    ['pid' => getmypid(), 'method' => $method->getName(), 'modifiers' => $modifiers]
                 );
                 $this->tests[$method->getName()] = [
                     'status' => self::TEST_NEW,
@@ -253,7 +253,7 @@ class TestRunner
         if (!empty($name)) {
             $this->logger->debug(
                 'Register a new event listener',
-                ['class' => $this->name, 'event' => $event, 'listener' => $listener]
+                ['pid' => getmypid(), 'event' => $event, 'method' => $listener]
             );
             $this->precondition->addListener($name, array($this->test_case, $listener));
         }
@@ -295,7 +295,7 @@ class TestRunner
     public function run()
     {
         if (empty($this->tests)) {
-            $this->logger->notice('Test not found in TestCase', ['class' => $this->name]);
+            $this->logger->notice('Tests not found in TestCase', ['pid' => getmypid()]);
 
             return false;
         }
@@ -333,7 +333,7 @@ class TestRunner
                 $depends = array_unique(explode(',', $depends));
                 $this->logger->debug(
                     'The test has depends',
-                    ['class' => $this->name, 'test' => $test, 'depends' => $depends]
+                    ['pid' => getmypid(), 'test' => $test, 'depends' => $depends]
                 );
                 $test_event->setDepends($depends);
                 $this->resolveDependencies($depends);

@@ -46,7 +46,7 @@ class MultiProc
      */
     protected $methods_filters = [];
     /**
-     * @var array
+     * @var SplFileInfo[]
      */
     protected $current_jobs = [];
     /**
@@ -171,26 +171,35 @@ class MultiProc
     public function run()
     {
         if ($this->max_procs == 1) {
-            $this->logger->info('Run TestCases in single process.');
+            $this->logger->info('Run TestCases in single process.', ['pid' => getmypid()]);
             foreach ($this->suites as $suite) {
                 $this->executor($suite);
             }
         } else {
-            $this->logger->info('Run TestCases in forked processes.', ['procs' => $this->max_procs]);
+            $this->logger->info(
+                'Run TestCases in forked processes.',
+                ['pid' => getmypid(), 'procs' => $this->max_procs]
+            );
             pcntl_signal(SIGCHLD, [$this, 'childSignalHandler']);
             foreach ($this->suites as $suite) {
                 $this->launchJob($suite);
                 while (count($this->current_jobs) >= $this->max_procs) {
-                    $this->logger->debug('Maximum children allowed, waiting.', ['jobs' => $this->current_jobs]);
+                    $this->logger->debug(
+                        'Maximum children allowed, waiting.',
+                        ['jobs' => array_keys($this->current_jobs)]
+                    );
                     sleep(1);
                 }
             }
             while (count($this->current_jobs)) {
-                $this->logger->debug('Waiting for current jobs to finish.', ['jobs' => $this->current_jobs]);
+                $this->logger->debug(
+                    'Waiting for current jobs to finish.',
+                    ['jobs' => array_keys($this->current_jobs)]
+                );
                 sleep(1);
             }
         }
-        $this->logger->info('All tests done.');
+        $this->logger->info('All tests done.', ['pid' => getmypid()]);
 
         return true;
     }
@@ -205,22 +214,18 @@ class MultiProc
     protected function executor(SplFileInfo $case)
     {
         try {
-            $this->logger->debug('Trying to load TestCase.', ['file' => $case->getPathname()]);
+            $this->logger->debug('Trying to load TestCase.', ['pid' => getmypid(), 'file' => $case->getPathname()]);
             $class = TestCaseLoader::load($case);
+            $this->logger->debug('TestCase was found.', ['pid' => getmypid(), 'class' => get_class($class)]);
             if (!empty($this->class_filters)) {
-                $this->logger->debug(
-                    'Filtering classes.',
-                    ['file' => $case->getPathname(), 'filters' => array_keys($this->class_filters)]
-                );
                 $reflection_class = new \ReflectionClass($class);
                 foreach ($this->class_filters as $filter) {
                     if (!$filter->filter($reflection_class)) {
                         $this->logger->info(
                             'Class was filtered',
                             [
-                                'class' => $reflection_class->getName(),
-                                'file' => $case->getPathname(),
-                                'filter' => $filter->getName()
+                                'pid' => getmypid(),
+                                'filter' => $filter->getName(),
                             ]
                         );
 
@@ -235,7 +240,7 @@ class MultiProc
 
             return $runner->run();
         } catch (\RuntimeException $e) {
-            $this->logger->notice('TestCase class does not found in file', ['file' => $case->getPathname()]);
+            $this->logger->notice('TestCase class does not found in file', ['pid' => getmypid()]);
 
             return false;
         }
@@ -252,11 +257,12 @@ class MultiProc
     {
         $pid = pcntl_fork();
         if ($pid == -1) {
-            $this->logger->critical('Could not launch new job, exiting', ['case' => $case]);
+            $this->logger->critical('Could not launch new job, exiting', ['file' => $case->getPathname()]);
 
             return false;
         } else {
             if ($pid) {
+                $this->logger->debug('New fork.', ['pid' => getmypid(), 'child' => $pid]);
                 // Parent process
                 // Sometimes you can receive a signal to the childSignalHandler function before this code executes if
                 // the child script executes quickly enough!
@@ -267,7 +273,7 @@ class MultiProc
                 if (isset($this->signal_queue[$pid])) {
                     $this->logger->info(
                         'Found new pid in the signal queue, processing it now.',
-                        ['case' => $case, 'pid' => $pid]
+                        ['pid' => $pid, 'file' => $case->getPathname()]
                     );
                     $this->childSignalHandler(SIGCHLD, $pid, $this->signal_queue[$pid]);
                     unset($this->signal_queue[$pid]);
@@ -302,7 +308,7 @@ class MultiProc
                 if ($exit_code != 0) {
                     $this->logger->notice(
                         'Process exited with status != 0.',
-                        ['pid' => $pid, 'exit_code' => $exit_code, 'case' => $this->current_jobs[$pid]]
+                        ['pid' => $pid, 'exit_code' => $exit_code]
                     );
                 }
                 unset($this->current_jobs[$pid]);
@@ -310,10 +316,7 @@ class MultiProc
                 if ($pid) {
                     //Oh no, our job has finished before this parent process could even note that it had been launched!
                     //Let's make note of it and handle it when the parent process is ready for it
-                    $this->logger->debug(
-                        'Adding process to signal queue.',
-                        ['pid' => $pid, 'case' => $this->current_jobs[$pid]]
-                    );
+                    $this->logger->debug('Adding process to signal queue.', ['pid' => $pid]);
                     $this->signal_queue[$pid] = $status;
                 }
             }
