@@ -210,7 +210,7 @@ class MultiProc
             if (!empty($this->class_filters)) {
                 $this->logger->debug(
                     'Filtering classes.',
-                    ['file' => $case->getPathname(), 'filters' => $this->class_filters]
+                    ['file' => $case->getPathname(), 'filters' => array_keys($this->class_filters)]
                 );
                 $reflection_class = new \ReflectionClass($class);
                 foreach ($this->class_filters as $filter) {
@@ -220,7 +220,7 @@ class MultiProc
                             [
                                 'class' => $reflection_class->getName(),
                                 'file' => $case->getPathname(),
-                                'filter' => $filter
+                                'filter' => $filter->getName()
                             ]
                         );
 
