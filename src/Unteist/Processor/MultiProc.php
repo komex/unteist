@@ -66,6 +66,10 @@ class MultiProc
      * @var int
      */
     protected $strategy = Context::STRATEGY_IGNORE_FAILS;
+    /**
+     * @var int
+     */
+    protected $exit_code = 0;
 
     /**
      * @param EventDispatcher $dispatcher
@@ -74,8 +78,8 @@ class MultiProc
     public function __construct(EventDispatcher $dispatcher, LoggerInterface $logger)
     {
         $this->dispatcher = $dispatcher;
-        $this->global_storage = new \ArrayObject();
         $this->logger = $logger;
+        $this->global_storage = new \ArrayObject();
     }
 
     /**
@@ -171,14 +175,16 @@ class MultiProc
     /**
      * Run all TestCases.
      *
-     * @return bool
+     * @return int Exit code
      */
     public function run()
     {
         if ($this->max_procs == 1) {
             $this->logger->info('Run TestCases in single process.', ['pid' => getmypid()]);
             foreach ($this->suites as $suite) {
-                $this->executor($suite);
+                if ($this->executor($suite)) {
+                    $this->exit_code = 1;
+                }
             }
         } else {
             $this->logger->info(
@@ -204,9 +210,9 @@ class MultiProc
                 sleep(1);
             }
         }
-        $this->logger->info('All tests done.', ['pid' => getmypid()]);
+        $this->logger->info('All tests done.', ['pid' => getmypid(), 'exit_code' => $this->exit_code]);
 
-        return true;
+        return $this->exit_code;
     }
 
     /**
@@ -243,13 +249,12 @@ class MultiProc
             $runner->setFilters($this->methods_filters);
             $runner->setGlobalStorage($this->global_storage);
             $runner->precondition($class);
-            $runner->run();
 
-            return 0;
+            return $runner->run();
         } catch (\RuntimeException $e) {
             $this->logger->notice('TestCase class does not found in file', ['pid' => getmypid()]);
 
-            return 2;
+            return 1;
         }
     }
 
@@ -317,6 +322,7 @@ class MultiProc
                         'Process exited with status != 0.',
                         ['pid' => $pid, 'exit_code' => $exit_code]
                     );
+                    $this->exit_code = $exit_code;
                 }
                 unset($this->current_jobs[$pid]);
             } else {

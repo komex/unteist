@@ -103,6 +103,8 @@ class TestRunner
     /**
      * @param EventDispatcher $dispatcher Global event dispatcher
      * @param LoggerInterface $logger
+     *
+     * @return TestRunner
      */
     public function __construct(EventDispatcher $dispatcher, LoggerInterface $logger)
     {
@@ -276,19 +278,22 @@ class TestRunner
         if (empty($this->tests)) {
             $this->logger->notice('Tests not found in TestCase', ['pid' => getmypid()]);
 
-            return false;
+            return 1;
         }
         $this->test_case_event = new TestCaseEvent($this->name);
         $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
         $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
+        $return_code = 0;
         foreach ($this->tests as $method => $data) {
             $this->context->setStrategy($this->strategy);
-            $this->runTest($method, $data);
+            if ($this->runTest($method, $data)) {
+                $return_code = 1;
+            }
         }
         $this->precondition->dispatch(EventStorage::EV_AFTER_CASE);
         $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, $this->test_case_event);
 
-        return true;
+        return $return_code;
     }
 
     /**
@@ -297,6 +302,7 @@ class TestRunner
      * @param string $test Method name
      * @param array $data
      *
+     * @return int
      * @throws \Unteist\Exception\SkipException
      * @throws \RuntimeException
      */
@@ -333,6 +339,8 @@ class TestRunner
                     $this->switcher->done($test);
                 }
             }
+
+            return 0;
         } catch (SkipException $skip) {
             $this->switcher->skipped($test);
             throw $skip;
@@ -343,9 +351,13 @@ class TestRunner
             );
             $this->switcher->failed($test);
             $this->context->fail($e);
+
+            return 1;
         } catch (\Exception $e) {
             $this->switcher->failed($test);
             $this->context->fail($e);
+
+            return 1;
         }
     }
 
