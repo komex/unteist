@@ -2,7 +2,7 @@
 /**
  * This file is a part of Unteist project.
  *
- * (c) Andrey Kolchenko <komexx@gmail.com>
+ * (c) Andrey Kolchenko <andrey@kolchenko.me>
  */
 
 namespace Unteist\Filter;
@@ -12,7 +12,7 @@ namespace Unteist\Filter;
  * Class MethodsFilterInterface
  *
  * @package Unteist\Filter
- * @author Andrey Kolchenko <komexx@gmail.com>
+ * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
 interface MethodsFilterInterface
 {
@@ -25,4 +25,11 @@ interface MethodsFilterInterface
      * @return bool Is it right method?
      */
     public function condition(\ReflectionMethod $method, array $modifiers);
+
+    /**
+     * Get name of this methods filter.
+     *
+     * @return string
+     */
+    public function getName();
 }

@@ -23,4 +23,11 @@ interface ClassFilterInterface
      * @return bool Can we use this class?
      */
     public function filter(\ReflectionClass $class);
+
+    /**
+     * Get name of this class filter.
+     *
+     * @return string
+     */
+    public function getName();
 }

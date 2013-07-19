@@ -26,9 +26,16 @@ class ClassFilter implements ClassFilterInterface
     {
         $name = $class->getShortName();
 
-        return (!$class->isAbstract() && !$class->isInterface() && $class->isSubclassOf(
-                '\\Unteist\\TestCase'
-            ) && strlen($name > 4) && substr($name, -4) !== 'Test');
+        return (!$class->isAbstract() && !$class->isInterface() && strlen($name) > 4 && substr($name, -4) === 'Test');
     }
 
+    /**
+     * Get name of this class filter.
+     *
+     * @return string
+     */
+    public function getName()
+    {
+        return 'named';
+    }
 }

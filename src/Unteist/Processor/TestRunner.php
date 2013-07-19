@@ -8,6 +8,7 @@
 namespace Unteist\Processor;
 
 
+use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
@@ -97,15 +98,20 @@ class TestRunner
      * @var \ArrayIterator[]
      */
     protected $data_sets = [];
+    /**
+     * @var LoggerInterface
+     */
+    protected $logger;
 
     /**
      * @param EventDispatcher $dispatcher Global event dispatcher
+     * @param LoggerInterface $logger
      */
-    public function __construct(EventDispatcher $dispatcher)
+    public function __construct(EventDispatcher $dispatcher, LoggerInterface $logger)
     {
         $this->dispatcher = $dispatcher;
+        $this->logger = $logger;
         $this->precondition = new EventDispatcher();
-        $this->global_storage = new \ArrayObject();
         $this->context = new Context();
         $this->tests = new \ArrayObject();
         $this->switcher = new StatusSwitcher($this->tests, $this->precondition, $this->dispatcher);
@@ -156,11 +162,24 @@ class TestRunner
             $modifiers = $this->parseDocBlock($method);
             foreach ($this->filters as $filter) {
                 if (!$filter->condition($method, $modifiers)) {
+                    $this->logger->debug(
+                        'Method is NOT a test.',
+                        [
+                            'pid' => getmypid(),
+                            'method' => $method->getName(),
+                            'modifiers' => $modifiers,
+                            'filter' => $filter->getName()
+                        ]
+                    );
                     $is_test_method = false;
                     break;
                 }
             }
             if ($is_test_method) {
+                $this->logger->debug(
+                    'Registering a test method.',
+                    ['pid' => getmypid(), 'method' => $method->getName(), 'modifiers' => $modifiers]
+                );
                 $this->tests[$method->getName()] = [
                     'status' => self::TEST_NEW,
                     'modifiers' => $modifiers,
@@ -232,6 +251,10 @@ class TestRunner
                 $name = null;
         }
         if (!empty($name)) {
+            $this->logger->debug(
+                'Register a new event listener',
+                ['pid' => getmypid(), 'event' => $event, 'method' => $listener]
+            );
             $this->precondition->addListener($name, array($this->test_case, $listener));
         }
     }
@@ -272,6 +295,8 @@ class TestRunner
     public function run()
     {
         if (empty($this->tests)) {
+            $this->logger->notice('Tests not found in TestCase', ['pid' => getmypid()]);
+
             return false;
         }
         $this->test_case_event = new TestCaseEvent($this->name);
@@ -306,6 +331,10 @@ class TestRunner
                 $this->switcher->marked($test);
                 $depends = preg_replace('{[^\w,]}i', '', $modifiers['depends']);
                 $depends = array_unique(explode(',', $depends));
+                $this->logger->debug(
+                    'The test has depends',
+                    ['pid' => getmypid(), 'test' => $test, 'depends' => $depends]
+                );
                 $test_event->setDepends($depends);
                 $this->resolveDependencies($depends);
             }

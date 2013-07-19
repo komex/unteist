@@ -28,4 +28,14 @@ final class MethodsFilter implements MethodsFilterInterface
 
         return false;
     }
+
+    /**
+     * Get name of this methods filter.
+     *
+     * @return string
+     */
+    public function getName()
+    {
+        return 'named';
+    }
 }
