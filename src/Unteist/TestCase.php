@@ -29,6 +29,10 @@ class TestCase
      * @var \ArrayObject
      */
     private $global_storage;
+    /**
+     * @var int
+     */
+    private $asserts = 0;
 
     /**
      * Create a new TestCase.
@@ -36,6 +40,24 @@ class TestCase
     public function __construct()
     {
         $this->local_storage = new \ArrayObject();
+    }
+
+    /**
+     * Get asserts count for this test.
+     *
+     * @return int
+     */
+    public function getAsserts()
+    {
+        return $this->asserts;
+    }
+
+    /**
+     * Increase count of assserts for this test case.
+     */
+    public function incAsserts()
+    {
+        $this->asserts++;
     }
 
     /**
