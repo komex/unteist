@@ -10,6 +10,7 @@ namespace Unteist\Processor;
 
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
 use Unteist\Event\TestEvent;
@@ -68,7 +69,7 @@ class Runner
      */
     protected $filters = [];
     /**
-     * @var EventDispatcher
+     * @var EventDispatcherInterface
      */
     protected $dispatcher;
     /**
@@ -101,12 +102,12 @@ class Runner
     protected $logger;
 
     /**
-     * @param EventDispatcher $dispatcher Global event dispatcher
+     * @param EventDispatcherInterface $dispatcher Global event dispatcher
      * @param LoggerInterface $logger
      *
      * @return Runner
      */
-    public function __construct(EventDispatcher $dispatcher, LoggerInterface $logger)
+    public function __construct(EventDispatcherInterface $dispatcher, LoggerInterface $logger)
     {
         $this->dispatcher = $dispatcher;
         $this->logger = $logger;

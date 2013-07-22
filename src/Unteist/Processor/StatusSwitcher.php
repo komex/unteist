@@ -8,6 +8,7 @@
 namespace Unteist\Processor;
 
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestEvent;
 
@@ -40,10 +41,13 @@ class StatusSwitcher
     /**
      * @param \ArrayObject $tests
      * @param EventDispatcher $precondition
-     * @param EventDispatcher $dispatcher
+     * @param EventDispatcherInterface $dispatcher
      */
-    public function __construct(\ArrayObject $tests, EventDispatcher $precondition, EventDispatcher $dispatcher)
-    {
+    public function __construct(
+        \ArrayObject $tests,
+        EventDispatcher $precondition,
+        EventDispatcherInterface $dispatcher
+    ) {
         $this->tests = $tests;
         $this->precondition = $precondition;
         $this->dispatcher = $dispatcher;

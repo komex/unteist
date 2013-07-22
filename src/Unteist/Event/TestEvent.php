@@ -8,7 +8,7 @@
 namespace Unteist\Event;
 
 use Symfony\Component\EventDispatcher\Event;
-use Unteist\Processor\TestRunner;
+use Unteist\Processor\Runner;
 
 /**
  * Class TestEvent
@@ -21,7 +21,7 @@ class TestEvent extends Event
     /**
      * @var string
      */
-    protected $name;
+    protected $method;
     /**
      * @var TestCaseEvent
      */
@@ -44,14 +44,14 @@ class TestEvent extends Event
     protected $asserts;
 
     /**
-     * @param string $name Test name
+     * @param string $method Test name
      * @param TestCaseEvent $test_case_event
      */
-    public function __construct($name, TestCaseEvent $test_case_event)
+    public function __construct($method, TestCaseEvent $test_case_event)
     {
-        $this->name = $name;
+        $this->method = $method;
         $this->test_case_event = $test_case_event;
-        $this->status = TestRunner::TEST_NEW;
+        $this->status = Runner::TEST_NEW;
         $test_case_event->addTestEvent($this);
     }
 
@@ -120,9 +120,9 @@ class TestEvent extends Event
      *
      * @return string
      */
-    public function getName()
+    public function getMethod()
     {
-        return $this->name;
+        return $this->method;
     }
 
     /**

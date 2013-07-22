@@ -10,9 +10,10 @@ declare(ticks = 1);
 namespace Unteist\Processor;
 
 use Psr\Log\LoggerInterface;
-use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
+use Unteist\Event\Connector;
 use Unteist\Filter\ClassFilterInterface;
 use Unteist\Filter\MethodsFilterInterface;
 use Unteist\Strategy\Context;
@@ -35,7 +36,7 @@ class Processor
      */
     protected $suites = [];
     /**
-     * @var EventDispatcher
+     * @var EventDispatcherInterface
      */
     protected $dispatcher;
     /**
@@ -70,16 +71,21 @@ class Processor
      * @var int
      */
     protected $exit_code = 0;
+    /**
+     * @var Connector
+     */
+    protected $connector;
 
     /**
-     * @param EventDispatcher $dispatcher
-     * @param \Psr\Log\LoggerInterface $logger
+     * @param EventDispatcherInterface $dispatcher
+     * @param LoggerInterface $logger
      */
-    public function __construct(EventDispatcher $dispatcher, LoggerInterface $logger)
+    public function __construct(EventDispatcherInterface $dispatcher, LoggerInterface $logger)
     {
         $this->dispatcher = $dispatcher;
         $this->logger = $logger;
         $this->global_storage = new \ArrayObject();
+        $this->connector = new Connector($this->dispatcher);
     }
 
     /**
@@ -199,7 +205,7 @@ class Processor
                         'Maximum children allowed, waiting.',
                         ['jobs' => array_keys($this->current_jobs)]
                     );
-                    sleep(1);
+                    $this->connector->read();
                 }
             }
             while (count($this->current_jobs)) {
@@ -207,8 +213,9 @@ class Processor
                     'Waiting for current jobs to finish.',
                     ['jobs' => array_keys($this->current_jobs)]
                 );
-                sleep(1);
+                $this->connector->read();
             }
+            $this->connector->read();
         }
         $this->logger->info('All tests done.', ['pid' => getmypid(), 'exit_code' => $this->exit_code]);
 
@@ -267,6 +274,7 @@ class Processor
      */
     protected function launchJob(SplFileInfo $case)
     {
+        $this->connector->add();
         $pid = pcntl_fork();
         if ($pid == -1) {
             $this->logger->critical('Could not launch new job, exiting', ['file' => $case->getPathname()]);
@@ -275,6 +283,7 @@ class Processor
         } else {
             if ($pid) {
                 $this->logger->debug('New fork.', ['pid' => getmypid(), 'child' => $pid]);
+                $this->connector->attach($pid);
                 // Parent process
                 // Sometimes you can receive a signal to the childSignalHandler function before this code executes if
                 // the child script executes quickly enough!
@@ -291,6 +300,7 @@ class Processor
                     unset($this->signal_queue[$pid]);
                 }
             } else {
+                $this->connector->activate();
                 exit($this->executor($case));
             }
         }
@@ -324,6 +334,7 @@ class Processor
                     );
                     $this->exit_code = $exit_code;
                 }
+                $this->connector->detach($pid);
                 unset($this->current_jobs[$pid]);
             } else {
                 if ($pid) {
