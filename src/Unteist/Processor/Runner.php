@@ -281,20 +281,24 @@ class Runner
 
             return 1;
         }
-        $this->test_case_event = new TestCaseEvent($this->name);
-        $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
-        $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
-        $return_code = 0;
-        foreach ($this->tests as $method => $data) {
-            $this->context->setStrategy($this->strategy);
-            if ($this->runTest($method, $data)) {
-                $return_code = 1;
+        try {
+            $this->test_case_event = new TestCaseEvent($this->name);
+            $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
+            $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
+            $return_code = 0;
+            foreach ($this->tests as $method => $data) {
+                $this->context->setStrategy($this->strategy);
+                if ($this->runTest($method, $data)) {
+                    $return_code = 1;
+                }
             }
-        }
-        $this->precondition->dispatch(EventStorage::EV_AFTER_CASE);
-        $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, $this->test_case_event);
+            $this->precondition->dispatch(EventStorage::EV_AFTER_CASE);
+            $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, $this->test_case_event);
 
-        return $return_code;
+            return $return_code;
+        } catch (AssertException $e) {
+            return 1;
+        }
     }
 
     /**
@@ -312,6 +316,7 @@ class Runner
         $test_event = new TestEvent($test, $this->test_case_event);
         $this->switcher->setTestEvent($test_event);
         $modifiers = $data['modifiers'];
+        $asserts = 0;
         try {
             if (!empty($modifiers['depends'])) {
                 $this->switcher->marked($test);
@@ -336,7 +341,10 @@ class Runner
                 foreach ($dataProvider as $data_set) {
                     $test_event->setDataSet($data_set);
                     $this->switcher->eventBeforeTest();
+                    $asserts = $this->test_case->getAsserts();
                     $method->invokeArgs($this->test_case, $data_set);
+                    $delta = $this->test_case->getAsserts() - $asserts;
+                    $test_event->setAsserts($delta);
                     $this->switcher->done($test);
                 }
             }
@@ -350,11 +358,15 @@ class Runner
                 'Assert fail.',
                 ['pid' => getmypid(), 'test' => $test, 'exception' => $e->getMessage()]
             );
+            $delta = $this->test_case->getAsserts() - $asserts;
+            $test_event->setAsserts($delta);
             $this->switcher->failed($test);
             $this->context->fail($e);
 
             return 1;
         } catch (\Exception $e) {
+            $delta = $this->test_case->getAsserts() - $asserts;
+            $test_event->setAsserts($delta);
             $this->switcher->failed($test);
             $this->context->fail($e);
 
