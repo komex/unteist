@@ -19,9 +19,9 @@ class IgnoreFailsStrategy
     /**
      * Doing nothing on test's fail.
      *
-     * @param \Exception $exception
+     * @param \RuntimeException $exception
      */
-    public function fail($exception)
+    public function fail(\RuntimeException $exception)
     {
 
     }
