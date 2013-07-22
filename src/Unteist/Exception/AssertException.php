@@ -14,7 +14,7 @@ namespace Unteist\Exception;
  * @package Unteist\Exception
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class AssertException extends \Exception
+class AssertException extends \RuntimeException
 {
 
 }
