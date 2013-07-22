@@ -89,6 +89,26 @@ class Processor
     }
 
     /**
+     * Get current strategy
+     *
+     * @return int
+     */
+    public function getStrategy()
+    {
+        return $this->strategy;
+    }
+
+    /**
+     * Set default strategy.
+     *
+     * @param int $strategy
+     */
+    public function setStrategy($strategy)
+    {
+        $this->strategy = intval($strategy, 10);
+    }
+
+    /**
      * @param Finder $suites
      */
     public function setSuites(Finder $suites)
@@ -259,7 +279,7 @@ class Processor
 
             return $runner->run();
         } catch (\RuntimeException $e) {
-            $this->logger->notice('TestCase class does not found in file', ['pid' => getmypid()]);
+            $this->logger->notice('TestCase class does not found in file', ['pid' => getmypid(), 'exception' => $e]);
 
             return 1;
         }
