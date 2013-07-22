@@ -19,12 +19,12 @@ use Unteist\Strategy\Context;
 
 
 /**
- * Class MultiProc
+ * Class Processor
  *
  * @package Unteist\Processor
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class MultiProc
+class Processor
 {
     /**
      * @var int
@@ -244,7 +244,7 @@ class MultiProc
                     }
                 }
             }
-            $runner = new TestRunner($this->dispatcher, $this->logger);
+            $runner = new Runner($this->dispatcher, $this->logger);
             $runner->setStrategy($this->strategy);
             $runner->setFilters($this->methods_filters);
             $runner->setGlobalStorage($this->global_storage);

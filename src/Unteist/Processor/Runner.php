@@ -20,12 +20,12 @@ use Unteist\Strategy\Context;
 use Unteist\TestCase;
 
 /**
- * Class TestRunner
+ * Class Runner
  *
  * @package Unteist\Processor
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class TestRunner
+class Runner
 {
     /**
      * The test is just added to tests list.
@@ -104,7 +104,7 @@ class TestRunner
      * @param EventDispatcher $dispatcher Global event dispatcher
      * @param LoggerInterface $logger
      *
-     * @return TestRunner
+     * @return Runner
      */
     public function __construct(EventDispatcher $dispatcher, LoggerInterface $logger)
     {

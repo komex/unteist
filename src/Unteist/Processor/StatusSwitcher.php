@@ -71,7 +71,7 @@ class StatusSwitcher
         if (empty($this->tests[$method])) {
             throw new \InvalidArgumentException(sprintf('Test with name "%s" does not found.', $method));
         }
-        $this->tests[$method]['status'] = TestRunner::TEST_MARKED;
+        $this->tests[$method]['status'] = Runner::TEST_MARKED;
     }
 
     /**
@@ -86,8 +86,8 @@ class StatusSwitcher
         if (empty($this->tests[$method])) {
             throw new \InvalidArgumentException(sprintf('Test with name "%s" does not found.', $method));
         }
-        $this->tests[$method]['status'] = TestRunner::TEST_DONE;
-        $this->test_event->setStatus(TestRunner::TEST_DONE);
+        $this->tests[$method]['status'] = Runner::TEST_DONE;
+        $this->test_event->setStatus(Runner::TEST_DONE);
         $this->eventAfterTest();
     }
 
@@ -103,8 +103,8 @@ class StatusSwitcher
         if (empty($this->tests[$method])) {
             throw new \InvalidArgumentException(sprintf('Test with name "%s" does not found.', $method));
         }
-        $this->tests[$method]['status'] = TestRunner::TEST_SKIPPED;
-        $this->test_event->setStatus(TestRunner::TEST_SKIPPED);
+        $this->tests[$method]['status'] = Runner::TEST_SKIPPED;
+        $this->test_event->setStatus(Runner::TEST_SKIPPED);
         $this->dispatcher->dispatch(EventStorage::EV_TEST_SKIPPED, $this->test_event);
     }
 
@@ -120,8 +120,8 @@ class StatusSwitcher
         if (empty($this->tests[$method])) {
             throw new \InvalidArgumentException(sprintf('Test with name "%s" does not found.', $method));
         }
-        $this->tests[$method]['status'] = TestRunner::TEST_FAILED;
-        $this->test_event->setStatus(TestRunner::TEST_FAILED);
+        $this->tests[$method]['status'] = Runner::TEST_FAILED;
+        $this->test_event->setStatus(Runner::TEST_FAILED);
         $this->dispatcher->dispatch(EventStorage::EV_TEST_FAIL, $this->test_event);
         $this->eventAfterTest();
     }
