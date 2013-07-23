@@ -78,4 +78,19 @@ class TestCaseEvent extends Event
 
         return $asserts;
     }
+
+    /**
+     * Get execution time of TestCase.
+     *
+     * @return float
+     */
+    public function getTime()
+    {
+        $time = 0;
+        foreach ($this->test_events as $event) {
+            $time += $event->getTime();
+        }
+
+        return $time;
+    }
 }

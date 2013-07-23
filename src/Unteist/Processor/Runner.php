@@ -14,8 +14,8 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
 use Unteist\Event\TestEvent;
-use Unteist\Exception\AssertException;
-use Unteist\Exception\SkipException;
+use Unteist\Exception\AssertFailException;
+use Unteist\Exception\SkipTestException;
 use Unteist\Filter\MethodsFilterInterface;
 use Unteist\Meta\TestMeta;
 use Unteist\Strategy\Context;
@@ -77,6 +77,10 @@ class Runner
      * @var LoggerInterface
      */
     protected $logger;
+    /**
+     * @var float
+     */
+    protected $started;
 
     /**
      * @param EventDispatcherInterface $dispatcher Global event dispatcher
@@ -243,7 +247,7 @@ class Runner
     /**
      * Run TestCase.
      *
-     * @return bool
+     * @return int Status code
      */
     public function run()
     {
@@ -263,13 +267,13 @@ class Runner
                     $return_code = 1;
                 }
             }
-            $this->precondition->dispatch(EventStorage::EV_AFTER_CASE);
-            $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, $this->test_case_event);
-
-            return $return_code;
-        } catch (AssertException $e) {
-            return 1;
+        } catch (AssertFailException $e) {
+            $return_code = 1;
         }
+        $this->precondition->dispatch(EventStorage::EV_AFTER_CASE);
+        $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, $this->test_case_event);
+
+        return $return_code;
     }
 
     /**
@@ -279,8 +283,8 @@ class Runner
      *
      * @return int Status code
      * @throws \RuntimeException If something was wrong.
-     * @throws SkipException If this test was skipped.
-     * @throws AssertException If assert was fail.
+     * @throws SkipTestException If this test was skipped.
+     * @throws AssertFailException If assert was fail.
      */
     protected function runTest(TestMeta $test)
     {
@@ -300,23 +304,16 @@ class Runner
                     $event = new TestEvent($test->getMethod(), $this->test_case_event);
                     $event->setDataSet($data_set);
                     $event->setDepends($test->getDependencies());
-
-                    $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $event);
-                    $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $event);
-
                     $this->test_case->setTestEvent($event);
 
+                    $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $event);
+                    $this->started = microtime(true);
+                    $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $event);
                     $method->invokeArgs($this->test_case, $data_set);
-
-                    $test->setStatus(TestMeta::TEST_DONE);
-                    $event->setStatus(TestMeta::TEST_DONE);
-                    $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
-                    $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
+                    $this->finish($test, $event, TestMeta::TEST_DONE);
                 }
             }
-
-            return 0;
-        } catch (SkipException $e) {
+        } catch (SkipTestException $e) {
             $this->logger->debug(
                 'The test was skipped.',
                 ['pid' => getmypid(), 'test' => $test->getMethod(), 'exception' => $e->getMessage()]
@@ -326,21 +323,18 @@ class Runner
             $event->setDepends($test->getDependencies());
             $this->dispatcher->dispatch(EventStorage::EV_TEST_SKIPPED, $event);
             $this->context->skipTest($e);
-        } catch (AssertException $e) {
+        } catch (AssertFailException $e) {
             $this->logger->debug(
                 'Assert fail.',
                 ['pid' => getmypid(), 'test' => $test->getMethod(), 'exception' => $e->getMessage()]
             );
-            $test->setStatus(TestMeta::TEST_DONE);
-            $event->setStatus(TestMeta::TEST_DONE);
-            $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
-            $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
+            $this->finish($test, $event, TestMeta::TEST_FAILED);
             $this->context->assertFail($e);
 
             return 1;
-        } catch (\Exception $e) {
-            throw new \RuntimeException('Unexpected exception. All tests will be stopped.', 1, $e);
         }
+
+        return 0;
     }
 
     /**
@@ -350,7 +344,7 @@ class Runner
      *
      * @throws \LogicException If found infinitive depends loop.
      * @throws \InvalidArgumentException If depends methods not found.
-     * @throws \Unteist\Exception\SkipException If test method has skipped or failed method in depends.
+     * @throws SkipTestException If test method has skipped or failed method in depends.
      */
     protected function resolveDependencies(array $depends)
     {
@@ -370,13 +364,13 @@ class Runner
                             $depend
                         ));
                     case TestMeta::TEST_SKIPPED:
-                        throw new SkipException(sprintf(
+                        throw new SkipTestException(sprintf(
                             'Test method "%s:%s" was skipped.',
                             $this->name,
                             $depend
                         ));
                     case TestMeta::TEST_FAILED:
-                        throw new SkipException(sprintf(
+                        throw new SkipTestException(sprintf(
                             'Test method "%s:%s" was failed.',
                             $this->name,
                             $depend
@@ -425,5 +419,21 @@ class Runner
 
         return $this->data_sets[$method];
 
+    }
+
+    /**
+     * Do all dirty job after test is finish.
+     *
+     * @param TestMeta $test Meta description of test
+     * @param TestEvent $event Test event
+     * @param int $status Test status
+     */
+    protected function finish(TestMeta $test, TestEvent $event, $status)
+    {
+        $test->setStatus($status);
+        $event->setStatus($status);
+        $event->setTime(microtime(true) - $this->started);
+        $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
+        $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
     }
 }

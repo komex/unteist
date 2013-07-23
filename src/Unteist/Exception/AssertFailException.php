@@ -7,13 +7,14 @@
 
 namespace Unteist\Exception;
 
+
 /**
- * Class FailException
+ * Class AssertFailException
  *
  * @package Unteist\Exception
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class SkipException extends \RuntimeException
+class AssertFailException extends \RuntimeException
 {
 
 }

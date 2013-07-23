@@ -43,6 +43,10 @@ class TestEvent extends Event
      * @var int
      */
     protected $asserts;
+    /**
+     * @var double
+     */
+    protected $time;
 
     /**
      * @param string $method Test name
@@ -152,5 +156,25 @@ class TestEvent extends Event
     public function incAsserts()
     {
         $this->asserts++;
+    }
+
+    /**
+     * Get execution time.
+     *
+     * @return float
+     */
+    public function getTime()
+    {
+        return $this->time;
+    }
+
+    /**
+     * Set execution time.
+     *
+     * @param float $time
+     */
+    public function setTime($time)
+    {
+        $this->time = floatval($time);
     }
 }
