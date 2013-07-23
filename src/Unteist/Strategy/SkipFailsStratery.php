@@ -7,6 +7,7 @@
 
 namespace Unteist\Strategy;
 
+use Unteist\Exception\AssertException;
 use Unteist\Exception\SkipException;
 
 
@@ -21,12 +22,12 @@ class SkipFailsStratery extends IgnoreFailsStrategy
     /**
      * The depends test was fail. Skip base test.
      *
-     * @param \RuntimeException $exception
+     * @param AssertException $exception
      *
      * @throws SkipException
      */
-    public function fail(\RuntimeException $exception)
+    public function assertFail(AssertException $exception)
     {
-        throw new SkipException($exception);
+        throw new SkipException('The test has failed test in depends.', 0, $exception);
     }
 }

@@ -7,6 +7,8 @@
 
 namespace Unteist\Strategy;
 
+use Unteist\Exception\AssertException;
+
 
 /**
  * Class StopOnFailsStratery
@@ -19,11 +21,11 @@ class StopOnFailsStratery extends IgnoreFailsStrategy
     /**
      * Prevent executing next tests.
      *
-     * @param \RuntimeException $exception
+     * @param AssertException $exception
      *
-     * @throws \RuntimeException
+     * @throws AssertException
      */
-    public function fail(\RuntimeException $exception)
+    public function assertFail(AssertException $exception)
     {
         throw $exception;
     }

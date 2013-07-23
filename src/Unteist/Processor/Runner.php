@@ -325,7 +325,7 @@ class Runner
             $event = new TestEvent($test->getMethod(), $this->test_case_event);
             $event->setDepends($test->getDependencies());
             $this->dispatcher->dispatch(EventStorage::EV_TEST_SKIPPED, $event);
-            throw $e;
+            $this->context->skipTest($e);
         } catch (AssertException $e) {
             $this->logger->debug(
                 'Assert fail.',
@@ -335,7 +335,7 @@ class Runner
             $event->setStatus(TestMeta::TEST_DONE);
             $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
             $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
-            $this->context->fail($e);
+            $this->context->assertFail($e);
 
             return 1;
         } catch (\Exception $e) {

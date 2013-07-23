@@ -347,8 +347,10 @@ class Processor
         while ($pid > 0) {
             if ($pid && isset($this->current_jobs[$pid])) {
                 $exit_code = pcntl_wexitstatus($status);
-                if ($exit_code != 0) {
-                    $this->logger->notice(
+                if ($exit_code == 0) {
+                    $this->logger->debug('TestCase was successful finished.', ['pid' => $pid]);
+                } else {
+                    $this->logger->info(
                         'Process exited with status != 0.',
                         ['pid' => $pid, 'exit_code' => $exit_code]
                     );
