@@ -147,12 +147,10 @@ class TestEvent extends Event
     }
 
     /**
-     * Set number of asserts in this test.
-     *
-     * @param int $asserts
+     * Increment number of asserts in this test.
      */
-    public function setAsserts($asserts)
+    public function incAsserts()
     {
-        $this->asserts = intval($asserts, 10);
+        $this->asserts++;
     }
 }

@@ -8,6 +8,7 @@
 namespace Unteist;
 
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Unteist\Event\TestEvent;
 
 /**
  * Class TestCase
@@ -30,9 +31,9 @@ class TestCase
      */
     private $global_storage;
     /**
-     * @var int
+     * @var TestEvent
      */
-    private $asserts = 0;
+    private $test_event;
 
     /**
      * Create a new TestCase.
@@ -43,21 +44,23 @@ class TestCase
     }
 
     /**
-     * Get asserts count for this test.
+     * Get TestEvent
      *
-     * @return int
+     * @return TestEvent
      */
-    public function getAsserts()
+    public function getTestEvent()
     {
-        return $this->asserts;
+        return $this->test_event;
     }
 
     /**
-     * Increase count of assserts for this test case.
+     * Set TestEvent
+     *
+     * @param TestEvent $test_event
      */
-    public function incAsserts()
+    public function setTestEvent(TestEvent $test_event)
     {
-        $this->asserts++;
+        $this->test_event = $test_event;
     }
 
     /**

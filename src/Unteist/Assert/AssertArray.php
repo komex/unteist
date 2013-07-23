@@ -7,6 +7,7 @@
 
 namespace Unteist\Assert;
 
+use Unteist\Event\TestEvent;
 use Unteist\Exception\AssertException;
 
 
@@ -15,7 +16,7 @@ use Unteist\Exception\AssertException;
  *
  * @package Unteist\Assert
  * @author Andrey Kolchenko <andrey@kolchenko.me>
- * @method incAsserts
+ * @method TestEvent getTestEvent()
  */
 trait AssertArray
 {
@@ -32,7 +33,8 @@ trait AssertArray
             $message = sprintf('Failed assert that an array has a key "%s".%s%s', $key, PHP_EOL, $message);
             throw new AssertException($message);
         }
-        $this->incAsserts();
+        $event = $this->getTestEvent();
+        $event->incAsserts();
     }
 
     /**
@@ -48,6 +50,7 @@ trait AssertArray
             $message = sprintf('Failed assert that an array has not a key "%s".%s%s', $key, PHP_EOL, $message);
             throw new AssertException($message);
         }
-        $this->incAsserts();
+        $event = $this->getTestEvent();
+        $event->incAsserts();
     }
 }

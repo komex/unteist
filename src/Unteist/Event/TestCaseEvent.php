@@ -63,4 +63,19 @@ class TestCaseEvent extends Event
     {
         array_push($this->test_events, $event);
     }
+
+    /**
+     * Get total count of asserts in TestCase.
+     *
+     * @return int
+     */
+    public function getAsserts()
+    {
+        $asserts = 0;
+        foreach ($this->test_events as $event) {
+            $asserts += $event->getAsserts();
+        }
+
+        return $asserts;
+    }
 }

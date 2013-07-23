@@ -17,6 +17,7 @@ use Unteist\Event\TestEvent;
 use Unteist\Exception\AssertException;
 use Unteist\Exception\SkipException;
 use Unteist\Filter\MethodsFilterInterface;
+use Unteist\Meta\TestMeta;
 use Unteist\Strategy\Context;
 use Unteist\TestCase;
 
@@ -28,26 +29,6 @@ use Unteist\TestCase;
  */
 class Runner
 {
-    /**
-     * The test is just added to tests list.
-     */
-    const TEST_NEW = 0;
-    /**
-     * The test is done.
-     */
-    const TEST_DONE = 1;
-    /**
-     * The test was skipped.
-     */
-    const TEST_SKIPPED = 2;
-    /**
-     * The test was failed.
-     */
-    const TEST_FAILED = 4;
-    /**
-     * The test is marked as is already in stack list
-     */
-    const TEST_MARKED = 8;
     /**
      * @var string
      */
@@ -61,7 +42,7 @@ class Runner
      */
     protected $test_case_event;
     /**
-     * @var \ArrayObject
+     * @var TestMeta[]
      */
     protected $tests;
     /**
@@ -89,10 +70,6 @@ class Runner
      */
     protected $strategy;
     /**
-     * @var StatusSwitcher
-     */
-    protected $switcher;
-    /**
      * @var \ArrayIterator[]
      */
     protected $data_sets = [];
@@ -114,7 +91,6 @@ class Runner
         $this->precondition = new EventDispatcher();
         $this->context = new Context();
         $this->tests = new \ArrayObject();
-        $this->switcher = new StatusSwitcher($this->tests, $this->precondition, $this->dispatcher);
     }
 
     /**
@@ -176,14 +152,9 @@ class Runner
                 }
             }
             if ($is_test_method) {
-                $this->logger->debug(
-                    'Registering a new test method.',
-                    ['pid' => getmypid(), 'method' => $method->getName(), 'modifiers' => $modifiers]
+                $this->tests[$method->getName()] = new TestMeta(
+                    $this->name, $method->getName(), $modifiers, $this->logger
                 );
-                $this->tests[$method->getName()] = [
-                    'status' => self::TEST_NEW,
-                    'modifiers' => $modifiers,
-                ];
             } else {
                 foreach (array_keys($modifiers) as $event) {
                     $this->registerEventListener($event, $method->getName());
@@ -286,9 +257,9 @@ class Runner
             $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
             $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
             $return_code = 0;
-            foreach ($this->tests as $method => $data) {
+            foreach ($this->tests as $meta) {
                 $this->context->setStrategy($this->strategy);
-                if ($this->runTest($method, $data)) {
+                if ($this->runTest($meta)) {
                     $return_code = 1;
                 }
             }
@@ -304,73 +275,71 @@ class Runner
     /**
      * Run test method.
      *
-     * @param string $test Method name
-     * @param array $data
+     * @param TestMeta $test
      *
-     * @return int
-     * @throws \Unteist\Exception\SkipException
-     * @throws \RuntimeException
+     * @return int Status code
+     * @throws \RuntimeException If something was wrong.
+     * @throws SkipException If this test was skipped.
+     * @throws AssertException If assert was fail.
      */
-    protected function runTest($test, array $data)
+    protected function runTest(TestMeta $test)
     {
-        $test_event = new TestEvent($test, $this->test_case_event);
-        $this->switcher->setTestEvent($test_event);
-        $modifiers = $data['modifiers'];
-        $asserts = 0;
         try {
-            if (!empty($modifiers['depends'])) {
-                $this->switcher->marked($test);
-                $depends = preg_replace('{[^\w,]}i', '', $modifiers['depends']);
-                $depends = array_unique(explode(',', $depends));
-                $this->logger->debug(
-                    'The test has depends',
-                    ['pid' => getmypid(), 'test' => $test, 'depends' => $depends]
-                );
-                $test_event->setDepends($depends);
+            $depends = $test->getDependencies();
+            if (!empty($depends)) {
+                $test->setStatus(TestMeta::TEST_MARKED);
                 $this->resolveDependencies($depends);
             }
 
-            $status = $this->tests[$test]['status'];
-            if ($status == self::TEST_NEW || $status == self::TEST_MARKED) {
-                if (empty($modifiers['dataProvider'])) {
-                    $dataProvider = [[]];
-                } else {
-                    $dataProvider = $this->getDataSet($modifiers['dataProvider']);
-                }
-                $method = new \ReflectionMethod($this->test_case, $test);
+            $status = $test->getStatus();
+            if ($status == TestMeta::TEST_NEW || $status == TestMeta::TEST_MARKED) {
+                $dataProvider = $this->getDataSet($test->getDataProvider());
+                $method = new \ReflectionMethod($this->test_case, $test->getMethod());
                 foreach ($dataProvider as $data_set) {
-                    $test_event->setDataSet($data_set);
-                    $this->switcher->eventBeforeTest();
-                    $asserts = $this->test_case->getAsserts();
+
+                    $event = new TestEvent($test->getMethod(), $this->test_case_event);
+                    $event->setDataSet($data_set);
+                    $event->setDepends($test->getDependencies());
+
+                    $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $event);
+                    $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $event);
+
+                    $this->test_case->setTestEvent($event);
+
                     $method->invokeArgs($this->test_case, $data_set);
-                    $delta = $this->test_case->getAsserts() - $asserts;
-                    $test_event->setAsserts($delta);
-                    $this->switcher->done($test);
+
+                    $test->setStatus(TestMeta::TEST_DONE);
+                    $event->setStatus(TestMeta::TEST_DONE);
+                    $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
+                    $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
                 }
             }
 
             return 0;
-        } catch (SkipException $skip) {
-            $this->switcher->skipped($test);
-            throw $skip;
+        } catch (SkipException $e) {
+            $this->logger->debug(
+                'The test was skipped.',
+                ['pid' => getmypid(), 'test' => $test->getMethod(), 'exception' => $e->getMessage()]
+            );
+            $test->setStatus(TestMeta::TEST_SKIPPED);
+            $event = new TestEvent($test->getMethod(), $this->test_case_event);
+            $event->setDepends($test->getDependencies());
+            $this->dispatcher->dispatch(EventStorage::EV_TEST_SKIPPED, $event);
+            throw $e;
         } catch (AssertException $e) {
             $this->logger->debug(
                 'Assert fail.',
-                ['pid' => getmypid(), 'test' => $test, 'exception' => $e->getMessage()]
+                ['pid' => getmypid(), 'test' => $test->getMethod(), 'exception' => $e->getMessage()]
             );
-            $delta = $this->test_case->getAsserts() - $asserts;
-            $test_event->setAsserts($delta);
-            $this->switcher->failed($test);
+            $test->setStatus(TestMeta::TEST_DONE);
+            $event->setStatus(TestMeta::TEST_DONE);
+            $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
+            $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
             $this->context->fail($e);
 
             return 1;
         } catch (\Exception $e) {
-            $delta = $this->test_case->getAsserts() - $asserts;
-            $test_event->setAsserts($delta);
-            $this->switcher->failed($test);
-            $this->context->fail($e);
-
-            return 1;
+            throw new \RuntimeException('Unexpected exception. All tests will be stopped.', 1, $e);
         }
     }
 
@@ -387,26 +356,26 @@ class Runner
     {
         foreach ($depends as $depend) {
             if (!empty($this->tests[$depend])) {
-                $data = $this->tests[$depend];
-                switch ($data['status']) {
-                    case self::TEST_NEW:
+                $test = $this->tests[$depend];
+                switch ($test->getStatus()) {
+                    case TestMeta::TEST_NEW:
                         $this->context->setStrategy(Context::STRATEGY_SKIP_FAILS);
-                        $this->runTest($depend, $data);
+                        $this->runTest($test);
                         $this->context->setStrategy($this->strategy);
                         break;
-                    case self::TEST_MARKED:
+                    case TestMeta::TEST_MARKED:
                         throw new \LogicException(sprintf(
                             'Found infinitive loop in depends for test method "%s:%s".',
                             $this->name,
                             $depend
                         ));
-                    case self::TEST_SKIPPED:
+                    case TestMeta::TEST_SKIPPED:
                         throw new SkipException(sprintf(
                             'Test method "%s:%s" was skipped.',
                             $this->name,
                             $depend
                         ));
-                    case self::TEST_FAILED:
+                    case TestMeta::TEST_FAILED:
                         throw new SkipException(sprintf(
                             'Test method "%s:%s" was failed.',
                             $this->name,
@@ -433,6 +402,9 @@ class Runner
      */
     protected function getDataSet($method)
     {
+        if (empty($method)) {
+            return [[]];
+        }
         if (empty($this->data_sets[$method])) {
             $data_set_method = new \ReflectionMethod($this->test_case, $method);
             $data_set = $data_set_method->invoke($this->test_case);
