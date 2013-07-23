@@ -25,6 +25,10 @@ class TestCaseEvent extends Event
      * @var TestEvent[]
      */
     protected $test_events = [];
+    /**
+     * @var array
+     */
+    private $cache;
 
     /**
      * @param string $class Test case class
@@ -65,18 +69,40 @@ class TestCaseEvent extends Event
     }
 
     /**
+     * Reset statistics cache.
+     */
+    public function resetCache()
+    {
+        $this->cache = null;
+    }
+
+    /**
      * Get total count of asserts in TestCase.
      *
      * @return int
      */
     public function getAsserts()
     {
-        $asserts = 0;
-        foreach ($this->test_events as $event) {
-            $asserts += $event->getAsserts();
+        if (empty($this->cache)) {
+            $this->count();
         }
 
-        return $asserts;
+        return $this->cache['asserts'];
+    }
+
+    /**
+     * Evaluate statistics.
+     */
+    private function count()
+    {
+        $this->cache = [
+            'asserts' => 0,
+            'time' => 0,
+        ];
+        foreach ($this->test_events as $event) {
+            $this->cache['asserts'] += $event->getAsserts();
+            $this->cache['time'] += $event->getTime();
+        }
     }
 
     /**
@@ -86,11 +112,10 @@ class TestCaseEvent extends Event
      */
     public function getTime()
     {
-        $time = 0;
-        foreach ($this->test_events as $event) {
-            $time += $event->getTime();
+        if (empty($this->cache)) {
+            $this->count();
         }
 
-        return $time;
+        return $this->cache['time'];
     }
 }

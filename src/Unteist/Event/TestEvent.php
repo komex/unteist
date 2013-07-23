@@ -9,7 +9,6 @@ namespace Unteist\Event;
 
 use Symfony\Component\EventDispatcher\Event;
 use Unteist\Meta\TestMeta;
-use Unteist\Processor\Runner;
 
 /**
  * Class TestEvent
@@ -156,6 +155,7 @@ class TestEvent extends Event
     public function incAsserts()
     {
         $this->asserts++;
+        $this->test_case_event->resetCache();
     }
 
     /**
@@ -176,5 +176,6 @@ class TestEvent extends Event
     public function setTime($time)
     {
         $this->time = floatval($time);
+        $this->test_case_event->resetCache();
     }
 }
