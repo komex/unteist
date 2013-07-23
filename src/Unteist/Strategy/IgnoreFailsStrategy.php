@@ -7,8 +7,8 @@
 
 namespace Unteist\Strategy;
 
-use Unteist\Exception\AssertException;
-use Unteist\Exception\SkipException;
+use Unteist\Exception\AssertFailException;
+use Unteist\Exception\SkipTestException;
 
 
 /**
@@ -22,9 +22,9 @@ class IgnoreFailsStrategy
     /**
      * Doing nothing on test's fail.
      *
-     * @param AssertException $exception
+     * @param AssertFailException $exception
      */
-    public function assertFail(AssertException $exception)
+    public function assertFail(AssertFailException $exception)
     {
 
     }
@@ -32,11 +32,11 @@ class IgnoreFailsStrategy
     /**
      * Skip test.
      *
-     * @param SkipException $exception
+     * @param SkipTestException $exception
      *
-     * @throws SkipException
+     * @throws SkipTestException
      */
-    public function skipTest(SkipException $exception)
+    public function skipTest(SkipTestException $exception)
     {
         throw $exception;
     }

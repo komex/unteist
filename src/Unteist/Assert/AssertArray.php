@@ -8,7 +8,7 @@
 namespace Unteist\Assert;
 
 use Unteist\Event\TestEvent;
-use Unteist\Exception\AssertException;
+use Unteist\Exception\AssertFailException;
 
 
 /**
@@ -25,13 +25,13 @@ trait AssertArray
      * @param array $array
      * @param string $message
      *
-     * @throws \Unteist\Exception\AssertException
+     * @throws \Unteist\Exception\AssertFailException
      */
     public function assertArrayHasKey($key, array $array, $message = '')
     {
         if (!array_key_exists($key, $array)) {
             $message = sprintf('Failed assert that an array has a key "%s".%s%s', $key, PHP_EOL, $message);
-            throw new AssertException($message);
+            throw new AssertFailException($message);
         }
         $event = $this->getTestEvent();
         $event->incAsserts();
@@ -42,13 +42,13 @@ trait AssertArray
      * @param array $array
      * @param string $message
      *
-     * @throws \Unteist\Exception\AssertException
+     * @throws \Unteist\Exception\AssertFailException
      */
     public function assertArrayNotHasKey($key, array $array, $message = '')
     {
         if (array_key_exists($key, $array)) {
             $message = sprintf('Failed assert that an array has not a key "%s".%s%s', $key, PHP_EOL, $message);
-            throw new AssertException($message);
+            throw new AssertFailException($message);
         }
         $event = $this->getTestEvent();
         $event->incAsserts();

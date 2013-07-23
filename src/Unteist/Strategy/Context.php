@@ -7,8 +7,8 @@
 
 namespace Unteist\Strategy;
 
-use Unteist\Exception\AssertException;
-use Unteist\Exception\SkipException;
+use Unteist\Exception\AssertFailException;
+use Unteist\Exception\SkipTestException;
 
 
 /**
@@ -66,12 +66,12 @@ class Context
     /**
      * Call this method on test fail.
      *
-     * @param AssertException $exception
+     * @param AssertFailException $exception
      *
-     * @throws AssertException
-     * @throws SkipException
+     * @throws AssertFailException
+     * @throws SkipTestException
      */
-    public function assertFail(AssertException $exception)
+    public function assertFail(AssertFailException $exception)
     {
         $this->strategy->assertFail($exception);
     }
@@ -79,9 +79,9 @@ class Context
     /**
      * Skip current test.
      *
-     * @param SkipException $exception
+     * @param SkipTestException $exception
      */
-    public function skipTest(SkipException $exception)
+    public function skipTest(SkipTestException $exception)
     {
         $this->strategy->skipTest($exception);
     }
