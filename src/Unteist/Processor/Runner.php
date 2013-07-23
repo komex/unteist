@@ -10,21 +10,23 @@ namespace Unteist\Processor;
 
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
 use Unteist\Event\TestEvent;
+use Unteist\Exception\AssertException;
 use Unteist\Exception\SkipException;
 use Unteist\Filter\MethodsFilterInterface;
 use Unteist\Strategy\Context;
 use Unteist\TestCase;
 
 /**
- * Class TestRunner
+ * Class Runner
  *
  * @package Unteist\Processor
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class TestRunner
+class Runner
 {
     /**
      * The test is just added to tests list.
@@ -67,17 +69,13 @@ class TestRunner
      */
     protected $filters = [];
     /**
-     * @var EventDispatcher
+     * @var EventDispatcherInterface
      */
     protected $dispatcher;
     /**
      * @var EventDispatcher
      */
     protected $precondition;
-    /**
-     * @var int
-     */
-    protected $asserts_count = 0;
     /**
      * @var \ArrayObject
      */
@@ -104,10 +102,12 @@ class TestRunner
     protected $logger;
 
     /**
-     * @param EventDispatcher $dispatcher Global event dispatcher
+     * @param EventDispatcherInterface $dispatcher Global event dispatcher
      * @param LoggerInterface $logger
+     *
+     * @return Runner
      */
-    public function __construct(EventDispatcher $dispatcher, LoggerInterface $logger)
+    public function __construct(EventDispatcherInterface $dispatcher, LoggerInterface $logger)
     {
         $this->dispatcher = $dispatcher;
         $this->logger = $logger;
@@ -177,7 +177,7 @@ class TestRunner
             }
             if ($is_test_method) {
                 $this->logger->debug(
-                    'Registering a test method.',
+                    'Registering a new test method.',
                     ['pid' => getmypid(), 'method' => $method->getName(), 'modifiers' => $modifiers]
                 );
                 $this->tests[$method->getName()] = [
@@ -270,24 +270,6 @@ class TestRunner
     }
 
     /**
-     * Increase the count of used asserts in TestCase.
-     */
-    public function incAssertCount()
-    {
-        $this->asserts_count++;
-    }
-
-    /**
-     * Get the current number of used asserts in TestCase.
-     *
-     * @return int
-     */
-    public function getAssertCount()
-    {
-        return $this->asserts_count;
-    }
-
-    /**
      * Run TestCase.
      *
      * @return bool
@@ -297,19 +279,26 @@ class TestRunner
         if (empty($this->tests)) {
             $this->logger->notice('Tests not found in TestCase', ['pid' => getmypid()]);
 
-            return false;
+            return 1;
         }
-        $this->test_case_event = new TestCaseEvent($this->name);
-        $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
-        $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
-        foreach ($this->tests as $method => $data) {
-            $this->context->setStrategy($this->strategy);
-            $this->runTest($method, $data);
-        }
-        $this->precondition->dispatch(EventStorage::EV_AFTER_CASE);
-        $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, $this->test_case_event);
+        try {
+            $this->test_case_event = new TestCaseEvent($this->name);
+            $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
+            $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
+            $return_code = 0;
+            foreach ($this->tests as $method => $data) {
+                $this->context->setStrategy($this->strategy);
+                if ($this->runTest($method, $data)) {
+                    $return_code = 1;
+                }
+            }
+            $this->precondition->dispatch(EventStorage::EV_AFTER_CASE);
+            $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, $this->test_case_event);
 
-        return true;
+            return $return_code;
+        } catch (AssertException $e) {
+            return 1;
+        }
     }
 
     /**
@@ -318,6 +307,7 @@ class TestRunner
      * @param string $test Method name
      * @param array $data
      *
+     * @return int
      * @throws \Unteist\Exception\SkipException
      * @throws \RuntimeException
      */
@@ -326,6 +316,7 @@ class TestRunner
         $test_event = new TestEvent($test, $this->test_case_event);
         $this->switcher->setTestEvent($test_event);
         $modifiers = $data['modifiers'];
+        $asserts = 0;
         try {
             if (!empty($modifiers['depends'])) {
                 $this->switcher->marked($test);
@@ -349,18 +340,37 @@ class TestRunner
                 $method = new \ReflectionMethod($this->test_case, $test);
                 foreach ($dataProvider as $data_set) {
                     $test_event->setDataSet($data_set);
-                    $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $test_event);
-                    $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $test_event);
+                    $this->switcher->eventBeforeTest();
+                    $asserts = $this->test_case->getAsserts();
                     $method->invokeArgs($this->test_case, $data_set);
+                    $delta = $this->test_case->getAsserts() - $asserts;
+                    $test_event->setAsserts($delta);
                     $this->switcher->done($test);
                 }
             }
+
+            return 0;
         } catch (SkipException $skip) {
             $this->switcher->skipped($test);
             throw $skip;
-        } catch (\Exception $e) {
+        } catch (AssertException $e) {
+            $this->logger->debug(
+                'Assert fail.',
+                ['pid' => getmypid(), 'test' => $test, 'exception' => $e->getMessage()]
+            );
+            $delta = $this->test_case->getAsserts() - $asserts;
+            $test_event->setAsserts($delta);
             $this->switcher->failed($test);
             $this->context->fail($e);
+
+            return 1;
+        } catch (\Exception $e) {
+            $delta = $this->test_case->getAsserts() - $asserts;
+            $test_event->setAsserts($delta);
+            $this->switcher->failed($test);
+            $this->context->fail($e);
+
+            return 1;
         }
     }
 

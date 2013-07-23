@@ -21,11 +21,11 @@ class SkipFailsStratery extends IgnoreFailsStrategy
     /**
      * The depends test was fail. Skip base test.
      *
-     * @param \Exception $exception
+     * @param \RuntimeException $exception
      *
      * @throws SkipException
      */
-    public function fail(\Exception $exception)
+    public function fail(\RuntimeException $exception)
     {
         throw new SkipException($exception);
     }

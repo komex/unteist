@@ -10,20 +10,22 @@ declare(ticks = 1);
 namespace Unteist\Processor;
 
 use Psr\Log\LoggerInterface;
-use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
+use Unteist\Event\Connector;
 use Unteist\Filter\ClassFilterInterface;
 use Unteist\Filter\MethodsFilterInterface;
+use Unteist\Strategy\Context;
 
 
 /**
- * Class MultiProc
+ * Class Processor
  *
  * @package Unteist\Processor
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class MultiProc
+class Processor
 {
     /**
      * @var int
@@ -34,7 +36,7 @@ class MultiProc
      */
     protected $suites = [];
     /**
-     * @var EventDispatcher
+     * @var EventDispatcherInterface
      */
     protected $dispatcher;
     /**
@@ -61,16 +63,49 @@ class MultiProc
      * @var LoggerInterface
      */
     protected $logger;
+    /**
+     * @var int
+     */
+    protected $strategy = Context::STRATEGY_IGNORE_FAILS;
+    /**
+     * @var int
+     */
+    protected $exit_code = 0;
+    /**
+     * @var Connector
+     */
+    protected $connector;
 
     /**
-     * @param EventDispatcher $dispatcher
-     * @param \Psr\Log\LoggerInterface $logger
+     * @param EventDispatcherInterface $dispatcher
+     * @param LoggerInterface $logger
      */
-    public function __construct(EventDispatcher $dispatcher, LoggerInterface $logger)
+    public function __construct(EventDispatcherInterface $dispatcher, LoggerInterface $logger)
     {
         $this->dispatcher = $dispatcher;
-        $this->global_storage = new \ArrayObject();
         $this->logger = $logger;
+        $this->global_storage = new \ArrayObject();
+        $this->connector = new Connector($this->dispatcher);
+    }
+
+    /**
+     * Get current strategy
+     *
+     * @return int
+     */
+    public function getStrategy()
+    {
+        return $this->strategy;
+    }
+
+    /**
+     * Set default strategy.
+     *
+     * @param int $strategy
+     */
+    public function setStrategy($strategy)
+    {
+        $this->strategy = intval($strategy, 10);
     }
 
     /**
@@ -166,14 +201,16 @@ class MultiProc
     /**
      * Run all TestCases.
      *
-     * @return bool
+     * @return int Exit code
      */
     public function run()
     {
         if ($this->max_procs == 1) {
             $this->logger->info('Run TestCases in single process.', ['pid' => getmypid()]);
             foreach ($this->suites as $suite) {
-                $this->executor($suite);
+                if ($this->executor($suite)) {
+                    $this->exit_code = 1;
+                }
             }
         } else {
             $this->logger->info(
@@ -188,7 +225,7 @@ class MultiProc
                         'Maximum children allowed, waiting.',
                         ['jobs' => array_keys($this->current_jobs)]
                     );
-                    sleep(1);
+                    $this->connector->read();
                 }
             }
             while (count($this->current_jobs)) {
@@ -196,12 +233,13 @@ class MultiProc
                     'Waiting for current jobs to finish.',
                     ['jobs' => array_keys($this->current_jobs)]
                 );
-                sleep(1);
+                $this->connector->read();
             }
+            $this->connector->read();
         }
-        $this->logger->info('All tests done.', ['pid' => getmypid()]);
+        $this->logger->info('All tests done.', ['pid' => getmypid(), 'exit_code' => $this->exit_code]);
 
-        return true;
+        return $this->exit_code;
     }
 
     /**
@@ -229,20 +267,21 @@ class MultiProc
                             ]
                         );
 
-                        return false;
+                        return 1;
                     }
                 }
             }
-            $runner = new TestRunner($this->dispatcher, $this->logger);
+            $runner = new Runner($this->dispatcher, $this->logger);
+            $runner->setStrategy($this->strategy);
             $runner->setFilters($this->methods_filters);
             $runner->setGlobalStorage($this->global_storage);
             $runner->precondition($class);
 
             return $runner->run();
         } catch (\RuntimeException $e) {
-            $this->logger->notice('TestCase class does not found in file', ['pid' => getmypid()]);
+            $this->logger->notice('TestCase class does not found in file', ['pid' => getmypid(), 'exception' => $e]);
 
-            return false;
+            return 1;
         }
     }
 
@@ -255,6 +294,7 @@ class MultiProc
      */
     protected function launchJob(SplFileInfo $case)
     {
+        $this->connector->add();
         $pid = pcntl_fork();
         if ($pid == -1) {
             $this->logger->critical('Could not launch new job, exiting', ['file' => $case->getPathname()]);
@@ -263,6 +303,7 @@ class MultiProc
         } else {
             if ($pid) {
                 $this->logger->debug('New fork.', ['pid' => getmypid(), 'child' => $pid]);
+                $this->connector->attach($pid);
                 // Parent process
                 // Sometimes you can receive a signal to the childSignalHandler function before this code executes if
                 // the child script executes quickly enough!
@@ -279,6 +320,7 @@ class MultiProc
                     unset($this->signal_queue[$pid]);
                 }
             } else {
+                $this->connector->activate();
                 exit($this->executor($case));
             }
         }
@@ -310,7 +352,9 @@ class MultiProc
                         'Process exited with status != 0.',
                         ['pid' => $pid, 'exit_code' => $exit_code]
                     );
+                    $this->exit_code = $exit_code;
                 }
+                $this->connector->detach($pid);
                 unset($this->current_jobs[$pid]);
             } else {
                 if ($pid) {

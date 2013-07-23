@@ -20,18 +20,18 @@ class TestCaseEvent extends Event
     /**
      * @var string
      */
-    protected $name;
+    protected $class;
     /**
      * @var TestEvent[]
      */
     protected $test_events = [];
 
     /**
-     * @param string $name Test case namespace
+     * @param string $class Test case class
      */
-    public function __construct($name)
+    public function __construct($class)
     {
-        $this->name = $name;
+        $this->class = $class;
     }
 
     /**
@@ -39,9 +39,9 @@ class TestCaseEvent extends Event
      *
      * @return string
      */
-    public function getName()
+    public function getClass()
     {
-        return $this->name;
+        return $this->class;
     }
 
     /**

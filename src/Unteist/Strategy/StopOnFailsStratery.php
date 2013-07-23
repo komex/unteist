@@ -19,12 +19,12 @@ class StopOnFailsStratery extends IgnoreFailsStrategy
     /**
      * Prevent executing next tests.
      *
-     * @param \Exception $exception
+     * @param \RuntimeException $exception
      *
      * @throws \RuntimeException
      */
-    public function fail(\Exception $exception)
+    public function fail(\RuntimeException $exception)
     {
-        throw new \RuntimeException($exception);
+        throw $exception;
     }
 }
