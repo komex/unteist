@@ -8,6 +8,7 @@
 namespace Unteist\Event;
 
 use Symfony\Component\EventDispatcher\Event;
+use Unteist\Meta\TestMeta;
 use Unteist\Processor\Runner;
 
 /**
@@ -51,7 +52,7 @@ class TestEvent extends Event
     {
         $this->method = $method;
         $this->test_case_event = $test_case_event;
-        $this->status = Runner::TEST_NEW;
+        $this->status = TestMeta::TEST_NEW;
         $test_case_event->addTestEvent($this);
     }
 
@@ -146,12 +147,10 @@ class TestEvent extends Event
     }
 
     /**
-     * Set number of asserts in this test.
-     *
-     * @param int $asserts
+     * Increment number of asserts in this test.
      */
-    public function setAsserts($asserts)
+    public function incAsserts()
     {
-        $this->asserts = intval($asserts, 10);
+        $this->asserts++;
     }
 }
