@@ -354,7 +354,6 @@ class Processor
                     );
                     $this->exit_code = $exit_code;
                 }
-                $this->connector->detach($pid);
                 unset($this->current_jobs[$pid]);
             } else {
                 if ($pid) {

@@ -76,19 +76,6 @@ class Connector
     }
 
     /**
-     * Detach socket from list.
-     *
-     * @param int $pid
-     */
-    public function detach($pid)
-    {
-        if (isset($this->sockets[$pid])) {
-            fclose($this->sockets[$pid]);
-            unset($this->sockets[$pid]);
-        }
-    }
-
-    /**
      * Activate cross processes tunnel.
      * NB: Should be called only in child process!
      * Removes all current registered listeners.
