@@ -133,13 +133,14 @@ class Processor
      */
     public function setMaxProcs($max_procs)
     {
+        $max_procs = intval($max_procs, 10);
         if ($max_procs < 1) {
             $max_procs = 1;
         }
         if ($max_procs > 10) {
             $max_procs = 10;
         }
-        $this->max_procs = intval($max_procs, 10);
+        $this->max_procs = $max_procs;
     }
 
     /**

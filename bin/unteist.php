@@ -8,6 +8,5 @@
 
 require 'vendor/autoload.php';
 
-$app = new \Symfony\Component\Console\Application('Unteist', '1.0.0');
-$app->add(new \Unteist\Console\RunCommand());
+$app = new \Unteist\Console\Unteist('Unteist', '1.0.0');
 $app->run();
