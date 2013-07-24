@@ -16,6 +16,10 @@ namespace Unteist\Event;
 final class EventStorage
 {
     /**
+     * Calls on application started
+     */
+    const EV_APP_STARTED = 'application.started';
+    /**
      * Calls before all tests in TestCase
      */
     const EV_BEFORE_CASE = 'case.before';
@@ -43,4 +47,8 @@ final class EventStorage
      * Calls after all tests in TestCase
      */
     const EV_AFTER_CASE = 'case.after';
+    /**
+     * Calls on application finished
+     */
+    const EV_APP_FINISHED = 'application.finished';
 }

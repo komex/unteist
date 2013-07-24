@@ -14,6 +14,7 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
 use Unteist\Event\Connector;
+use Unteist\Event\EventStorage;
 use Unteist\Filter\ClassFilterInterface;
 use Unteist\Filter\MethodsFilterInterface;
 use Unteist\Strategy\Context;
@@ -133,13 +134,14 @@ class Processor
      */
     public function setMaxProcs($max_procs)
     {
+        $max_procs = intval($max_procs, 10);
         if ($max_procs < 1) {
             $max_procs = 1;
         }
         if ($max_procs > 10) {
             $max_procs = 10;
         }
-        $this->max_procs = intval($max_procs, 10);
+        $this->max_procs = $max_procs;
     }
 
     /**
@@ -205,6 +207,7 @@ class Processor
      */
     public function run()
     {
+        $this->dispatcher->dispatch(EventStorage::EV_APP_STARTED);
         if ($this->max_procs == 1) {
             $this->logger->info('Run TestCases in single process.', ['pid' => getmypid()]);
             foreach ($this->suites as $suite) {
@@ -238,6 +241,7 @@ class Processor
             $this->connector->read();
         }
         $this->logger->info('All tests done.', ['pid' => getmypid(), 'exit_code' => $this->exit_code]);
+        $this->dispatcher->dispatch(EventStorage::EV_APP_FINISHED);
 
         return $this->exit_code;
     }
