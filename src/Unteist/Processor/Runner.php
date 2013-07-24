@@ -433,6 +433,17 @@ class Runner
         $test->setStatus($status);
         $event->setStatus($status);
         $event->setTime(microtime(true) - $this->started);
+        switch ($status) {
+            case TestMeta::TEST_DONE:
+                $this->dispatcher->dispatch(EventStorage::EV_TEST_SUCCESS, $event);
+                break;
+            case TestMeta::TEST_SKIPPED:
+                $this->dispatcher->dispatch(EventStorage::EV_TEST_SKIPPED, $event);
+                break;
+            case TestMeta::TEST_FAILED:
+                $this->dispatcher->dispatch(EventStorage::EV_TEST_FAIL, $event);
+                break;
+        }
         $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
         $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
     }
