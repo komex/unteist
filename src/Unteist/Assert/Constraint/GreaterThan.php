@@ -7,6 +7,8 @@
 
 namespace Unteist\Assert\Constraint;
 
+use SebastianBergmann\Exporter\Exporter;
+
 
 /**
  * Class GreaterThan
@@ -24,6 +26,10 @@ class GreaterThan implements ConstraintInterface
      * @var mixed
      */
     protected $less;
+    /**
+     * @var Exporter
+     */
+    protected $exporter;
 
     /**
      * @param mixed $more
@@ -33,6 +39,7 @@ class GreaterThan implements ConstraintInterface
     {
         $this->more = $more;
         $this->less = $less;
+        $this->exporter = new Exporter();
     }
 
     /**
@@ -46,22 +53,12 @@ class GreaterThan implements ConstraintInterface
     }
 
     /**
-     * Get a description of failure.
-     *
-     * @return string
-     */
-    public function failureDescription()
-    {
-        return $this->toString();
-    }
-
-    /**
      * Get a description of constraint.
      *
      * @return string
      */
     public function toString()
     {
-        return $this->more . ' is greater than ' . $this->less;
+        return $this->exporter->export($this->more) . ' is greater than ' . $this->exporter->export($this->less);
     }
 }

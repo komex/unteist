@@ -7,6 +7,8 @@
 
 namespace Unteist\Assert\Constraint;
 
+use SebastianBergmann\Exporter\Exporter;
+
 
 /**
  * Class ArrayHasKey
@@ -24,20 +26,31 @@ class ArrayHasKey implements ConstraintInterface
      * @var array
      */
     protected $array;
+    /**
+     * @var bool
+     */
+    protected $inverse;
+    /**
+     * @var Exporter
+     */
+    protected $exporter;
 
     /**
      * @param int|string $key
      * @param array $array
+     * @param bool $inverse
      *
      * @throws \InvalidArgumentException If key is not a string or a number.
      */
-    public function __construct($key, array $array)
+    public function __construct($key, array $array, $inverse = false)
     {
         if (!is_int($key) && !is_string($key)) {
             throw new \InvalidArgumentException('The key must be a string or a number.');
         }
         $this->key = $key;
         $this->array = $array;
+        $this->inverse = $inverse;
+        $this->exporter = new Exporter();
     }
 
     /**
@@ -47,17 +60,12 @@ class ArrayHasKey implements ConstraintInterface
      */
     public function matches()
     {
-        return array_key_exists($this->key, $this->array);
-    }
+        $match = array_key_exists($this->key, $this->array);
+        if ($this->inverse) {
+            $match = !$match;
+        }
 
-    /**
-     * Get a description of failure.
-     *
-     * @return string
-     */
-    public function failureDescription()
-    {
-        return 'an array ' . $this->toString();
+        return $match;
     }
 
     /**
@@ -67,6 +75,11 @@ class ArrayHasKey implements ConstraintInterface
      */
     public function toString()
     {
-        return 'has the key ' . $this->key;
+        return sprintf(
+            'an array %s has%s the key %s',
+            $this->exporter->export($this->array),
+            $this->inverse ? ' not' : '',
+            $this->key
+        );
     }
 }

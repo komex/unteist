@@ -11,21 +11,17 @@ use SebastianBergmann\Exporter\Exporter;
 
 
 /**
- * Class IsEmpty
+ * Class IsFalse
  *
  * @package Unteist\Assert\Constraint
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class IsEmpty implements ConstraintInterface
+class IsFalse implements ConstraintInterface
 {
     /**
      * @var mixed
      */
     protected $element;
-    /**
-     * @var bool
-     */
-    protected $inverse;
     /**
      * @var Exporter
      */
@@ -33,12 +29,10 @@ class IsEmpty implements ConstraintInterface
 
     /**
      * @param mixed $element
-     * @param bool $inverse
      */
-    public function __construct($element, $inverse = false)
+    public function __construct($element)
     {
         $this->element = $element;
-        $this->inverse = $inverse;
         $this->exporter = new Exporter();
     }
 
@@ -49,7 +43,7 @@ class IsEmpty implements ConstraintInterface
      */
     public function matches()
     {
-        return $this->inverse ? !empty($this->element) : empty($this->element);
+        return $this->element === false;
     }
 
     /**
@@ -59,6 +53,6 @@ class IsEmpty implements ConstraintInterface
      */
     public function toString()
     {
-        return $this->exporter->export($this->element) . (($this->inverse) ? ' is not empty' : ' is empty');
+        return $this->exporter->export($this->element) . ' is false';
     }
 }

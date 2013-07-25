@@ -29,11 +29,4 @@ interface ConstraintInterface
      * @return string
      */
     public function toString();
-
-    /**
-     * Get a description of failure.
-     *
-     * @return string
-     */
-    public function failureDescription();
 }

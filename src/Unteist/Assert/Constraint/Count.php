@@ -80,16 +80,6 @@ class Count implements ConstraintInterface
      */
     public function toString()
     {
-        return 'count matches';
-    }
-
-    /**
-     * Get a description of failure.
-     *
-     * @return string
-     */
-    public function failureDescription()
-    {
         return sprintf('actual size %d matches expected size %d', $this->count, $this->expected);
     }
 }
