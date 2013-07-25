@@ -8,6 +8,7 @@
 namespace Unteist\Event;
 
 use Symfony\Component\EventDispatcher\Event;
+use Unteist\Assert\Assert;
 use Unteist\Meta\TestMeta;
 
 /**
@@ -151,10 +152,12 @@ class TestEvent extends Event
 
     /**
      * Increment number of asserts in this test.
+     *
+     * @param int $asserts
      */
-    public function incAsserts()
+    public function setAsserts($asserts)
     {
-        $this->asserts++;
+        $this->asserts = $asserts;
         $this->test_case_event->resetCache();
     }
 

@@ -30,10 +30,6 @@ class TestCase
      * @var \ArrayObject
      */
     private $global_storage;
-    /**
-     * @var TestEvent
-     */
-    private $test_event;
 
     /**
      * Create a new TestCase.
@@ -41,26 +37,6 @@ class TestCase
     public function __construct()
     {
         $this->local_storage = new \ArrayObject();
-    }
-
-    /**
-     * Get TestEvent
-     *
-     * @return TestEvent
-     */
-    public function getTestEvent()
-    {
-        return $this->test_event;
-    }
-
-    /**
-     * Set TestEvent
-     *
-     * @param TestEvent $test_event
-     */
-    public function setTestEvent(TestEvent $test_event)
-    {
-        $this->test_event = $test_event;
     }
 
     /**
