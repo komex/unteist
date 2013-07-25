@@ -36,4 +36,4 @@ interface ConstraintInterface
      * @return string
      */
     public function failureDescription();
-} 
+}

@@ -40,16 +40,6 @@ class IsEmpty implements ConstraintInterface
     }
 
     /**
-     * Get a description of constraint.
-     *
-     * @return string
-     */
-    public function toString()
-    {
-        return 'is empty';
-    }
-
-    /**
      * Get a description of failure.
      *
      * @return string
@@ -65,4 +55,14 @@ class IsEmpty implements ConstraintInterface
             $this->toString()
         );
     }
-} 
+
+    /**
+     * Get a description of constraint.
+     *
+     * @return string
+     */
+    public function toString()
+    {
+        return 'is empty';
+    }
+}
