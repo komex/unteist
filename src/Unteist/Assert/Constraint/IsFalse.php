@@ -22,10 +22,6 @@ class IsFalse implements ConstraintInterface
      * @var mixed
      */
     protected $element;
-    /**
-     * @var Exporter
-     */
-    protected $exporter;
 
     /**
      * @param mixed $element
@@ -33,7 +29,6 @@ class IsFalse implements ConstraintInterface
     public function __construct($element)
     {
         $this->element = $element;
-        $this->exporter = new Exporter();
     }
 
     /**
@@ -53,6 +48,8 @@ class IsFalse implements ConstraintInterface
      */
     public function toString()
     {
-        return $this->exporter->export($this->element) . ' is false';
+        $exporter = new Exporter();
+
+        return $exporter->export($this->element) . ' is false';
     }
 }

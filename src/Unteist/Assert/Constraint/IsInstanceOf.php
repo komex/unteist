@@ -11,29 +11,35 @@ use SebastianBergmann\Exporter\Exporter;
 
 
 /**
- * Class IsEmpty
+ * Class IsInstanceOf
  *
  * @package Unteist\Assert\Constraint
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class IsEmpty implements ConstraintInterface
+class IsInstanceOf implements ConstraintInterface
 {
     /**
-     * @var mixed
+     * @var string
      */
-    protected $element;
+    protected $class_name;
+    /**
+     * @var Object
+     */
+    protected $class;
     /**
      * @var bool
      */
     protected $inverse;
 
     /**
-     * @param mixed $element
+     * @param Object $class
+     * @param string $class_name
      * @param bool $inverse
      */
-    public function __construct($element, $inverse = false)
+    public function __construct($class, $class_name, $inverse = false)
     {
-        $this->element = $element;
+        $this->class = $class;
+        $this->class_name = $class_name;
         $this->inverse = $inverse;
     }
 
@@ -44,7 +50,7 @@ class IsEmpty implements ConstraintInterface
      */
     public function matches()
     {
-        return $this->inverse ? !empty($this->element) : empty($this->element);
+        return ($this->class instanceof $this->class_name);
     }
 
     /**
@@ -56,6 +62,12 @@ class IsEmpty implements ConstraintInterface
     {
         $exporter = new Exporter();
 
-        return $exporter->export($this->element) . (($this->inverse) ? ' is not empty' : ' is empty');
+        return sprintf(
+            '%s is%s an instance of "%s"',
+            $exporter->shortenedExport($this->class),
+            ($this->inverse ? ' not' : ''),
+            $this->class_name
+        );
     }
-}
+
+} 

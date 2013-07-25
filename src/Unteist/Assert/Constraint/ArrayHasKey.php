@@ -30,10 +30,6 @@ class ArrayHasKey implements ConstraintInterface
      * @var bool
      */
     protected $inverse;
-    /**
-     * @var Exporter
-     */
-    protected $exporter;
 
     /**
      * @param int|string $key
@@ -50,7 +46,6 @@ class ArrayHasKey implements ConstraintInterface
         $this->key = $key;
         $this->array = $array;
         $this->inverse = $inverse;
-        $this->exporter = new Exporter();
     }
 
     /**
@@ -75,9 +70,11 @@ class ArrayHasKey implements ConstraintInterface
      */
     public function toString()
     {
+        $exporter = new Exporter();
+
         return sprintf(
             'an array %s has%s the key %s',
-            $this->exporter->export($this->array),
+            $exporter->export($this->array),
             $this->inverse ? ' not' : '',
             $this->key
         );

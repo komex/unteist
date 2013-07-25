@@ -26,10 +26,6 @@ class GreaterThan implements ConstraintInterface
      * @var mixed
      */
     protected $less;
-    /**
-     * @var Exporter
-     */
-    protected $exporter;
 
     /**
      * @param mixed $more
@@ -39,7 +35,6 @@ class GreaterThan implements ConstraintInterface
     {
         $this->more = $more;
         $this->less = $less;
-        $this->exporter = new Exporter();
     }
 
     /**
@@ -59,6 +54,8 @@ class GreaterThan implements ConstraintInterface
      */
     public function toString()
     {
-        return $this->exporter->export($this->more) . ' is greater than ' . $this->exporter->export($this->less);
+        $exporter = new Exporter();
+
+        return $exporter->export($this->more) . ' is greater than ' . $exporter->export($this->less);
     }
 }
