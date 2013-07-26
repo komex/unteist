@@ -75,6 +75,8 @@ class IsType implements ConstraintInterface
     {
         $exporter = new Exporter();
 
-        return $exporter->export($this->element) . ' ' . (($this->inverse) ? 'is not' : 'is') . $this->expected_type;
+        return $exporter->export(
+            $this->element
+        ) . ' ' . (($this->inverse) ? 'is not' : 'is') . ' type of ' . $this->expected_type;
     }
 }
