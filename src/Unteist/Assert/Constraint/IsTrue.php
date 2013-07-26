@@ -11,30 +11,24 @@ use SebastianBergmann\Exporter\Exporter;
 
 
 /**
- * Class IsNull
+ * Class IsTrue
  *
  * @package Unteist\Assert\Constraint
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class IsNull implements ConstraintInterface
+class IsTrue implements ConstraintInterface
 {
     /**
      * @var mixed
      */
     protected $element;
-    /**
-     * @var bool
-     */
-    protected $inverse;
 
     /**
      * @param mixed $element
-     * @param bool $inverse
      */
-    public function __construct($element, $inverse = false)
+    public function __construct($element)
     {
         $this->element = $element;
-        $this->inverse = $inverse;
     }
 
     /**
@@ -44,7 +38,7 @@ class IsNull implements ConstraintInterface
      */
     public function matches()
     {
-        return $this->inverse ? $this->element !== null : $this->element === null;
+        return $this->element === true;
     }
 
     /**
@@ -56,6 +50,6 @@ class IsNull implements ConstraintInterface
     {
         $exporter = new Exporter();
 
-        return $exporter->export($this->element) . (($this->inverse) ? ' is not null' : ' is null');
+        return $exporter->export($this->element) . ' is true';
     }
 }
