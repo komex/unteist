@@ -12,8 +12,6 @@ use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Formatter\OutputFormatterStyle;
-use Symfony\Component\Console\Helper\ProgressHelper;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -49,21 +47,17 @@ class RunCommand extends Command
      */
     protected $tests_success = 0;
     /**
-     * @var \SplDoublyLinkedList|TestEvent[]
+     * @var \SplDoublyLinkedList
      */
     protected $tests_skipped;
     /**
-     * @var \SplDoublyLinkedList|TestEvent[]
+     * @var \SplDoublyLinkedList
      */
     protected $tests_fail;
     /**
-     * @var ProgressHelper
+     * @var Formatter
      */
-    protected $progress;
-    /**
-     * @var OutputInterface
-     */
-    protected $output;
+    protected $formatter;
     /**
      * @var array
      */
@@ -81,7 +75,7 @@ class RunCommand extends Command
      */
     public function afterCase(TestCaseEvent $event)
     {
-        $this->progress->advance();
+        $this->formatter->advance();
         $this->asserts += $event->getAsserts();
     }
 
@@ -119,45 +113,7 @@ class RunCommand extends Command
     public function finish()
     {
         $time = (microtime(true) - $this->started);
-        $this->progress->finish();
-        $this->output->writeln(sprintf('Time: <comment>%F</comment> seconds.', $time));
-        $this->output->writeln('');
-        if ($this->tests_fail->count() > 0) {
-            if ($this->tests_skipped->count() > 0) {
-                $this->output->writeln('Skipped tests:');
-                foreach ($this->tests_skipped as $i => $test) {
-                    $this->output->writeln(sprintf('<comment>%d.</comment> %s', ($i + 1), $test->getException()));
-                }
-            }
-            $this->output->writeln('Failed tests:');
-            foreach ($this->tests_fail as $i => $test) {
-                $this->output->writeln(
-                    sprintf('<error>%d.</error> %s', ($i + 1), $test->getException()->getMessage())
-                );
-                $this->output->writeln($test->getException()->getTraceAsString());
-            }
-
-            $this->output->writeln(
-                sprintf(
-                    '<error>FAILURES! Tests: %d, Skipped: %d, Assertions: %d, Failures: %d</error>',
-                    $this->tests_success,
-                    $this->tests_skipped->count(),
-                    $this->asserts,
-                    $this->tests_fail->count()
-                )
-            );
-        } elseif ($this->tests_success > 0) {
-            $style = new OutputFormatterStyle('black', 'green');
-            $this->output->getFormatter()->setStyle('success', $style);
-            $this->output->writeln(
-                sprintf(
-                    '<success>OK (Tests: %d, Skipped: %d, Asserts: %d)</success>',
-                    $this->tests_success,
-                    $this->tests_skipped->count(),
-                    $this->asserts
-                )
-            );
-        }
+        $this->formatter->finish($time, $this->tests_success, $this->tests_skipped, $this->tests_fail, $this->asserts);
     }
 
     /**
@@ -191,28 +147,15 @@ class RunCommand extends Command
     {
         $this->tests_skipped = new \SplDoublyLinkedList();
         $this->tests_fail = new \SplDoublyLinkedList();
+        $this->formatter = new Formatter($output, $this->getHelperSet()->get('progress'));
         $output->writeln($this->getApplication()->getLongVersion());
-        // Logger
-        $logger = new Logger('unteist');
-        if (isset($this->log_levels[$input->getOption('log-level')])) {
-            $logger->pushHandler(
-                new StreamHandler($input->getOption('log-file'), $this->log_levels[$input->getOption('log-level')])
-            );
-            $output->writeln(
-                sprintf(
-                    'The <info>%s</info> logs will be written to <comment>%s</comment>.',
-                    $input->getOption('log-level'),
-                    $input->getOption('log-file')
-                )
-            );
-        } else {
-            $logger->pushHandler(new NullHandler());
-        }
         // Finder
         $finder = new Finder();
         $finder->files()->in($input->getArgument('source'))->name('*Test.php');
         // EventDispatcher
         $dispatcher = new EventDispatcher();
+        // Logger
+        $logger = $this->getLogger($input->getOption('log-level'), $input->getOption('log-file'));
         // Processor
         $processor = new Processor($dispatcher, $logger);
         $processor->addClassFilter(new ClassFilter());
@@ -228,23 +171,52 @@ class RunCommand extends Command
         }
         // Global variables
         $this->started = microtime(true);
-        $this->progress = $this->getHelperSet()->get('progress');
-        $this->output = $output;
         // Output information and progress bar
-        $output->writeln(
-            sprintf('Found <comment>%d</comment> %s.', $finder->count(), $finder->count() === 1 ? 'file' : 'files')
-        );
-        $this->progress->start($output, $finder->count());
-        $this->progress->display();
+        $this->formatter->start($finder->count());
+
         // Register listeners
+        $this->registerListeners($dispatcher);
+
+        // Run tests
+        return $processor->run();
+    }
+
+    /**
+     * Get configured logger.
+     *
+     * @param string $level Log-level
+     * @param string $file Output file
+     *
+     * @return Logger
+     */
+    protected function getLogger($level, $file)
+    {
+        $logger = new Logger('unteist');
+        if (isset($this->log_levels[$level])) {
+            $log_level = $this->log_levels[$level];
+            $logger->pushHandler(
+                new StreamHandler($file, $log_level)
+            );
+            $this->formatter->loggerInformation($log_level, $file);
+        } else {
+            $logger->pushHandler(new NullHandler());
+        }
+
+        return $logger;
+    }
+
+    /**
+     * Gerister all listeners for getting statistics.
+     *
+     * @param EventDispatcher $dispatcher General dispatcher
+     */
+    protected function registerListeners(EventDispatcher $dispatcher)
+    {
         $dispatcher->addListener(EventStorage::EV_AFTER_CASE, [$this, 'afterCase']);
         $dispatcher->addListener(EventStorage::EV_TEST_SUCCESS, [$this, 'successTest']);
         $dispatcher->addListener(EventStorage::EV_TEST_SKIPPED, [$this, 'skippedTest']);
         $dispatcher->addListener(EventStorage::EV_TEST_FAIL, [$this, 'failTest']);
         $dispatcher->addListener(EventStorage::EV_APP_FINISHED, [$this, 'finish']);
-
-        // Run tests
-        return $processor->run();
     }
 
 }
