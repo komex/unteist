@@ -72,57 +72,97 @@ class Formatter
     }
 
     /**
-     * @param $time
-     * @param $tests_success
-     * @param \SplDoublyLinkedList|TestEvent[] $tests_skipped
-     * @param \SplDoublyLinkedList|TestEvent[] $tests_fail
-     * @param $asserts
+     * Display result information.
+     *
+     * @param float $time
+     * @param int $success
+     * @param \SplDoublyLinkedList $skipped
+     * @param \SplDoublyLinkedList $fail
+     * @param int $asserts
      */
-    public function finish(
-        $time,
-        $tests_success,
-        \SplDoublyLinkedList $tests_skipped,
-        \SplDoublyLinkedList $tests_fail,
-        $asserts
-    ) {
+    public function finish($time, $success, \SplDoublyLinkedList $skipped, \SplDoublyLinkedList $fail, $asserts)
+    {
         $this->progress->finish();
         $this->output->writeln(sprintf('Time: <comment>%F</comment> seconds.', $time));
         $this->output->writeln('');
-        if ($tests_fail->count() > 0) {
-            if ($tests_skipped->count() > 0) {
-                $this->output->writeln('Skipped tests:');
-                foreach ($tests_skipped as $i => $test) {
-                    $this->output->writeln(sprintf('<comment>%d.</comment> %s', ($i + 1), $test->getException()));
-                }
-            }
-            $this->output->writeln('Failed tests:');
-            foreach ($tests_fail as $i => $test) {
-                $this->output->writeln(
-                    sprintf('<error>%d.</error> %s', ($i + 1), $test->getException()->getMessage())
-                );
-                $this->output->writeln($test->getException()->getTraceAsString());
-            }
-
-            $this->output->writeln(
-                sprintf(
-                    '<error>FAILURES! Tests: %d, Skipped: %d, Assertions: %d, Failures: %d</error>',
-                    $tests_success,
-                    $tests_skipped->count(),
-                    $asserts,
-                    $tests_fail->count()
-                )
-            );
-        } elseif ($tests_success > 0) {
-            $style = new OutputFormatterStyle('black', 'green');
-            $this->output->getFormatter()->setStyle('success', $style);
-            $this->output->writeln(
-                sprintf(
-                    '<success>OK (Tests: %d, Skipped: %d, Asserts: %d)</success>',
-                    $tests_success,
-                    $tests_skipped->count(),
-                    $asserts
-                )
-            );
+        if ($fail->count() > 0) {
+            $this->fail($success, $skipped, $fail, $asserts);
+        } elseif ($success > 0) {
+            $this->success($success, $skipped, $asserts);
         }
+    }
+
+    /**
+     * Output when one or more tests fail.
+     *
+     * @param int $success
+     * @param \SplDoublyLinkedList|TestEvent[] $skipped
+     * @param \SplDoublyLinkedList|TestEvent[] $fail
+     * @param int $asserts
+     */
+    protected function fail($success, \SplDoublyLinkedList $skipped, \SplDoublyLinkedList $fail, $asserts)
+    {
+        if ($skipped->count() > 0) {
+            $this->testOutput('Skipped tests:', 'comment', $skipped);
+        }
+        $this->testOutput('Failed tests:', 'error', $fail);
+
+        $this->output->writeln('');
+        $this->output->writeln(
+            sprintf(
+                '<error>FAILURES! Tests: %d, Skipped: %d, Assertions: %d, Failures: %d</error>',
+                $success,
+                $skipped->count(),
+                $asserts,
+                $fail->count()
+            )
+        );
+    }
+
+    /**
+     * Print failed or skipped tests with stack trace.
+     *
+     * @param string $title Group title
+     * @param string $tag Tag name for color output
+     * @param \SplDoublyLinkedList|TestEvent[] $tests
+     */
+    protected function testOutput($title, $tag, \SplDoublyLinkedList $tests)
+    {
+        $this->output->writeln($title);
+        foreach ($tests as $i => $test) {
+            $exception = $test->getException();
+            if (empty($exception)) {
+                $message = '';
+                $trace = '';
+            } else {
+                $message = $exception->getMessage();
+                $trace = $exception->getTraceAsString();
+            }
+            $this->output->writeln(
+                sprintf('<%3$s>%d.</%3$s> %s', ($i + 1), $message, $tag)
+            );
+            $this->output->writeln($trace);
+        }
+    }
+
+    /**
+     * Output when all test success.
+     *
+     * @param int $success
+     * @param \SplDoublyLinkedList|TestEvent[] $skipped
+     * @param int $asserts
+     */
+    protected function success($success, \SplDoublyLinkedList $skipped, $asserts)
+    {
+        $style = new OutputFormatterStyle('black', 'green');
+        $this->output->getFormatter()->setStyle('success', $style);
+        $this->output->writeln(
+            sprintf(
+                '<success>OK (Tests: %d, Skipped: %d, Asserts: %d)</success>',
+                $success,
+                $skipped->count(),
+                $asserts
+            )
+        );
     }
 }
