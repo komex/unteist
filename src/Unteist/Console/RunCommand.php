@@ -22,6 +22,7 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Finder\Finder;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
+use Unteist\Event\TestEvent;
 use Unteist\Filter\ClassFilter;
 use Unteist\Filter\MethodsFilter;
 use Unteist\Processor\Processor;
@@ -48,13 +49,13 @@ class RunCommand extends Command
      */
     protected $tests_success = 0;
     /**
-     * @var int
+     * @var \SplDoublyLinkedList|TestEvent[]
      */
-    protected $tests_skipped = 0;
+    protected $tests_skipped;
     /**
-     * @var int
+     * @var \SplDoublyLinkedList|TestEvent[]
      */
-    protected $tests_fail = 0;
+    protected $tests_fail;
     /**
      * @var ProgressHelper
      */
@@ -94,18 +95,22 @@ class RunCommand extends Command
 
     /**
      * Increase skipped tests counter
+     *
+     * @param TestEvent $event
      */
-    public function skippedTest()
+    public function skippedTest(TestEvent $event)
     {
-        $this->tests_skipped++;
+        $this->tests_skipped->push($event);
     }
 
     /**
      * Increase fail tests counter
+     *
+     * @param TestEvent $event
      */
-    public function failTest()
+    public function failTest(TestEvent $event)
     {
-        $this->tests_fail++;
+        $this->tests_fail->push($event);
     }
 
     /**
@@ -117,14 +122,28 @@ class RunCommand extends Command
         $this->progress->finish();
         $this->output->writeln(sprintf('Time: <comment>%F</comment> seconds.', $time));
         $this->output->writeln('');
-        if ($this->tests_fail > 0) {
+        if ($this->tests_fail->count() > 0) {
+            if ($this->tests_skipped->count() > 0) {
+                $this->output->writeln('Skipped tests:');
+                foreach ($this->tests_skipped as $i => $test) {
+                    $this->output->writeln(sprintf('<comment>%d.</comment> %s', ($i + 1), $test->getException()));
+                }
+            }
+            $this->output->writeln('Failed tests:');
+            foreach ($this->tests_fail as $i => $test) {
+                $this->output->writeln(
+                    sprintf('<error>%d.</error> %s', ($i + 1), $test->getException()->getMessage())
+                );
+                $this->output->writeln($test->getException()->getTraceAsString());
+            }
+
             $this->output->writeln(
                 sprintf(
                     '<error>FAILURES! Tests: %d, Skipped: %d, Assertions: %d, Failures: %d</error>',
                     $this->tests_success,
-                    $this->tests_skipped,
+                    $this->tests_skipped->count(),
                     $this->asserts,
-                    $this->tests_fail
+                    $this->tests_fail->count()
                 )
             );
         } elseif ($this->tests_success > 0) {
@@ -134,7 +153,7 @@ class RunCommand extends Command
                 sprintf(
                     '<success>OK (Tests: %d, Skipped: %d, Asserts: %d)</success>',
                     $this->tests_success,
-                    $this->tests_skipped,
+                    $this->tests_skipped->count(),
                     $this->asserts
                 )
             );
@@ -170,6 +189,8 @@ class RunCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->tests_skipped = new \SplDoublyLinkedList();
+        $this->tests_fail = new \SplDoublyLinkedList();
         $output->writeln($this->getApplication()->getLongVersion());
         // Logger
         $logger = new Logger('unteist');

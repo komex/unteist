@@ -11,6 +11,7 @@ namespace Unteist\Processor;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Unteist\Assert\Assert;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
 use Unteist\Event\TestEvent;
@@ -81,6 +82,10 @@ class Runner
      * @var float
      */
     protected $started;
+    /**
+     * @var int
+     */
+    protected $asserts;
 
     /**
      * @param EventDispatcherInterface $dispatcher Global event dispatcher
@@ -304,7 +309,7 @@ class Runner
                     $event = new TestEvent($test->getMethod(), $this->test_case_event);
                     $event->setDataSet($data_set);
                     $event->setDepends($test->getDependencies());
-                    $this->test_case->setTestEvent($event);
+                    $this->asserts = Assert::getAssertsCount();
 
                     $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $event);
                     $this->started = microtime(true);
@@ -321,6 +326,7 @@ class Runner
             $test->setStatus(TestMeta::TEST_SKIPPED);
             $event = new TestEvent($test->getMethod(), $this->test_case_event);
             $event->setDepends($test->getDependencies());
+            $event->setException($e);
             $this->dispatcher->dispatch(EventStorage::EV_TEST_SKIPPED, $event);
             $this->context->skipTest($e);
         } catch (AssertFailException $e) {
@@ -328,6 +334,7 @@ class Runner
                 'Assert fail.',
                 ['pid' => getmypid(), 'test' => $test->getMethod(), 'exception' => $e->getMessage()]
             );
+            $event->setException($e);
             $this->finish($test, $event, TestMeta::TEST_FAILED);
             $this->context->assertFail($e);
 
@@ -433,6 +440,7 @@ class Runner
         $test->setStatus($status);
         $event->setStatus($status);
         $event->setTime(microtime(true) - $this->started);
+        $event->setAsserts(Assert::getAssertsCount() - $this->asserts);
         switch ($status) {
             case TestMeta::TEST_DONE:
                 $this->dispatcher->dispatch(EventStorage::EV_TEST_SUCCESS, $event);

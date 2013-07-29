@@ -8,6 +8,7 @@
 namespace Unteist\Event;
 
 use Symfony\Component\EventDispatcher\Event;
+use Unteist\Assert\Assert;
 use Unteist\Meta\TestMeta;
 
 /**
@@ -46,6 +47,10 @@ class TestEvent extends Event
      * @var double
      */
     protected $time;
+    /**
+     * @var \RuntimeException
+     */
+    protected $exception;
 
     /**
      * @param string $method Test name
@@ -151,10 +156,12 @@ class TestEvent extends Event
 
     /**
      * Increment number of asserts in this test.
+     *
+     * @param int $asserts
      */
-    public function incAsserts()
+    public function setAsserts($asserts)
     {
-        $this->asserts++;
+        $this->asserts = $asserts;
         $this->test_case_event->resetCache();
     }
 
@@ -177,5 +184,21 @@ class TestEvent extends Event
     {
         $this->time = floatval($time);
         $this->test_case_event->resetCache();
+    }
+
+    /**
+     * @return \RuntimeException
+     */
+    public function getException()
+    {
+        return $this->exception;
+    }
+
+    /**
+     * @param \RuntimeException $exception
+     */
+    public function setException(\RuntimeException $exception)
+    {
+        $this->exception = $exception;
     }
 }
