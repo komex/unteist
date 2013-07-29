@@ -18,19 +18,18 @@ use Unteist\Exception\AssertFailException;
  * @package Unteist\Assert\MatcherInterface
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class EqualTo implements MatcherInterface
+class EqualTo extends AbstractMatcher
 {
     /**
-     * @var mixed
+     * Matcher condition.
+     *
+     * @param mixed $actual
+     *
+     * @return bool
      */
-    protected $expected;
-
-    /**
-     * @param mixed $expected
-     */
-    public function __construct($expected)
+    protected function condition($actual)
     {
-        $this->expected = $expected;
+        return $actual == $this->expected;
     }
 
     /**
@@ -39,13 +38,11 @@ class EqualTo implements MatcherInterface
      *
      * @throws AssertFailException
      */
-    public function match($actual, $message = '')
+    protected function fail($actual, $message)
     {
-        if ($actual != $this->expected) {
-            $formatted = (empty($message) ? '' : $message . PHP_EOL);
-            $diff = new Diff('--- Original' . PHP_EOL . '+++ Expected' . PHP_EOL);
-            $formatted .= $diff->diff(var_export($actual, true), var_export($this->expected, true));
-            Assert::fail($formatted);
-        }
+        $formatted = (empty($message) ? '' : $message) . PHP_EOL;
+        $diff = new Diff('--- Original' . PHP_EOL . '+++ Expected' . PHP_EOL);
+        $formatted .= $diff->diff(var_export($actual, true), var_export($this->expected, true));
+        Assert::fail($formatted);
     }
 }

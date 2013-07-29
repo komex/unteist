@@ -7,9 +7,7 @@
 
 namespace Unteist\Assert\Matcher;
 
-use SebastianBergmann\Diff;
 use Unteist\Assert\Assert;
-use Unteist\Exception\AssertFailException;
 
 /**
  * Class IdenticalTo
@@ -20,18 +18,14 @@ use Unteist\Exception\AssertFailException;
 class IdenticalTo extends EqualTo
 {
     /**
-     * @param mixed $actual
-     * @param string $message
+     * Matcher condition.
      *
-     * @throws AssertFailException
+     * @param mixed $actual
+     *
+     * @return bool
      */
-    public function match($actual, $message = '')
+    protected function condition($actual)
     {
-        if ($actual != $this->expected) {
-            $formatted = (empty($message) ? '' : $message . PHP_EOL);
-            $diff = new Diff('--- Original' . PHP_EOL . '+++ Expected' . PHP_EOL);
-            $formatted .= $diff->diff(var_export($actual, true), var_export($this->expected, true));
-            Assert::fail($formatted);
-        }
+        return $actual === $this->expected;
     }
 }

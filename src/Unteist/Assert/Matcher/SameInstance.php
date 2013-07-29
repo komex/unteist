@@ -8,9 +8,7 @@
 namespace Unteist\Assert\Matcher;
 
 
-use SebastianBergmann\Diff;
 use Unteist\Assert\Assert;
-use Unteist\Exception\AssertFailException;
 
 /**
  * Class SameInstance
@@ -18,32 +16,17 @@ use Unteist\Exception\AssertFailException;
  * @package Unteist\Assert\Matcher
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class SameInstance implements MatcherInterface
+class SameInstance extends AbstractMatcher
 {
     /**
-     * @var string
-     */
-    protected $expected;
-
-    /**
-     * @param string $expected
-     */
-    public function __construct($expected)
-    {
-        $this->expected = $expected;
-    }
-
-    /**
-     * @param mixed $actual
-     * @param string $message
+     * Matcher condition.
      *
-     * @throws AssertFailException
+     * @param mixed $actual
+     *
+     * @return bool
      */
-    public function match($actual, $message = '')
+    public function condition($actual)
     {
-        if (!($actual instanceof $this->expected)) {
-            $formatted = (empty($message) ? '' : $message . PHP_EOL);
-            Assert::fail($formatted);
-        }
+        return $actual instanceof $this->expected;
     }
 }

@@ -7,9 +7,8 @@
 
 namespace Unteist\Assert;
 
-use Unteist\Assert\Constraint\IsFalse;
+use Unteist\Assert\Matcher\AbstractMatcher;
 use Unteist\Assert\Matcher\IdenticalTo;
-use Unteist\Assert\Matcher\MatcherInterface;
 use Unteist\Exception\AssertFailException;
 
 
@@ -49,10 +48,10 @@ class Assert
 
     /**
      * @param mixed $actual
-     * @param MatcherInterface $matcher
+     * @param AbstractMatcher $matcher
      * @param string $message
      */
-    public static function assertThat($actual, MatcherInterface $matcher, $message = '')
+    public static function assertThat($actual, AbstractMatcher $matcher, $message = '')
     {
         $matcher->match($actual, $message);
         self::$count++;
