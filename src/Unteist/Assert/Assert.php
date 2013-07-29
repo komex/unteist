@@ -8,6 +8,8 @@
 namespace Unteist\Assert;
 
 use Unteist\Assert\Constraint\IsFalse;
+use Unteist\Assert\Matcher\IdenticalTo;
+use Unteist\Assert\Matcher\MatcherInterface;
 use Unteist\Exception\AssertFailException;
 
 
@@ -35,26 +37,34 @@ class Assert
     }
 
     /**
-     * Increase asserts counter.
+     * Assert that element is FALSE.
+     *
+     * @param mixed $actual
+     * @param string $message
      */
-    public function incAssertsCount()
+    public static function isFalse($actual, $message = '')
     {
+        self::assertThat($actual, new IdenticalTo(false), $message);
+    }
+
+    /**
+     * @param mixed $actual
+     * @param MatcherInterface $matcher
+     * @param string $message
+     */
+    public static function assertThat($actual, MatcherInterface $matcher, $message = '')
+    {
+        $matcher->match($actual, $message);
         self::$count++;
     }
 
     /**
-     * Assert that element is FALSE.
+     * @param string $message
      *
-     * @param mixed $element
-     *
-     * @throws \Unteist\Exception\AssertFailException
+     * @throws AssertFailException
      */
-    public static function isFalse($element)
+    public static function fail($message = '')
     {
-        $constraint = new IsFalse($element);
-        if (!$constraint->matches()) {
-            throw new AssertFailException($constraint->toString());
-        }
-        self::incAssertsCount();
+        throw new AssertFailException($message);
     }
 }

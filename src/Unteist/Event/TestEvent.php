@@ -47,6 +47,10 @@ class TestEvent extends Event
      * @var double
      */
     protected $time;
+    /**
+     * @var \RuntimeException
+     */
+    protected $exception;
 
     /**
      * @param string $method Test name
@@ -180,5 +184,21 @@ class TestEvent extends Event
     {
         $this->time = floatval($time);
         $this->test_case_event->resetCache();
+    }
+
+    /**
+     * @return \RuntimeException
+     */
+    public function getException()
+    {
+        return $this->exception;
+    }
+
+    /**
+     * @param \RuntimeException $exception
+     */
+    public function setException(\RuntimeException $exception)
+    {
+        $this->exception = $exception;
     }
 }

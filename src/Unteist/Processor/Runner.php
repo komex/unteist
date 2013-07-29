@@ -326,6 +326,7 @@ class Runner
             $test->setStatus(TestMeta::TEST_SKIPPED);
             $event = new TestEvent($test->getMethod(), $this->test_case_event);
             $event->setDepends($test->getDependencies());
+            $event->setException($e);
             $this->dispatcher->dispatch(EventStorage::EV_TEST_SKIPPED, $event);
             $this->context->skipTest($e);
         } catch (AssertFailException $e) {
@@ -333,6 +334,7 @@ class Runner
                 'Assert fail.',
                 ['pid' => getmypid(), 'test' => $test->getMethod(), 'exception' => $e->getMessage()]
             );
+            $event->setException($e);
             $this->finish($test, $event, TestMeta::TEST_FAILED);
             $this->context->assertFail($e);
 
