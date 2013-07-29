@@ -42,7 +42,7 @@ class EqualTo implements MatcherInterface
     public function match($actual, $message = '')
     {
         if ($actual != $this->expected) {
-            $formatted = (empty($message) ? '' : $message) . PHP_EOL;
+            $formatted = (empty($message) ? '' : $message . PHP_EOL);
             $diff = new Diff('--- Original' . PHP_EOL . '+++ Expected' . PHP_EOL);
             $formatted .= $diff->diff(var_export($actual, true), var_export($this->expected, true));
             Assert::fail($formatted);

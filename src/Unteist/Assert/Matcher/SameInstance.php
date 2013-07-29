@@ -42,7 +42,7 @@ class SameInstance implements MatcherInterface
     public function match($actual, $message = '')
     {
         if (!($actual instanceof $this->expected)) {
-            $formatted = (empty($message) ? '' : $message) . PHP_EOL;
+            $formatted = (empty($message) ? '' : $message . PHP_EOL);
             Assert::fail($formatted);
         }
     }
