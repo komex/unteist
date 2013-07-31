@@ -29,4 +29,16 @@ class SameInstance extends AbstractMatcher
     {
         return $actual instanceof $this->expected;
     }
+
+    /**
+     * Get name of matcher.
+     *
+     * @return string
+     */
+    public function getName()
+    {
+        return 'SameInstance';
+    }
+
+
 }

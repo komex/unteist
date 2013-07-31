@@ -39,4 +39,16 @@ class TypeOf extends AbstractMatcher
     {
         return gettype($actual) == $this->expected;
     }
+
+    /**
+     * Get name of matcher.
+     *
+     * @return string
+     */
+    public function getName()
+    {
+        return 'TypeOf';
+    }
+
+
 }

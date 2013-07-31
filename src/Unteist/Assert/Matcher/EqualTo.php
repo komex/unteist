@@ -45,4 +45,16 @@ class EqualTo extends AbstractMatcher
         $formatted .= $diff->diff(var_export($actual, true), var_export($this->expected, true));
         Assert::fail($formatted);
     }
+
+    /**
+     * Get name of matcher.
+     *
+     * @return string
+     */
+    public function getName()
+    {
+        return 'EqualTo';
+    }
+
+
 }

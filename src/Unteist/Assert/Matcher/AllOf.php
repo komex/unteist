@@ -7,6 +7,9 @@
 
 namespace Unteist\Assert\Matcher;
 
+use Unteist\Exception\AssertFailException;
+use Unteist\Assert\Assert;
+
 
 /**
  * Class AllOf
@@ -16,6 +19,11 @@ namespace Unteist\Assert\Matcher;
  */
 class AllOf extends AbstractMatcher
 {
+    /**
+     * @var int
+     */
+    protected $number;
+
     /**
      * @param AbstractMatcher[] $expected
      */
@@ -34,12 +42,45 @@ class AllOf extends AbstractMatcher
     protected function condition($actual)
     {
         /** @var AbstractMatcher $expected */
-        foreach ($this->expected as $expected) {
+        foreach ($this->expected as $i => $expected) {
             if ($expected->condition($actual) === false) {
+                $this->number = $i;
+
                 return false;
             }
         }
 
         return true;
     }
+
+    /**
+     * Get name of matcher.
+     *
+     * @return string
+     */
+    public function getName()
+    {
+        return 'AllOf';
+    }
+
+    /**
+     * @param mixed $actual
+     * @param string $message
+     *
+     * @throws AssertFailException
+     */
+    protected function fail($actual, $message)
+    {
+        $formatted = (empty($message) ? '' : $message . PHP_EOL);
+        $formatted .= sprintf(
+            'Expected successful completion of all conditions (%d), but the condition of matcher #%d is not satisfied.',
+            count($this->expected),
+            $this->number + 1
+        );
+        /** @var AbstractMatcher $matcher */
+        $matcher = $this->expected[$this->number];
+        $matcher->fail($actual, $formatted);
+    }
+
+
 }

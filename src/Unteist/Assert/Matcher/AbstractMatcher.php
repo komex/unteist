@@ -65,4 +65,11 @@ abstract class AbstractMatcher
      * @return bool
      */
     abstract protected function condition($actual);
+
+    /**
+     * Get name of matcher.
+     *
+     * @return string
+     */
+    abstract public function getName();
 }
