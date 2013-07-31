@@ -164,7 +164,7 @@ class RunCommand extends Command
         $processor->addClassFilter(new ClassFilter());
         $processor->addMethodsFilter(new MethodsFilter());
         $processor->setSuites($finder);
-        $processor->setMaxProcs($input->getOption('processes'));
+        $processor->setProcesses($input->getOption('processes'));
         switch ($input->getOption('strategy')) {
             case 'IGNORE':
                 $processor->setStrategy(Context::STRATEGY_IGNORE_FAILS);

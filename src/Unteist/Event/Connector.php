@@ -101,7 +101,7 @@ class Connector
      * @param Event $event
      *
      * @throws \RuntimeException If could not write event to socket
-     * @internal This method calls automatically when $max_procs > 1.
+     * @internal This method calls automatically when $processes > 1.
      */
     public function onEvent(Event $event)
     {
