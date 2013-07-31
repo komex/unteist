@@ -7,7 +7,6 @@
 
 namespace Unteist\Exception;
 
-
 /**
  * Class AssertFailException
  *

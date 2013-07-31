@@ -2,20 +2,19 @@
 /**
  * This file is a part of Unteist project.
  *
- * (c) Andrey Kolchenko <andrey@kolchenko.me>
+ * (c) Andrey Kolchenko <komexx@gmail.com>
  */
 
 namespace Unteist\Assert\Matcher;
 
-use Unteist\Assert\Assert;
 
 /**
- * Class IdenticalTo
+ * Class StringEndsWith
  *
- * @package Unteist\Assert\MatcherInterface
- * @author Andrey Kolchenko <andrey@kolchenko.me>
+ * @package Unteist\Assert\Matcher
+ * @author Andrey Kolchenko <komexx@gmail.com>
  */
-class IdenticalTo extends EqualTo
+class StringEndsWith extends AbstractMatcher
 {
     /**
      * Get name of matcher.
@@ -24,7 +23,7 @@ class IdenticalTo extends EqualTo
      */
     public function getName()
     {
-        return 'IdenticalTo';
+        return 'StringEndsWith';
     }
 
     /**
@@ -36,6 +35,6 @@ class IdenticalTo extends EqualTo
      */
     protected function condition($actual)
     {
-        return $actual === $this->expected;
+        return substr($actual, -strlen($this->expected)) === $this->expected;
     }
 }

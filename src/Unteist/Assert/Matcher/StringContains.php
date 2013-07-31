@@ -7,15 +7,14 @@
 
 namespace Unteist\Assert\Matcher;
 
-use Unteist\Assert\Assert;
 
 /**
- * Class IdenticalTo
+ * Class StringContains
  *
- * @package Unteist\Assert\MatcherInterface
+ * @package Unteist\Assert\Matcher
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class IdenticalTo extends EqualTo
+class StringContains extends AbstractMatcher
 {
     /**
      * Get name of matcher.
@@ -24,7 +23,7 @@ class IdenticalTo extends EqualTo
      */
     public function getName()
     {
-        return 'IdenticalTo';
+        return 'StringContains';
     }
 
     /**
@@ -36,6 +35,6 @@ class IdenticalTo extends EqualTo
      */
     protected function condition($actual)
     {
-        return $actual === $this->expected;
+        return strpos($actual, $this->expected) !== false;
     }
 }

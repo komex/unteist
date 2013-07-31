@@ -9,7 +9,6 @@ namespace Unteist\Strategy;
 
 use Unteist\Exception\AssertFailException;
 
-
 /**
  * Class StopOnFailsStratery
  *

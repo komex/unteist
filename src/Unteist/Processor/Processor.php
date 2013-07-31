@@ -5,8 +5,6 @@
  * (c) Andrey Kolchenko <andrey@kolchenko.me>
  */
 
-declare(ticks = 1);
-
 namespace Unteist\Processor;
 
 use Psr\Log\LoggerInterface;
@@ -18,7 +16,6 @@ use Unteist\Event\EventStorage;
 use Unteist\Filter\ClassFilterInterface;
 use Unteist\Filter\MethodsFilterInterface;
 use Unteist\Strategy\Context;
-
 
 /**
  * Class Processor
@@ -220,6 +217,7 @@ class Processor
                 'Run TestCases in forked processes.',
                 ['pid' => getmypid(), 'procs' => $this->max_procs]
             );
+            declare(ticks = 1);
             pcntl_signal(SIGCHLD, [$this, 'childSignalHandler']);
             foreach ($this->suites as $suite) {
                 $this->launchJob($suite);
@@ -313,7 +311,8 @@ class Processor
                 // the child script executes quickly enough!
                 $this->current_jobs[$pid] = $case;
 
-                // In the event that a signal for this pid was caught before we get here, it will be in our signal_queue array
+                // In the event that a signal for this pid was caught before we get here,
+                // it will be in our signal_queue array.
                 // So let's go ahead and process it now as if we'd just received the signal
                 if (isset($this->signal_queue[$pid])) {
                     $this->logger->info(

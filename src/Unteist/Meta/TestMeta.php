@@ -8,8 +8,6 @@
 namespace Unteist\Meta;
 
 use Psr\Log\LoggerInterface;
-use Unteist\Processor\Runner;
-
 
 /**
  * Class TestMeta

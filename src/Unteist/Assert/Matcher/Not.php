@@ -7,16 +7,24 @@
 
 namespace Unteist\Assert\Matcher;
 
-use Unteist\Assert\Assert;
 
 /**
- * Class IdenticalTo
+ * Class Not
  *
- * @package Unteist\Assert\MatcherInterface
+ * @package Unteist\Assert\Matcher
  * @author Andrey Kolchenko <andrey@kolchenko.me>
+ * @property AbstractMatcher $expected
  */
-class IdenticalTo extends EqualTo
+class Not extends AbstractMatcher
 {
+    /**
+     * @param AbstractMatcher $expected
+     */
+    public function __construct(AbstractMatcher $expected)
+    {
+        parent::__construct($expected);
+    }
+
     /**
      * Get name of matcher.
      *
@@ -24,7 +32,7 @@ class IdenticalTo extends EqualTo
      */
     public function getName()
     {
-        return 'IdenticalTo';
+        return 'not ' . $this->expected->getName();
     }
 
     /**
@@ -36,6 +44,6 @@ class IdenticalTo extends EqualTo
      */
     protected function condition($actual)
     {
-        return $actual === $this->expected;
+        return !$this->expected->condition($actual);
     }
 }

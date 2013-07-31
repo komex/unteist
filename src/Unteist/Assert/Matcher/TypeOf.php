@@ -10,13 +10,23 @@ namespace Unteist\Assert\Matcher;
 use Unteist\Assert\Assert;
 
 /**
- * Class IdenticalTo
+ * Class TypeOf
  *
- * @package Unteist\Assert\MatcherInterface
+ * @package Unteist\Assert\Matcher
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class IdenticalTo extends EqualTo
+class TypeOf extends AbstractMatcher
 {
+
+    /**
+     * @param string $expected
+     */
+    public function __construct($expected)
+    {
+        $expected = strtolower($expected);
+        parent::__construct($expected);
+    }
+
     /**
      * Get name of matcher.
      *
@@ -24,7 +34,7 @@ class IdenticalTo extends EqualTo
      */
     public function getName()
     {
-        return 'IdenticalTo';
+        return 'TypeOf';
     }
 
     /**
@@ -36,6 +46,6 @@ class IdenticalTo extends EqualTo
      */
     protected function condition($actual)
     {
-        return $actual === $this->expected;
+        return gettype($actual) == $this->expected;
     }
 }

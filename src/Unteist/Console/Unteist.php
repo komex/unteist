@@ -60,4 +60,4 @@ class Unteist extends Application
 
         return $defaultCommands;
     }
-} 
+}

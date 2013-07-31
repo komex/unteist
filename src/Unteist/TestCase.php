@@ -8,7 +8,6 @@
 namespace Unteist;
 
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Unteist\Event\TestEvent;
 
 /**
  * Class TestCase
