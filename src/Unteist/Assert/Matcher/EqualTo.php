@@ -51,8 +51,8 @@ class EqualTo extends AbstractMatcher
     protected function fail($actual, $message)
     {
         $formatted = (empty($message) ? '' : $message) . PHP_EOL;
-        $diff = new Diff('--- Original' . PHP_EOL . '+++ Expected' . PHP_EOL);
-        $formatted .= $diff->diff(var_export($actual, true), var_export($this->expected, true));
+        $diff = new Diff('--- Expected' . PHP_EOL . '+++ Actual' . PHP_EOL);
+        $formatted .= $diff->diff(var_export($this->expected, true), var_export($actual, true));
         Assert::fail($formatted);
     }
 }
