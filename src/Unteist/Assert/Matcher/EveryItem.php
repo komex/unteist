@@ -8,16 +8,16 @@
 namespace Unteist\Assert\Matcher;
 
 use Unteist\Exception\AssertFailException;
-use Unteist\Assert\Assert;
 
 
 /**
- * Class AllOf
+ * Class EveryItem
  *
  * @package Unteist\Assert\Matcher
  * @author Andrey Kolchenko <andrey@kolchenko.me>
+ * @property AbstractMatcher $expected
  */
-class AllOf extends AbstractMatcher
+class EveryItem extends AbstractMatcher
 {
     /**
      * @var int
@@ -25,9 +25,9 @@ class AllOf extends AbstractMatcher
     protected $number;
 
     /**
-     * @param AbstractMatcher[] $expected
+     * @param AbstractMatcher $expected
      */
-    public function __construct(array $expected)
+    public function __construct(AbstractMatcher $expected)
     {
         parent::__construct($expected);
     }
@@ -39,7 +39,7 @@ class AllOf extends AbstractMatcher
      */
     public function getName()
     {
-        return 'AllOf';
+        return 'EveryItem';
     }
 
     /**
@@ -47,21 +47,20 @@ class AllOf extends AbstractMatcher
      *
      * @param mixed $actual
      *
-     * @throws \InvalidArgumentException
+     * @throws \InvalidArgumentException If $actual variable not an array or instance of Traversable.
      * @return bool
      */
     protected function condition($actual)
     {
-        /** @var AbstractMatcher $expected */
-        foreach ($this->expected as $i => $expected) {
-            if (!($expected instanceof AbstractMatcher)) {
-                throw new \InvalidArgumentException('Expects only AbstractMatcher objects.');
-            }
-            if ($expected->condition($actual) === false) {
-                $this->number = $i;
-
+        if (!(is_array($actual) || ($actual instanceof \Traversable))) {
+            throw new \InvalidArgumentException('Actual variable must be an array or instance of Traversable.');
+        }
+        $this->number = 0;
+        foreach ($actual as $value) {
+            if (!$this->expected->condition($value)) {
                 return false;
             }
+            $this->number++;
         }
 
         return true;
@@ -77,9 +76,8 @@ class AllOf extends AbstractMatcher
     {
         $formatted = (empty($message) ? '' : $message . PHP_EOL);
         $formatted .= sprintf(
-            'Expected successful completion of all conditions (%d), but the condition of matcher #%d is not satisfied.',
-            count($this->expected),
-            $this->number + 1
+            'Completiotion failed on element #%d',
+            $this->number
         );
         /** @var AbstractMatcher $matcher */
         $matcher = $this->expected[$this->number];

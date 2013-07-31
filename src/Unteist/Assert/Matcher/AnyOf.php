@@ -75,6 +75,4 @@ class AnyOf extends AbstractMatcher
         );
         parent::fail($actual, $formatted);
     }
-
-
 }

@@ -39,6 +39,4 @@ class SameInstance extends AbstractMatcher
     {
         return 'SameInstance';
     }
-
-
 }

@@ -55,6 +55,4 @@ class EqualTo extends AbstractMatcher
         $formatted .= $diff->diff(var_export($actual, true), var_export($this->expected, true));
         Assert::fail($formatted);
     }
-
-
 }
