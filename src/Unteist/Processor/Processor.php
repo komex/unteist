@@ -74,6 +74,10 @@ class Processor
      * @var Connector
      */
     protected $connector;
+    /**
+     * @var array
+     */
+    protected $globals = [];
 
     /**
      * @param EventDispatcherInterface $dispatcher
@@ -218,10 +222,12 @@ class Processor
         $this->dispatcher->dispatch(EventStorage::EV_APP_STARTED);
         if ($this->processes == 1) {
             $this->logger->info('Run TestCases in single process.', ['pid' => getmypid()]);
+            $this->backupGlobals();
             foreach ($this->suites as $suite) {
                 if ($this->executor($suite)) {
                     $this->exit_code = 1;
                 }
+                $this->restoreGlobals();
             }
         } else {
             $this->logger->info(
@@ -254,6 +260,14 @@ class Processor
         $this->dispatcher->dispatch(EventStorage::EV_APP_FINISHED);
 
         return $this->exit_code;
+    }
+
+    /**
+     * Backup all super global variables.
+     */
+    private function backupGlobals()
+    {
+        $this->globals = array_merge([], $GLOBALS);
     }
 
     /**
@@ -297,6 +311,14 @@ class Processor
 
             return 1;
         }
+    }
+
+    /**
+     * Restore all super global variables.
+     */
+    private function restoreGlobals()
+    {
+        $GLOBALS = $this->globals;
     }
 
     /**
