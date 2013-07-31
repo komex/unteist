@@ -23,7 +23,7 @@ class StringEndsWith extends AbstractMatcher
      */
     public function getName()
     {
-        return 'StringStartsWith';
+        return 'StringEndsWith';
     }
 
     /**

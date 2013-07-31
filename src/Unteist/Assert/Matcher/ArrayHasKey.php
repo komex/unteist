@@ -17,6 +17,16 @@ namespace Unteist\Assert\Matcher;
 class ArrayHasKey extends AbstractMatcher
 {
     /**
+     * Get name of matcher.
+     *
+     * @return string
+     */
+    public function getName()
+    {
+        return 'ArrayHasKey';
+    }
+
+    /**
      * Matcher condition.
      *
      * @param array $actual
@@ -31,15 +41,5 @@ class ArrayHasKey extends AbstractMatcher
         }
 
         return array_key_exists($this->expected, $actual);
-    }
-
-    /**
-     * Get name of matcher.
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return 'ArrayHasKey';
     }
 }

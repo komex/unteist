@@ -8,26 +8,14 @@
 namespace Unteist\Assert\Matcher;
 
 
-use Unteist\Assert\Assert;
-
 /**
- * Class TypeOf
+ * Class StringContains
  *
  * @package Unteist\Assert\Matcher
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class TypeOf extends AbstractMatcher
+class StringContains extends AbstractMatcher
 {
-
-    /**
-     * @param string $expected
-     */
-    public function __construct($expected)
-    {
-        $expected = strtolower($expected);
-        parent::__construct($expected);
-    }
-
     /**
      * Get name of matcher.
      *
@@ -35,7 +23,7 @@ class TypeOf extends AbstractMatcher
      */
     public function getName()
     {
-        return 'TypeOf';
+        return 'StringContains';
     }
 
     /**
@@ -47,6 +35,6 @@ class TypeOf extends AbstractMatcher
      */
     protected function condition($actual)
     {
-        return gettype($actual) == $this->expected;
+        return strpos($actual, $this->expected) !== false;
     }
 }

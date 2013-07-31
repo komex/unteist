@@ -18,6 +18,16 @@ use Unteist\Assert\Assert;
 class IdenticalTo extends EqualTo
 {
     /**
+     * Get name of matcher.
+     *
+     * @return string
+     */
+    public function getName()
+    {
+        return 'IdenticalTo';
+    }
+
+    /**
      * Matcher condition.
      *
      * @param mixed $actual
@@ -27,15 +37,5 @@ class IdenticalTo extends EqualTo
     protected function condition($actual)
     {
         return $actual === $this->expected;
-    }
-
-    /**
-     * Get name of matcher.
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return 'IdenticalTo';
     }
 }

@@ -46,6 +46,15 @@ abstract class AbstractMatcher
     }
 
     /**
+     * Matcher condition.
+     *
+     * @param mixed $actual
+     *
+     * @return bool
+     */
+    abstract protected function condition($actual);
+
+    /**
      * @param mixed $actual
      * @param string $message
      *
@@ -56,15 +65,6 @@ abstract class AbstractMatcher
         $formatted = (empty($message) ? '' : $message . PHP_EOL);
         Assert::fail($formatted);
     }
-
-    /**
-     * Matcher condition.
-     *
-     * @param mixed $actual
-     *
-     * @return bool
-     */
-    abstract protected function condition($actual);
 
     /**
      * Get name of matcher.

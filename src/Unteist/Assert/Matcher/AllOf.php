@@ -33,6 +33,16 @@ class AllOf extends AbstractMatcher
     }
 
     /**
+     * Get name of matcher.
+     *
+     * @return string
+     */
+    public function getName()
+    {
+        return 'AllOf';
+    }
+
+    /**
      * Matcher condition.
      *
      * @param mixed $actual
@@ -55,16 +65,6 @@ class AllOf extends AbstractMatcher
         }
 
         return true;
-    }
-
-    /**
-     * Get name of matcher.
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return 'AllOf';
     }
 
     /**

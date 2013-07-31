@@ -21,6 +21,16 @@ use Unteist\Exception\AssertFailException;
 class EqualTo extends AbstractMatcher
 {
     /**
+     * Get name of matcher.
+     *
+     * @return string
+     */
+    public function getName()
+    {
+        return 'EqualTo';
+    }
+
+    /**
      * Matcher condition.
      *
      * @param mixed $actual
@@ -44,16 +54,6 @@ class EqualTo extends AbstractMatcher
         $diff = new Diff('--- Original' . PHP_EOL . '+++ Expected' . PHP_EOL);
         $formatted .= $diff->diff(var_export($actual, true), var_export($this->expected, true));
         Assert::fail($formatted);
-    }
-
-    /**
-     * Get name of matcher.
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return 'EqualTo';
     }
 
 
