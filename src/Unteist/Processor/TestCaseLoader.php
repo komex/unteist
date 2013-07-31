@@ -7,7 +7,6 @@
 
 namespace Unteist\Processor;
 
-
 use Symfony\Component\Finder\SplFileInfo;
 use Unteist\TestCase;
 

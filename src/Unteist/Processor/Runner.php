@@ -7,7 +7,6 @@
 
 namespace Unteist\Processor;
 
-
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -162,7 +161,10 @@ class Runner
             }
             if ($is_test_method) {
                 $this->tests[$method->getName()] = new TestMeta(
-                    $this->name, $method->getName(), $modifiers, $this->logger
+                    $this->name,
+                    $method->getName(),
+                    $modifiers,
+                    $this->logger
                 );
             } else {
                 foreach (array_keys($modifiers) as $event) {
@@ -293,6 +295,7 @@ class Runner
      */
     protected function runTest(TestMeta $test)
     {
+        $event = null;
         try {
             $depends = $test->getDependencies();
             if (!empty($depends)) {
@@ -365,30 +368,22 @@ class Runner
                         $this->context->setStrategy($this->strategy);
                         break;
                     case TestMeta::TEST_MARKED:
-                        throw new \LogicException(sprintf(
-                            'Found infinitive loop in depends for test method "%s:%s".',
-                            $this->name,
-                            $depend
-                        ));
+                        throw new \LogicException(
+                            sprintf('Found infinitive loop in depends for test method "%s:%s".', $this->name, $depend)
+                        );
                     case TestMeta::TEST_SKIPPED:
-                        throw new SkipTestException(sprintf(
-                            'Test method "%s:%s" was skipped.',
-                            $this->name,
-                            $depend
-                        ));
+                        throw new SkipTestException(
+                            sprintf('Test method "%s:%s" was skipped.', $this->name, $depend)
+                        );
                     case TestMeta::TEST_FAILED:
-                        throw new SkipTestException(sprintf(
-                            'Test method "%s:%s" was failed.',
-                            $this->name,
-                            $depend
-                        ));
+                        throw new SkipTestException(
+                            sprintf('Test method "%s:%s" was failed.', $this->name, $depend)
+                        );
                 }
             } else {
-                throw new \InvalidArgumentException(sprintf(
-                    'The depends method "%s:%s" does not exists or is not a test.',
-                    $this->name,
-                    $depend
-                ));
+                throw new \InvalidArgumentException(
+                    sprintf('The depends method "%s:%s" does not exists or is not a test.', $this->name, $depend)
+                );
             }
         }
     }
@@ -414,11 +409,9 @@ class Runner
             } elseif ($data_set instanceof \Iterator) {
                 $this->data_sets[$method] = $data_set;
             } else {
-                throw new \InvalidArgumentException(sprintf(
-                    'DataProvider "%s:%s" must return an array or Iterator object.',
-                    $this->name,
-                    $method
-                ));
+                throw new \InvalidArgumentException(
+                    sprintf('DataProvider "%s:%s" must return an array or Iterator object.', $this->name, $method)
+                );
             }
         } else {
             $this->data_sets[$method]->rewind();

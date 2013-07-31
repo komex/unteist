@@ -10,7 +10,6 @@ namespace Unteist\Strategy;
 use Unteist\Exception\AssertFailException;
 use Unteist\Exception\SkipTestException;
 
-
 /**
  * Class IgnoreFailsStrategy
  *

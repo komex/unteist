@@ -12,7 +12,6 @@ use Symfony\Component\Console\Helper\ProgressHelper;
 use Symfony\Component\Console\Output\OutputInterface;
 use Unteist\Event\TestEvent;
 
-
 /**
  * Class Formatter
  *

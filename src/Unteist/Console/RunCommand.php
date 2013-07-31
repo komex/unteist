@@ -12,6 +12,7 @@ use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Helper\ProgressHelper;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -147,7 +148,9 @@ class RunCommand extends Command
     {
         $this->tests_skipped = new \SplDoublyLinkedList();
         $this->tests_fail = new \SplDoublyLinkedList();
-        $this->formatter = new Formatter($output, $this->getHelperSet()->get('progress'));
+        /** @var ProgressHelper $progress */
+        $progress = $this->getHelperSet()->get('progress');
+        $this->formatter = new Formatter($output, $progress);
         $output->writeln($this->getApplication()->getLongVersion());
         // Finder
         $finder = new Finder();
@@ -218,5 +221,4 @@ class RunCommand extends Command
         $dispatcher->addListener(EventStorage::EV_TEST_FAIL, [$this, 'failTest']);
         $dispatcher->addListener(EventStorage::EV_APP_FINISHED, [$this, 'finish']);
     }
-
 }

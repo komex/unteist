@@ -7,7 +7,6 @@
 
 namespace Unteist\Assert\Matcher;
 
-
 use Unteist\Assert\Assert;
 
 /**

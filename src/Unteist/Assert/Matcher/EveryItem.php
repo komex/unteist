@@ -9,7 +9,6 @@ namespace Unteist\Assert\Matcher;
 
 use Unteist\Exception\AssertFailException;
 
-
 /**
  * Class EveryItem
  *

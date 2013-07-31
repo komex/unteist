@@ -56,10 +56,9 @@ class Connector
     {
         $this->current_sockets = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
         if ($this->current_sockets === false) {
-            throw new \RuntimeException(sprintf(
-                'Could not create a new pair socket: %s',
-                socket_strerror(socket_last_error())
-            ));
+            throw new \RuntimeException(
+                sprintf('Could not create a new pair socket: %s', socket_strerror(socket_last_error()))
+            );
         }
     }
 
@@ -123,10 +122,9 @@ class Connector
         $read = $this->sockets;
         $num = stream_select($read, $write = null, $exception = null, null, 500000);
         if ($num === false) {
-            throw new \RuntimeException(sprintf(
-                'Cannot read from sockets, reason: %s',
-                socket_strerror(socket_last_error())
-            ));
+            throw new \RuntimeException(
+                sprintf('Cannot read from sockets, reason: %s', socket_strerror(socket_last_error()))
+            );
         }
         if ($num > 0) {
             foreach ($read as $socket) {

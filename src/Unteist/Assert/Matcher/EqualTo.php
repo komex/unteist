@@ -11,7 +11,6 @@ use SebastianBergmann\Diff;
 use Unteist\Assert\Assert;
 use Unteist\Exception\AssertFailException;
 
-
 /**
  * Class EqualTo
  *

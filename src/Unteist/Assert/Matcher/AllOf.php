@@ -10,7 +10,6 @@ namespace Unteist\Assert\Matcher;
 use Unteist\Exception\AssertFailException;
 use Unteist\Assert\Assert;
 
-
 /**
  * Class AllOf
  *

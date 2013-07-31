@@ -19,7 +19,6 @@ use Unteist\Assert\Matcher\StringStartsWith;
 use Unteist\Assert\Matcher\TypeOf;
 use Unteist\Exception\AssertFailException;
 
-
 /**
  * Class Assert
  *

@@ -10,7 +10,6 @@ namespace Unteist\Assert\Matcher;
 use Unteist\Assert\Assert;
 use Unteist\Exception\AssertFailException;
 
-
 /**
  * Class AbstractMatcher
  *
