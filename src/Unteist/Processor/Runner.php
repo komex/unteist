@@ -58,10 +58,6 @@ class Runner
      */
     protected $precondition;
     /**
-     * @var \ArrayObject
-     */
-    protected $global_storage;
-    /**
      * @var Context
      */
     protected $context;
@@ -119,16 +115,6 @@ class Runner
     public function setStrategy($strategy)
     {
         $this->strategy = $strategy;
-    }
-
-    /**
-     * Get global storage.
-     *
-     * @param \ArrayObject $global_storage
-     */
-    public function setGlobalStorage(\ArrayObject $global_storage)
-    {
-        $this->global_storage = $global_storage;
     }
 
     /**

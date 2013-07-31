@@ -13,6 +13,7 @@ use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
 use Unteist\Event\Connector;
 use Unteist\Event\EventStorage;
+use Unteist\Event\StorageEvent;
 use Unteist\Filter\ClassFilterInterface;
 use Unteist\Filter\MethodsFilterInterface;
 use Unteist\Strategy\Context;
@@ -28,7 +29,7 @@ class Processor
     /**
      * @var int
      */
-    protected $max_procs = 1;
+    protected $processes = 1;
     /**
      * @var Finder|SplFileInfo[]
      */
@@ -119,26 +120,26 @@ class Processor
      *
      * @return int
      */
-    public function getMaxProcs()
+    public function getProcesses()
     {
-        return $this->max_procs;
+        return $this->processes;
     }
 
     /**
      * Set number of maximum processes.
      *
-     * @param int $max_procs
+     * @param int $processes Number of using processes.
      */
-    public function setMaxProcs($max_procs)
+    public function setProcesses($processes)
     {
-        $max_procs = intval($max_procs, 10);
-        if ($max_procs < 1) {
-            $max_procs = 1;
+        $processes = intval($processes, 10);
+        if ($processes < 1) {
+            $processes = 1;
         }
-        if ($max_procs > 10) {
-            $max_procs = 10;
+        if ($processes > 10) {
+            $processes = 10;
         }
-        $this->max_procs = $max_procs;
+        $this->processes = $processes;
     }
 
     /**
@@ -198,6 +199,16 @@ class Processor
     }
 
     /**
+     * Update global storage from event data.
+     *
+     * @param StorageEvent $event
+     */
+    public function updateStorage(StorageEvent $event)
+    {
+        $this->global_storage->unserialize($event->getData());
+    }
+
+    /**
      * Run all TestCases.
      *
      * @return int Exit code
@@ -205,7 +216,7 @@ class Processor
     public function run()
     {
         $this->dispatcher->dispatch(EventStorage::EV_APP_STARTED);
-        if ($this->max_procs == 1) {
+        if ($this->processes == 1) {
             $this->logger->info('Run TestCases in single process.', ['pid' => getmypid()]);
             foreach ($this->suites as $suite) {
                 if ($this->executor($suite)) {
@@ -215,13 +226,14 @@ class Processor
         } else {
             $this->logger->info(
                 'Run TestCases in forked processes.',
-                ['pid' => getmypid(), 'procs' => $this->max_procs]
+                ['pid' => getmypid(), 'procs' => $this->processes]
             );
             declare(ticks = 1);
             pcntl_signal(SIGCHLD, [$this, 'childSignalHandler']);
+            $this->dispatcher->addListener(EventStorage::EV_STORAGE_GLOBAL_UPDATE, [$this, 'updateStorage']);
             foreach ($this->suites as $suite) {
                 $this->launchJob($suite);
-                while (count($this->current_jobs) >= $this->max_procs) {
+                while (count($this->current_jobs) >= $this->processes) {
                     $this->logger->debug(
                         'Maximum children allowed, waiting.',
                         ['jobs' => array_keys($this->current_jobs)]
@@ -229,7 +241,7 @@ class Processor
                     $this->connector->read();
                 }
             }
-            while (count($this->current_jobs)) {
+            while (count($this->current_jobs) > 0) {
                 $this->logger->debug(
                     'Waiting for current jobs to finish.',
                     ['jobs' => array_keys($this->current_jobs)]
@@ -273,10 +285,10 @@ class Processor
                     }
                 }
             }
+            $class->setGlobalStorage($this->global_storage);
             $runner = new Runner($this->dispatcher, $this->logger);
             $runner->setStrategy($this->strategy);
             $runner->setFilters($this->methods_filters);
-            $runner->setGlobalStorage($this->global_storage);
             $runner->precondition($class);
 
             return $runner->run();
@@ -324,7 +336,13 @@ class Processor
                 }
             } else {
                 $this->connector->activate();
-                exit($this->executor($case));
+                $hash = $this->global_storage->serialize();
+                $status_code = $this->executor($case);
+                $data = $this->global_storage->serialize();
+                if ($data !== $hash) {
+                    $this->dispatcher->dispatch(EventStorage::EV_STORAGE_GLOBAL_UPDATE, new StorageEvent($data));
+                }
+                exit($status_code);
             }
         }
 

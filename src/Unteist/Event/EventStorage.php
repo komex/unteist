@@ -51,4 +51,8 @@ final class EventStorage
      * Calls on application finished
      */
     const EV_APP_FINISHED = 'application.finished';
+    /**
+     * Global storage was changed - processor shall update it
+     */
+    const EV_STORAGE_GLOBAL_UPDATE = 'storage.global.update';
 }
