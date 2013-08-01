@@ -331,6 +331,8 @@ class Runner
             return 1;
         }
 
+        //@todo: Обработка исключений от getDataSet()
+
         return 0;
     }
 
@@ -391,6 +393,7 @@ class Runner
         if (empty($this->data_sets[$method])) {
             $data_set_method = new \ReflectionMethod($this->test_case, $method);
             $data_set = $data_set_method->invoke($this->test_case);
+            //@todo: Обработка пустых data_set
             if (is_array($data_set)) {
                 $this->data_sets[$method] = new \ArrayIterator($data_set);
             } elseif ($data_set instanceof \Iterator) {
