@@ -200,7 +200,7 @@ class RunCommand extends Command
             $logger->pushHandler(
                 new StreamHandler($file, $log_level)
             );
-            $this->formatter->loggerInformation($log_level, $file);
+            $this->formatter->loggerInformation($level, $file);
         } else {
             $logger->pushHandler(new NullHandler());
         }
