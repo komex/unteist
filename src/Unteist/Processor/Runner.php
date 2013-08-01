@@ -260,7 +260,7 @@ class Runner
                     $return_code = 1;
                 }
             }
-        } catch (AssertFailException $e) {
+        } catch (\Exception $e) {
             $return_code = 1;
         }
         $this->precondition->dispatch(EventStorage::EV_AFTER_CASE);
@@ -316,6 +316,7 @@ class Runner
             $event = new TestEvent($test->getMethod(), $this->test_case_event);
             $event->setDepends($test->getDependencies());
             $event->setException($e);
+            $event->setStatus(TestMeta::TEST_SKIPPED);
             $this->dispatcher->dispatch(EventStorage::EV_TEST_SKIPPED, $event);
             $this->context->skipTest($e);
         } catch (AssertFailException $e) {
