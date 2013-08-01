@@ -102,7 +102,9 @@ class Formatter
     protected function fail($success, \SplDoublyLinkedList $skipped, \SplDoublyLinkedList $fail, $asserts)
     {
         if ($skipped->count() > 0) {
-            $this->testOutput('Skipped tests:', 'comment', $skipped);
+            $style = new OutputFormatterStyle('black', 'yellow');
+            $this->output->getFormatter()->setStyle('skipped', $style);
+            $this->testOutput('Skipped tests:', 'skipped', $skipped);
         }
         $this->testOutput('Failed tests:', 'error', $fail);
 
