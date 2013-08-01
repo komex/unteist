@@ -358,10 +358,10 @@ class Processor
                 }
             } else {
                 $this->connector->activate();
-                $hash = $this->global_storage->serialize();
+                $hash = sha1($this->global_storage->serialize());
                 $status_code = $this->executor($case);
                 $data = $this->global_storage->serialize();
-                if ($data !== $hash) {
+                if (sha1($data) !== $hash) {
                     $this->dispatcher->dispatch(EventStorage::EV_STORAGE_GLOBAL_UPDATE, new StorageEvent($data));
                 }
                 exit($status_code);
