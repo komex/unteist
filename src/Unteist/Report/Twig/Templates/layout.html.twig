@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}Unteist{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="{{ base_dir }}/">
+    <!-- Bootstrap -->
+    <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
+</head>
+<body>
+<div class="container">
+    <div class="navbar">
+        <div class="navbar-inner">
+            <a class="brand" href="#">Unteist</a>
+        </div>
+    </div>
+    {% block content %}{% endblock %}
+</div>
+</body>
+</html>
