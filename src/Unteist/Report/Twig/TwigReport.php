@@ -47,7 +47,7 @@ class TwigReport implements EventSubscriberInterface
         if (!$this->fs->exists($report_dir)) {
             $this->fs->mkdir($report_dir);
         }
-        $this->output_dir = $report_dir;
+        $this->output_dir = realpath($report_dir);
         $this->compileBootstrap();
     }
 
