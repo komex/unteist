@@ -48,7 +48,7 @@ class TestEvent extends Event
      */
     protected $time;
     /**
-     * @var \RuntimeException
+     * @var string
      */
     protected $exception;
 
@@ -99,7 +99,7 @@ class TestEvent extends Event
      *
      * @param array $data_set
      */
-    public function setDataSet($data_set)
+    public function setDataSet(array $data_set)
     {
         $this->data_set = $data_set;
     }
@@ -187,7 +187,9 @@ class TestEvent extends Event
     }
 
     /**
-     * @return \RuntimeException
+     * Get exception message.
+     *
+     * @return string
      */
     public function getException()
     {
@@ -199,6 +201,36 @@ class TestEvent extends Event
      */
     public function setException(\RuntimeException $exception)
     {
-        $this->exception = $exception;
+        $this->exception = $exception->getMessage();
+    }
+
+    /**
+     * Is test success?
+     *
+     * @return bool
+     */
+    public function isSuccess()
+    {
+        return $this->status == TestMeta::TEST_DONE;
+    }
+
+    /**
+     * Is test skipped.
+     *
+     * @return bool
+     */
+    public function isSkipped()
+    {
+        return $this->status == TestMeta::TEST_SKIPPED;
+    }
+
+    /**
+     * Is test failed?
+     *
+     * @return bool
+     */
+    public function isFailed()
+    {
+        return $this->status == TestMeta::TEST_FAILED;
     }
 }

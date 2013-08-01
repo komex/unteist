@@ -129,18 +129,10 @@ class Formatter
     {
         $this->output->writeln($title);
         foreach ($tests as $i => $test) {
-            $exception = $test->getException();
-            if (empty($exception)) {
-                $message = '';
-                $trace = '';
-            } else {
-                $message = $exception->getMessage();
-                $trace = $exception->getTraceAsString();
-            }
             $this->output->writeln(
-                sprintf('<%3$s>%d.</%3$s> %s', ($i + 1), $message, $tag)
+                sprintf('<%3$s>%d.</%3$s> %s', ($i + 1), $test->getException(), $tag)
             );
-            $this->output->writeln($trace);
+            //@todo: Output exception stack trace
         }
     }
 
