@@ -25,6 +25,7 @@ use Unteist\Event\TestEvent;
 use Unteist\Filter\ClassFilter;
 use Unteist\Filter\MethodsFilter;
 use Unteist\Processor\Processor;
+use Unteist\Report\Twig\TwigReport;
 use Unteist\Strategy\Context;
 
 /**
@@ -125,15 +126,15 @@ class RunCommand extends Command
         $this->setName('run')->setDescription('Run tests stored in specified directory.');
         $this->addArgument('source', InputArgument::REQUIRED, 'Path to TestCase classes.');
         $this->addOption('processes', 'p', InputOption::VALUE_REQUIRED, 'Run test in N separated processes.', 1);
-        $this->addOption('strategy', 's', InputOption::VALUE_REQUIRED, 'Assert strategy: STOP, IGNORE', 'STOP');
+        $this->addOption('strategy', 's', InputOption::VALUE_REQUIRED, 'Assert strategy: STOP, IGNORE.', 'STOP');
         $this->addOption(
             'log-level',
             'l',
             InputOption::VALUE_REQUIRED,
-            sprintf('Logger level: OFF, %s.', join(', ', array_keys($this->log_levels))),
-            'OFF'
+            sprintf('Logger level: %s.', join(', ', array_keys($this->log_levels)))
         );
         $this->addOption('log-file', 'f', InputOption::VALUE_REQUIRED, 'Logger output file.', 'unteist.log');
+        $this->addOption('report-dir', 'r', InputOption::VALUE_REQUIRED, 'Report output directory.');
     }
 
     /**
@@ -157,6 +158,10 @@ class RunCommand extends Command
         $finder->files()->in($input->getArgument('source'))->name('*Test.php');
         // EventDispatcher
         $dispatcher = new EventDispatcher();
+        // Twig report
+        if ($input->getOption('report-dir')) {
+            $dispatcher->addSubscriber(new TwigReport($input->getOption('report-dir')));
+        }
         // Logger
         $logger = $this->getLogger($input->getOption('log-level'), $input->getOption('log-file'));
         // Processor
