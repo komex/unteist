@@ -29,6 +29,10 @@ class TwigReport implements EventSubscriberInterface
      * @var string
      */
     protected $output_dir;
+    /**
+     * @var Filesystem
+     */
+    protected $fs;
 
     /**
      * Configure report generator.
@@ -38,12 +42,35 @@ class TwigReport implements EventSubscriberInterface
     public function __construct($report_dir)
     {
         $loader = new \Twig_Loader_Filesystem(__DIR__ . DIRECTORY_SEPARATOR . 'Templates');
-        $this->twig = new \Twig_Environment($loader, ['cache' => sys_get_temp_dir()]);
-        $this->output_dir = $report_dir;
-        $fs = new Filesystem();
-        if (!$fs->exists($this->output_dir)) {
-            $fs->mkdir($this->output_dir);
+        $this->twig = new \Twig_Environment($loader);
+        $this->fs = new Filesystem();
+        if (!$this->fs->exists($report_dir)) {
+            $this->fs->mkdir($report_dir);
         }
+        $this->output_dir = $report_dir;
+        $this->compileBootstrap();
+    }
+
+    /**
+     * Compile Bootstrap for reports.
+     */
+    protected function compileBootstrap()
+    {
+        $css_dir = $this->output_dir . DIRECTORY_SEPARATOR . 'css';
+        $bootstrap_dir = realpath(
+            join(
+                DIRECTORY_SEPARATOR,
+                [__DIR__, '..', '..', '..', '..', 'vendor', 'twitter', 'bootstrap', 'less']
+            )
+        );
+        $this->fs->mkdir($css_dir);
+        $less = new \lessc();
+        $less->setFormatter('compressed');
+        $less->setImportDir($bootstrap_dir);
+        $less->compileFile(
+            __DIR__ . DIRECTORY_SEPARATOR . 'bootstrap.less',
+            $css_dir . DIRECTORY_SEPARATOR . 'bootstrap.min.css'
+        );
     }
 
     /**
@@ -69,9 +96,33 @@ class TwigReport implements EventSubscriberInterface
     public static function getSubscribedEvents()
     {
         return [
-            EventStorage::EV_AFTER_TEST => 'onTestDone',
-            EventStorage::EV_AFTER_CASE => 'onTestCaseDone',
+            EventStorage::EV_BEFORE_CASE => 'onBeforeTestCase',
+            EventStorage::EV_AFTER_TEST => 'onAfterTest',
+            EventStorage::EV_AFTER_CASE => 'onAfterTestCase',
         ];
+    }
+
+    /**
+     * Get
+     *
+     * @param $namespace
+     *
+     * @return mixed
+     */
+    protected function getPathByNamespace($namespace)
+    {
+        return $this->output_dir . DIRECTORY_SEPARATOR . str_replace('\\', DIRECTORY_SEPARATOR, $namespace);
+    }
+
+    /**
+     * Create directory before TestCase start.
+     *
+     * @param TestCaseEvent $event
+     */
+    public function onBeforeTestCase(TestCaseEvent $event)
+    {
+        $path = $this->getPathByNamespace($event->getClass());
+        $this->fs->mkdir($path);
     }
 
     /**
@@ -79,9 +130,11 @@ class TwigReport implements EventSubscriberInterface
      *
      * @param TestCaseEvent $event TestCase information
      */
-    public function onTestCaseDone(TestCaseEvent $event)
+    public function onAfterTestCase(TestCaseEvent $event)
     {
-        var_dump($this->twig->render('case.html.twig', ['case' => $event]));
+        $content = $this->twig->render('case.html.twig', ['case' => $event, 'base_dir' => $this->output_dir]);
+        $path = $this->getPathByNamespace($event->getClass());
+        file_put_contents($path . DIRECTORY_SEPARATOR . 'index.html', $content);
     }
 
     /**
@@ -89,8 +142,16 @@ class TwigReport implements EventSubscriberInterface
      *
      * @param TestEvent $event Test information
      */
-    public function onTestDone(TestEvent $event)
+    public function onAfterTest(TestEvent $event)
     {
-        var_dump($this->twig->render('test.html.twig', ['test' => $event]));
+//        $content = $this->twig->render('test.html.twig', ['test' => $event, 'base_dir' => $this->output_dir]);
+//        $class = $event->getTestCaseEvent()->getClass();
+//        $path = $this->getPathByNamespace($class);
+////        $data_set = $event->getDataSet();
+//        if (empty($data_set)) {
+//            file_put_contents($path . DIRECTORY_SEPARATOR . $event->getMethod() . '.html', $content);
+//        } else {
+//            //@todo: Доделать отчеты с dataProvider
+//        }
     }
 }
