@@ -8,6 +8,8 @@
 namespace Unteist;
 
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Unteist\Exception\IncompleteTestException;
+use Unteist\Exception\TestFailException;
 
 /**
  * Class TestCase
@@ -90,5 +92,29 @@ class TestCase
     public function getService($name)
     {
         return $this->config->get($name);
+    }
+
+    /**
+     * Mark test as incomplete.
+     *
+     * @param string $message
+     *
+     * @throws IncompleteTestException
+     */
+    public static function markAsIncomplete($message = '')
+    {
+        throw new IncompleteTestException($message);
+    }
+
+    /**
+     * Mark test as fail.
+     *
+     * @param string $message
+     *
+     * @throws TestFailException
+     */
+    public static function markAsFail($message = '')
+    {
+        throw new TestFailException($message);
     }
 }

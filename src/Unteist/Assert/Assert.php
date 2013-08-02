@@ -204,14 +204,4 @@ class Assert
     {
         self::assertThat($actual, new TypeOf($expected), $message);
     }
-
-    /**
-     * @param string $message
-     *
-     * @throws TestFailException
-     */
-    public static function fail($message = '')
-    {
-        throw new TestFailException($message);
-    }
 }

@@ -8,8 +8,8 @@
 namespace Unteist\Assert\Matcher;
 
 use SebastianBergmann\Diff;
-use Unteist\Assert\Assert;
 use Unteist\Exception\TestFailException;
+use Unteist\TestCase;
 
 /**
  * Class EqualTo
@@ -52,6 +52,6 @@ class EqualTo extends AbstractMatcher
         $formatted = (empty($message) ? '' : $message) . PHP_EOL;
         $diff = new Diff('--- Expected' . PHP_EOL . '+++ Actual' . PHP_EOL);
         $formatted .= $diff->diff(var_export($this->expected, true), var_export($actual, true));
-        Assert::fail($formatted);
+        TestCase::markAsFail($formatted);
     }
 }
