@@ -312,12 +312,9 @@ class Runner
                 'The test was skipped.',
                 ['pid' => getmypid(), 'test' => $test->getMethod(), 'exception' => $e->getMessage()]
             );
-            $test->setStatus(TestMeta::TEST_SKIPPED);
             $event = new TestEvent($test->getMethod(), $this->test_case_event);
-            $event->setDepends($test->getDependencies());
             $event->setException($e);
-            $event->setStatus(TestMeta::TEST_SKIPPED);
-            $this->dispatcher->dispatch(EventStorage::EV_TEST_SKIPPED, $event);
+            $this->finish($test, $event, TestMeta::TEST_SKIPPED, false);
             $this->context->skipTest($e);
         } catch (AssertFailException $e) {
             $this->logger->debug(
@@ -417,11 +414,13 @@ class Runner
      * @param TestMeta $test Meta description of test
      * @param TestEvent $event Test event
      * @param int $status Test status
+     * @param bool $send_event Send After test event.
      */
-    protected function finish(TestMeta $test, TestEvent $event, $status)
+    protected function finish(TestMeta $test, TestEvent $event, $status, $send_event = true)
     {
         $test->setStatus($status);
         $event->setStatus($status);
+        $event->setDepends($test->getDependencies());
         $event->setTime(microtime(true) - $this->started);
         $event->setAsserts(Assert::getAssertsCount() - $this->asserts);
         switch ($status) {
@@ -435,7 +434,9 @@ class Runner
                 $this->dispatcher->dispatch(EventStorage::EV_TEST_FAIL, $event);
                 break;
         }
-        $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
-        $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
+        if ($send_event) {
+            $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
+            $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
+        }
     }
 }
