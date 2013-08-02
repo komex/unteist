@@ -106,6 +106,7 @@ class Formatter
             $this->output->getFormatter()->setStyle('skipped', $style);
             $this->testOutput('Skipped tests:', 'skipped', $skipped);
             $this->output->writeln('');
+            
         }
         $this->testOutput('Failed tests:', 'error', $fail);
 
