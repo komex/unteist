@@ -7,7 +7,7 @@
 
 namespace Unteist\Assert\Matcher;
 
-use Unteist\Exception\AssertFailException;
+use Unteist\Exception\TestFailException;
 use Unteist\Assert\Assert;
 
 /**
@@ -63,7 +63,7 @@ class AnyOf extends AbstractMatcher
      * @param mixed $actual
      * @param string $message
      *
-     * @throws AssertFailException
+     * @throws TestFailException
      */
     protected function fail($actual, $message)
     {

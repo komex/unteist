@@ -26,14 +26,18 @@ use Unteist\Filter\ClassFilter;
 use Unteist\Filter\MethodsFilter;
 use Unteist\Processor\Processor;
 use Unteist\Report\Twig\TwigReport;
+use Unteist\Strategy\Context;
+use Unteist\Strategy\IncompleteTestStrategy;
+use Unteist\Strategy\SkipTestStrategy;
+use Unteist\Strategy\TestFailStrategy;
 
 /**
- * Class RunCommand
+ * Class Launcher
  *
  * @package Unteist\Console
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class RunCommand extends Command
+class Launcher extends Command
 {
     /**
      * @var float
@@ -163,8 +167,10 @@ class RunCommand extends Command
         }
         // Logger
         $logger = $this->getLogger($input->getOption('log-level'), $input->getOption('log-file'));
+        // Context
+        $context = $this->getContext();
         // Processor
-        $processor = new Processor($dispatcher, $logger);
+        $processor = new Processor($dispatcher, $logger, $context);
         $processor->addClassFilter(new ClassFilter());
         $processor->addMethodsFilter(new MethodsFilter());
         $processor->setSuites($finder);
@@ -203,6 +209,18 @@ class RunCommand extends Command
         }
 
         return $logger;
+    }
+
+    /**
+     * Get configured context.
+     *
+     * @return Context
+     */
+    protected function getContext()
+    {
+        $fail_strategy = new TestFailStrategy();
+
+        return new Context($fail_strategy, $fail_strategy, new IncompleteTestStrategy(), new SkipTestStrategy());
     }
 
     /**

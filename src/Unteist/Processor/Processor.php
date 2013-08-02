@@ -16,6 +16,7 @@ use Unteist\Event\EventStorage;
 use Unteist\Event\StorageEvent;
 use Unteist\Filter\ClassFilterInterface;
 use Unteist\Filter\MethodsFilterInterface;
+use Unteist\Strategy\Context;
 
 /**
  * Class Processor
@@ -73,17 +74,23 @@ class Processor
      * @var array
      */
     protected $globals = [];
+    /**
+     * @var Context
+     */
+    protected $context;
 
     /**
      * @param EventDispatcherInterface $dispatcher
      * @param LoggerInterface $logger
+     * @param Context $context
      */
-    public function __construct(EventDispatcherInterface $dispatcher, LoggerInterface $logger)
+    public function __construct(EventDispatcherInterface $dispatcher, LoggerInterface $logger, Context $context)
     {
         $this->dispatcher = $dispatcher;
         $this->logger = $logger;
         $this->global_storage = new \ArrayObject();
         $this->connector = new Connector($this->dispatcher);
+        $this->context = $context;
     }
 
     /**
@@ -275,7 +282,7 @@ class Processor
                 }
             }
             $class->setGlobalStorage($this->global_storage);
-            $runner = new Runner($this->dispatcher, $this->logger);
+            $runner = new Runner($this->dispatcher, $this->logger, $this->context);
             $runner->setFilters($this->methods_filters);
             $runner->precondition($class);
 

@@ -56,7 +56,7 @@ class Unteist extends Application
         // which is used when using the --help option
         $defaultCommands = parent::getDefaultCommands();
 
-        $defaultCommands[] = new RunCommand();
+        $defaultCommands[] = new Launcher();
 
         return $defaultCommands;
     }

@@ -17,7 +17,7 @@ use Unteist\Assert\Matcher\StringContains;
 use Unteist\Assert\Matcher\StringEndsWith;
 use Unteist\Assert\Matcher\StringStartsWith;
 use Unteist\Assert\Matcher\TypeOf;
-use Unteist\Exception\AssertFailException;
+use Unteist\Exception\TestFailException;
 
 /**
  * Class Assert
@@ -208,10 +208,10 @@ class Assert
     /**
      * @param string $message
      *
-     * @throws AssertFailException
+     * @throws TestFailException
      */
     public static function fail($message = '')
     {
-        throw new AssertFailException($message);
+        throw new TestFailException($message);
     }
 }

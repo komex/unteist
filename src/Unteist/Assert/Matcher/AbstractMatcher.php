@@ -8,7 +8,7 @@
 namespace Unteist\Assert\Matcher;
 
 use Unteist\Assert\Assert;
-use Unteist\Exception\AssertFailException;
+use Unteist\Exception\TestFailException;
 
 /**
  * Class AbstractMatcher
@@ -35,7 +35,7 @@ abstract class AbstractMatcher
      * @param mixed $actual
      * @param string $message
      *
-     * @throws AssertFailException
+     * @throws TestFailException
      */
     final public function match($actual, $message = '')
     {
@@ -57,7 +57,7 @@ abstract class AbstractMatcher
      * @param mixed $actual
      * @param string $message
      *
-     * @throws AssertFailException
+     * @throws TestFailException
      */
     protected function fail($actual, $message)
     {

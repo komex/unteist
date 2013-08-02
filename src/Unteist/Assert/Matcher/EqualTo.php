@@ -9,7 +9,7 @@ namespace Unteist\Assert\Matcher;
 
 use SebastianBergmann\Diff;
 use Unteist\Assert\Assert;
-use Unteist\Exception\AssertFailException;
+use Unteist\Exception\TestFailException;
 
 /**
  * Class EqualTo
@@ -45,7 +45,7 @@ class EqualTo extends AbstractMatcher
      * @param mixed $actual
      * @param string $message
      *
-     * @throws AssertFailException
+     * @throws TestFailException
      */
     protected function fail($actual, $message)
     {

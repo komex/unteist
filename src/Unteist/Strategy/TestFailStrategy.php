@@ -7,7 +7,7 @@
 
 namespace Unteist\Strategy;
 
-use Unteist\Exception\AssertFailException;
+use Unteist\Exception\TestFailException;
 
 /**
  * Class TestFailStrategy
@@ -22,14 +22,14 @@ class TestFailStrategy implements StrategyInterface
      *
      * @param \Exception $exception
      *
-     * @throws AssertFailException
+     * @throws TestFailException
      */
     public function generateException(\Exception $exception)
     {
-        if ($exception instanceof AssertFailException) {
+        if ($exception instanceof TestFailException) {
             throw $exception;
         } else {
-            throw new AssertFailException('Test was marked as failure by chosen strategy.', 0, $exception);
+            throw new TestFailException('Test was marked as failure by chosen strategy.', 0, $exception);
         }
     }
 }

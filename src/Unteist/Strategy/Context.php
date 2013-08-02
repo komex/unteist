@@ -7,7 +7,7 @@
 
 namespace Unteist\Strategy;
 
-use Unteist\Exception\AssertFailException;
+use Unteist\Exception\TestFailException;
 use Unteist\Exception\IncompleteTestException;
 use Unteist\Exception\SkipTestException;
 
@@ -35,16 +35,38 @@ class Context
      * @var StrategyInterface
      */
     protected $skipped_strategy;
+    /**
+     * @var StrategyInterface[]
+     */
+    protected $default_strategies;
 
     /**
      * Setup default strategy.
      */
-    public function __construct()
+    public function __construct(
+        StrategyInterface $error,
+        StrategyInterface $failure,
+        StrategyInterface $incomplete,
+        StrategyInterface $skip
+    ) {
+        $this->default_strategies = [
+            'error' => $error,
+            'failure' => $failure,
+            'incomplete' => $incomplete,
+            'skip' => $skip,
+        ];
+        $this->restore();
+    }
+
+    /**
+     * Restore default strategy.
+     */
+    public function restore()
     {
-        $this->setErrorStrategy(new TestFailStrategy());
-        $this->setFailureStrategy(new TestFailStrategy());
-        $this->setIncompleteStrategy(new IncompleteTestStrategy());
-        $this->setSkippedStrategy(new SkipTestStrategy());
+        $this->setErrorStrategy($this->default_strategies['error']);
+        $this->setFailureStrategy($this->default_strategies['failure']);
+        $this->setIncompleteStrategy($this->default_strategies['incomplete']);
+        $this->setSkippedStrategy($this->default_strategies['skip']);
     }
 
     /**
@@ -104,11 +126,11 @@ class Context
     /**
      * Generate exception on failure test.
      *
-     * @param AssertFailException $exception
+     * @param TestFailException $exception
      *
      * @return int Status code
      */
-    public function onFailure(AssertFailException $exception)
+    public function onFailure(TestFailException $exception)
     {
         $this->failure_strategy->generateException($exception);
 
