@@ -314,6 +314,8 @@ class Runner
             );
             $event = new TestEvent($test->getMethod(), $this->test_case_event);
             $event->setException($e);
+            // Hack for reset execution time for skipped tests.
+            $this->started = microtime(true);
             $this->finish($test, $event, TestMeta::TEST_SKIPPED, false);
             $this->context->skipTest($e);
         } catch (AssertFailException $e) {

@@ -44,6 +44,7 @@ class TwigReport implements EventSubscriberInterface
         $loader = new \Twig_Loader_Filesystem(__DIR__ . DIRECTORY_SEPARATOR . 'Templates');
         $this->twig = new \Twig_Environment($loader);
         $this->twig->addFunction(new \Twig_SimpleFunction('explode', 'explode'));
+        $this->twig->addFilter(new \Twig_SimpleFilter('getPathByNamespace', [$this, 'getPathByNamespace']));
         $this->fs = new Filesystem();
         if (!$this->fs->exists($report_dir)) {
             $this->fs->mkdir($report_dir);
@@ -104,15 +105,21 @@ class TwigReport implements EventSubscriberInterface
     }
 
     /**
-     * Get
+     * Get path by class name (with namespace).
      *
-     * @param $namespace
+     * @param string $namespace
+     * @param bool $absolute
      *
-     * @return mixed
+     * @return string
      */
-    protected function getPathByNamespace($namespace)
+    public function getPathByNamespace($namespace, $absolute = false)
     {
-        return $this->output_dir . DIRECTORY_SEPARATOR . str_replace('\\', DIRECTORY_SEPARATOR, $namespace);
+        $path = str_replace('\\', DIRECTORY_SEPARATOR, $namespace);
+        if ($absolute) {
+            $path = $this->output_dir . DIRECTORY_SEPARATOR . $path;
+        }
+
+        return $path;
     }
 
     /**
@@ -122,7 +129,7 @@ class TwigReport implements EventSubscriberInterface
      */
     public function onBeforeTestCase(TestCaseEvent $event)
     {
-        $path = $this->getPathByNamespace($event->getClass());
+        $path = $this->getPathByNamespace($event->getClass(), true);
         $this->fs->mkdir($path);
     }
 
@@ -134,7 +141,7 @@ class TwigReport implements EventSubscriberInterface
     public function onAfterTestCase(TestCaseEvent $event)
     {
         $content = $this->twig->render('case.html.twig', ['case' => $event, 'base_dir' => $this->output_dir]);
-        $path = $this->getPathByNamespace($event->getClass());
+        $path = $this->getPathByNamespace($event->getClass(), true);
         file_put_contents($path . DIRECTORY_SEPARATOR . 'index.html', $content);
     }
 
@@ -145,14 +152,14 @@ class TwigReport implements EventSubscriberInterface
      */
     public function onAfterTest(TestEvent $event)
     {
-//        $content = $this->twig->render('test.html.twig', ['test' => $event, 'base_dir' => $this->output_dir]);
-//        $class = $event->getTestCaseEvent()->getClass();
-//        $path = $this->getPathByNamespace($class);
-////        $data_set = $event->getDataSet();
-//        if (empty($data_set)) {
-//            file_put_contents($path . DIRECTORY_SEPARATOR . $event->getMethod() . '.html', $content);
-//        } else {
-//            //@todo: Доделать отчеты с dataProvider
-//        }
+        $content = $this->twig->render('test.html.twig', ['test' => $event, 'base_dir' => $this->output_dir]);
+        $class = $event->getTestCaseEvent()->getClass();
+        $path = $this->getPathByNamespace($class, true);
+        $data_set = $event->getDataSet();
+        if (empty($data_set)) {
+            file_put_contents($path . DIRECTORY_SEPARATOR . $event->getMethod() . '.html', $content);
+        } else {
+            //@todo: Доделать отчеты с dataProvider
+        }
     }
 }
