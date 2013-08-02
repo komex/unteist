@@ -197,9 +197,9 @@ class TestEvent extends Event
     }
 
     /**
-     * @param \RuntimeException $exception
+     * @param \Exception $exception
      */
-    public function setException(\RuntimeException $exception)
+    public function setException(\Exception $exception)
     {
         $this->exception = $exception->getMessage();
     }

@@ -28,7 +28,7 @@ class TestMeta
     /**
      * The test was skipped.
      */
-    const TEST_SKIPPED = 2;
+    const TEST_SKIPPED = 3;
     /**
      * The test was failed.
      */
@@ -36,7 +36,15 @@ class TestMeta
     /**
      * The test is marked as is already in stack list
      */
-    const TEST_MARKED = 8;
+    const TEST_MARKED = 5;
+    /**
+     * Test done with unexpected error.
+     */
+    const TEST_ERROR = 6;
+    /**
+     * Test marked as incomplete.
+     */
+    const TEST_INCOMPLETE = 7;
     /**
      * @var array
      */

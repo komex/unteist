@@ -26,7 +26,6 @@ use Unteist\Filter\ClassFilter;
 use Unteist\Filter\MethodsFilter;
 use Unteist\Processor\Processor;
 use Unteist\Report\Twig\TwigReport;
-use Unteist\Strategy\Context;
 
 /**
  * Class RunCommand
@@ -170,13 +169,6 @@ class RunCommand extends Command
         $processor->addMethodsFilter(new MethodsFilter());
         $processor->setSuites($finder);
         $processor->setProcesses($input->getOption('processes'));
-        switch ($input->getOption('strategy')) {
-            case 'IGNORE':
-                $processor->setStrategy(Context::STRATEGY_IGNORE_FAILS);
-                break;
-            default:
-                $processor->setStrategy(Context::STRATEGY_STOP_ON_FAILS);
-        }
         // Global variables
         $this->started = microtime(true);
         // Output information and progress bar

@@ -16,7 +16,6 @@ use Unteist\Event\EventStorage;
 use Unteist\Event\StorageEvent;
 use Unteist\Filter\ClassFilterInterface;
 use Unteist\Filter\MethodsFilterInterface;
-use Unteist\Strategy\Context;
 
 /**
  * Class Processor
@@ -65,10 +64,6 @@ class Processor
     /**
      * @var int
      */
-    protected $strategy = Context::STRATEGY_IGNORE_FAILS;
-    /**
-     * @var int
-     */
     protected $exit_code = 0;
     /**
      * @var Connector
@@ -89,26 +84,6 @@ class Processor
         $this->logger = $logger;
         $this->global_storage = new \ArrayObject();
         $this->connector = new Connector($this->dispatcher);
-    }
-
-    /**
-     * Get current strategy
-     *
-     * @return int
-     */
-    public function getStrategy()
-    {
-        return $this->strategy;
-    }
-
-    /**
-     * Set default strategy.
-     *
-     * @param int $strategy
-     */
-    public function setStrategy($strategy)
-    {
-        $this->strategy = intval($strategy, 10);
     }
 
     /**
@@ -301,7 +276,6 @@ class Processor
             }
             $class->setGlobalStorage($this->global_storage);
             $runner = new Runner($this->dispatcher, $this->logger);
-            $runner->setStrategy($this->strategy);
             $runner->setFilters($this->methods_filters);
             $runner->precondition($class);
 
