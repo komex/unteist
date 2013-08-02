@@ -8,6 +8,7 @@
 namespace Unteist\Event;
 
 use Symfony\Component\EventDispatcher\Event;
+use Unteist\Meta\TestMeta;
 
 /**
  * Class TestCaseEvent
@@ -98,10 +99,24 @@ class TestCaseEvent extends Event
         $this->cache = [
             'asserts' => 0,
             'time' => 0,
+            'success' => 0,
+            'skipped' => 0,
+            'fail' => 0,
         ];
         foreach ($this->test_events as $event) {
             $this->cache['asserts'] += $event->getAsserts();
             $this->cache['time'] += $event->getTime();
+            switch ($event->getStatus()) {
+                case TestMeta::TEST_DONE:
+                    $this->cache['success']++;
+                    break;
+                case TestMeta::TEST_SKIPPED:
+                    $this->cache['skipped']++;
+                    break;
+                case TestMeta::TEST_FAILED:
+                    $this->cache['fail']++;
+                    break;
+            }
         }
     }
 
@@ -117,5 +132,31 @@ class TestCaseEvent extends Event
         }
 
         return $this->cache['time'];
+    }
+
+    /**
+     * Get count of tests by its type name.
+     *
+     * @param string|null $type Test type
+     *
+     * @return int
+     */
+    public function getTestsCount($type = null)
+    {
+        if (empty($this->cache)) {
+            $this->count();
+        }
+
+        $type = strtolower($type);
+        if (in_array($type, ['success', 'skipped', 'fail'])) {
+            return $this->cache[$type];
+        } else {
+            return count($this->test_events);
+        }
+    }
+
+    public function getTestPercent($type)
+    {
+        return ($this->getTestsCount($type) / $this->getTestsCount()) * 100;
     }
 }

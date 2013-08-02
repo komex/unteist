@@ -1,0 +1,17 @@
+{% macro depends(methods) %}
+    {% for method in methods %}
+        <a href="#{{ method }}">{{ method }}</a>{% if not loop.last %},{% endif %}
+    {% else %}
+        &minus;
+    {% endfor %}
+{% endmacro %}
+
+{% macro breadcrumb(class) %}
+    {% for element in explode('\\', class) %}
+        {% if loop.last %}
+            <li class="active">{{ element }}</li>
+        {% else %}
+            <li><a href="javascript:">{{ element }}</a> <span class="divider">/</span></li>
+        {% endif %}
+    {% endfor %}
+{% endmacro %}
