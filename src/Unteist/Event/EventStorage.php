@@ -40,6 +40,14 @@ final class EventStorage
      */
     const EV_TEST_FAIL = 'test.fail';
     /**
+     * Calls after each test with error.
+     */
+    const EV_TEST_ERROR = 'test.error';
+    /**
+     * Calls after each incomplete test.
+     */
+    const EV_TEST_INCOMPLETE = 'test.incomplete';
+    /**
      * Calls after each test in TestCase
      */
     const EV_AFTER_TEST = 'test.after';

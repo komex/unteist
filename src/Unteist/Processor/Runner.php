@@ -456,6 +456,12 @@ class Runner
             case TestMeta::TEST_FAILED:
                 $this->dispatcher->dispatch(EventStorage::EV_TEST_FAIL, $event);
                 break;
+            case TestMeta::TEST_ERROR:
+                $this->dispatcher->dispatch(EventStorage::EV_TEST_ERROR, $event);
+                break;
+            case TestMeta::TEST_INCOMPLETE:
+                $this->dispatcher->dispatch(EventStorage::EV_TEST_INCOMPLETE, $event);
+                break;
         }
         if ($send_event) {
             $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
