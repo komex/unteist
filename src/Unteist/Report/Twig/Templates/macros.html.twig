@@ -5,3 +5,13 @@
         &minus;
     {% endfor %}
 {% endmacro %}
+
+{% macro breadcrumb(class) %}
+    {% for element in explode('\\', class) %}
+        {% if loop.last %}
+            <li class="active">{{ element }}</li>
+        {% else %}
+            <li><a href="javascript:">{{ element }}</a> <span class="divider">/</span></li>
+        {% endif %}
+    {% endfor %}
+{% endmacro %}

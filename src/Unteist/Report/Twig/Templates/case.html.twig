@@ -7,7 +7,7 @@
 {% block content %}
     <ul class="breadcrumb">
         <li><a href="./index.html">Report</a> <span class="divider">/</span></li>
-        <li class="active">{{ case.class }}</li>
+        {{ macros.breadcrumb(case.class) }}
     </ul>
     <div class="progress">
         <div class="bar bar-success" style="width: 70%;" title="Success: 2/3"></div>

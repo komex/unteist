@@ -43,6 +43,7 @@ class TwigReport implements EventSubscriberInterface
     {
         $loader = new \Twig_Loader_Filesystem(__DIR__ . DIRECTORY_SEPARATOR . 'Templates');
         $this->twig = new \Twig_Environment($loader);
+        $this->twig->addFunction(new \Twig_SimpleFunction('explode', 'explode'));
         $this->fs = new Filesystem();
         if (!$this->fs->exists($report_dir)) {
             $this->fs->mkdir($report_dir);
