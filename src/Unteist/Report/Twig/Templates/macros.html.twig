@@ -1,6 +1,6 @@
 {% macro depends(methods) %}
     {% for method in methods %}
-        <a href="#{{ method }}">{{ method }}</a>{% if not loop.last %},{% endif %}
+        <a href="#" data-id="{{ method }}" class="depends">{{ method }}</a>{% if not loop.last %},{% endif %}
     {% else %}
         &minus;
     {% endfor %}
@@ -14,4 +14,18 @@
             <li><a href="javascript:">{{ element }}</a> <span class="divider">/</span></li>
         {% endif %}
     {% endfor %}
+{% endmacro %}
+
+{% macro test_style(test) %}
+    {% spaceless %}
+        {% if test.isSuccess() %}
+            success
+        {% elseif test.isFailed() or test.hasError() %}
+            error
+        {% elseif test.isIncomplete() %}
+            info
+        {% else %}
+            warning
+        {% endif %}
+    {% endspaceless %}
 {% endmacro %}

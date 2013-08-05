@@ -102,6 +102,8 @@ class TestCaseEvent extends Event
             'success' => 0,
             'skipped' => 0,
             'fail' => 0,
+            'error' => 0,
+            'incomplete' => 0,
         ];
         foreach ($this->test_events as $event) {
             $this->cache['asserts'] += $event->getAsserts();
@@ -116,6 +118,11 @@ class TestCaseEvent extends Event
                 case TestMeta::TEST_FAILED:
                     $this->cache['fail']++;
                     break;
+                case TestMeta::TEST_ERROR:
+                    $this->cache['error']++;
+                    break;
+                case TestMeta::TEST_INCOMPLETE:
+                    $this->cache['incomplete']++;
             }
         }
     }
@@ -148,15 +155,10 @@ class TestCaseEvent extends Event
         }
 
         $type = strtolower($type);
-        if (in_array($type, ['success', 'skipped', 'fail'])) {
+        if (in_array($type, ['success', 'skipped', 'fail', 'error', 'incomplete'])) {
             return $this->cache[$type];
         } else {
             return count($this->test_events);
         }
-    }
-
-    public function getTestPercent($type)
-    {
-        return ($this->getTestsCount($type) / $this->getTestsCount()) * 100;
     }
 }
