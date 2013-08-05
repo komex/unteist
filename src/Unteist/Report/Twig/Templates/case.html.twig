@@ -9,13 +9,30 @@
         <li><a href="./index.html">Report</a> <span class="divider">/</span></li>
         {{ macros.breadcrumb(case.class) }}
     </ul>
+    <div class="row-fluid">
+        <div class="span3">
+            <span class="label label-success">Success</span>: <b>{{ case.getTestsCount('success') }}</b>
+        </div>
+        <div class="span3">
+            <span class="label label-warning">Skipped</span>: <b>{{ case.getTestsCount('skipped') }}</b>
+        </div>
+        <div class="span3">
+            <span class="label label-important">Failed</span>:
+            <b>{{ case.getTestsCount('fail') }}</b> + <b>{{ case.getTestsCount('error') }}</b>
+        </div>
+        <div class="span3">
+            <span class="label label-info">Incomplete</span>: <b>{{ case.getTestsCount('incomplete') }}</b>
+        </div>
+    </div>
     <div class="progress">
-        <div class="bar bar-success" style="width: {{ case.getTestPercent('success') }}%;"
+        <div class="bar bar-success" style="width: {{ testPercent(case, 'success') }}%;"
              title="Success: {{ case.getTestsCount('success') }}/{{ case.getTestsCount() }}"></div>
-        <div class="bar bar-warning" style="width: {{ case.getTestPercent('skipped') }}%;"
+        <div class="bar bar-warning" style="width: {{ testPercent(case, 'skipped') }}%;"
              title="Skipped: {{ case.getTestsCount('skipped') }}/{{ case.getTestsCount() }}"></div>
-        <div class="bar bar-danger" style="width: {{ case.getTestPercent('fail') }}%;"
-             title="Failed: {{ case.getTestsCount('fail') }}/{{ case.getTestsCount() }}"></div>
+        <div class="bar bar-danger" style="width: {{ testPercent(case, 'fail') + testPercent(case, 'error') }}%;"
+             title="Failed: {{ case.getTestsCount('fail') + case.getTestsCount('error') }}/{{ case.getTestsCount() }}"></div>
+        <div class="bar bar-info" style="width: {{ testPercent(case, 'incomplete') }}%;"
+             title="Incomplete: {{ case.getTestsCount('incomplete') }}/{{ case.getTestsCount() }}"></div>
     </div>
     <table class="table table-bordered">
         <thead>
@@ -28,7 +45,7 @@
         </thead>
         <tbody>
         {% for test in case.getTestEvents() %}
-            <tr class="{% if test.isSuccess() %}success{% elseif test.isFailed() %}error{% else %}warning{% endif %}">
+            <tr class="{{ macros.test_style(test) }}">
                 <td>{{ test.method }}</td>
                 <td>{{ test.asserts }}</td>
                 <td>{{ test.time|number_format(4) }} sec.</td>

@@ -233,4 +233,24 @@ class TestEvent extends Event
     {
         return $this->status == TestMeta::TEST_FAILED;
     }
+
+    /**
+     * Is test incomplete?
+     *
+     * @return bool
+     */
+    public function isIncomplete()
+    {
+        return $this->status == TestMeta::TEST_INCOMPLETE;
+    }
+
+    /**
+     * Has test an error?
+     *
+     * @return bool
+     */
+    public function hasError()
+    {
+        return $this->status == TestMeta::TEST_ERROR;
+    }
 }

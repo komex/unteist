@@ -15,3 +15,17 @@
         {% endif %}
     {% endfor %}
 {% endmacro %}
+
+{% macro test_style(test) %}
+    {% spaceless %}
+        {% if test.isSuccess() %}
+            success
+        {% elseif test.isFailed() or test.hasError() %}
+            error
+        {% elseif test.isIncomplete() %}
+            info
+        {% else %}
+            warning
+        {% endif %}
+    {% endspaceless %}
+{% endmacro %}
