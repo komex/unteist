@@ -20,9 +20,7 @@ use Unteist\Exception\SkipTestException;
 use Unteist\Filter\MethodsFilterInterface;
 use Unteist\Meta\TestMeta;
 use Unteist\Strategy\Context;
-use Unteist\Strategy\IncompleteTestStrategy;
 use Unteist\Strategy\SkipTestStrategy;
-use Unteist\Strategy\TestFailStrategy;
 use Unteist\TestCase;
 
 /**
@@ -290,62 +288,22 @@ class Runner
                 }
             }
         } catch (SkipTestException $e) {
-            $this->logger->debug(
-                'The test was skipped.',
-                [
-                    'pid' => getmypid(),
-                    'test' => $test->getMethod(),
-                    'exception' => get_class($e),
-                    'message' => $e->getMessage(),
-                ]
-            );
             $event = new TestEvent($test->getMethod(), $this->test_case_event);
-            $event->setException($e);
             // Hack for reset execution time for skipped tests.
             $this->started = microtime(true);
-            $this->finish($test, $event, TestMeta::TEST_SKIPPED, false);
+            $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e, false);
 
             return $this->context->onSkip($e);
         } catch (TestFailException $e) {
-            $this->logger->debug(
-                'Assert fail.',
-                [
-                    'pid' => getmypid(),
-                    'test' => $test->getMethod(),
-                    'exception' => get_class($e),
-                    'message' => $e->getMessage(),
-                ]
-            );
-            $event->setException($e);
-            $this->finish($test, $event, TestMeta::TEST_FAILED);
+            $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
 
             return $this->context->onFailure($e);
         } catch (IncompleteTestException $e) {
-            $this->logger->debug(
-                'Test incomplete.',
-                [
-                    'pid' => getmypid(),
-                    'test' => $test->getMethod(),
-                    'exception' => get_class($e),
-                    'message' => $e->getMessage(),
-                ]
-            );
-            $event->setException($e);
-            $this->finish($test, $event, TestMeta::TEST_INCOMPLETE);
+            $this->finish($test, $event, TestMeta::TEST_INCOMPLETE, $e);
 
             return $this->context->onIncomplete($e);
         } catch (\Exception $e) {
-            $this->logger->critical(
-                'Unexpected exception.',
-                [
-                    'pid' => getmypid(),
-                    'test' => $test->getMethod(),
-                    'exception' => get_class($e),
-                    'message' => $e->getMessage(),
-                ]
-            );
-            $event->setException($e);
-            $this->finish($test, $event, TestMeta::TEST_ERROR);
+            $this->finish($test, $event, TestMeta::TEST_ERROR, $e);
 
             return $this->context->onError($e);
         }
@@ -437,31 +395,46 @@ class Runner
      * @param TestMeta $test Meta description of test
      * @param TestEvent $event Test event
      * @param int $status Test status
+     * @param \Exception $e
      * @param bool $send_event Send After test event.
      */
-    protected function finish(TestMeta $test, TestEvent $event, $status, $send_event = true)
+    protected function finish(TestMeta $test, TestEvent $event, $status, \Exception $e = null, $send_event = true)
     {
         $test->setStatus($status);
         $event->setStatus($status);
         $event->setDepends($test->getDependencies());
         $event->setTime(microtime(true) - $this->started);
         $event->setAsserts(Assert::getAssertsCount() - $this->asserts);
+        if ($status === TestMeta::TEST_DONE) {
+            $context = [];
+        } else {
+            $event->setException($e);
+            $context = [
+                'pid' => getmypid(),
+                'test' => $test->getMethod(),
+                'exception' => get_class($e),
+                'message' => $e->getMessage(),
+            ];
+        }
         switch ($status) {
             case TestMeta::TEST_DONE:
                 $this->dispatcher->dispatch(EventStorage::EV_TEST_SUCCESS, $event);
                 break;
             case TestMeta::TEST_SKIPPED:
+                $this->logger->debug('The test was skipped.', $context);
                 $this->dispatcher->dispatch(EventStorage::EV_TEST_SKIPPED, $event);
                 break;
             case TestMeta::TEST_FAILED:
+                $this->logger->debug('Assert fail.', $context);
                 $this->dispatcher->dispatch(EventStorage::EV_TEST_FAIL, $event);
                 break;
-            case TestMeta::TEST_ERROR:
-                $this->dispatcher->dispatch(EventStorage::EV_TEST_ERROR, $event);
-                break;
             case TestMeta::TEST_INCOMPLETE:
+                $this->logger->debug('Test incomplete.', $context);
                 $this->dispatcher->dispatch(EventStorage::EV_TEST_INCOMPLETE, $event);
                 break;
+            default:
+                $this->logger->critical('Unexpected exception.', $context);
+                $this->dispatcher->dispatch(EventStorage::EV_TEST_ERROR, $event);
         }
         if ($send_event) {
             $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
