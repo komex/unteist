@@ -29,15 +29,7 @@
         <tbody>
         {% for test in case.getTestEvents() %}
             <tr class="{% if test.isSuccess() %}success{% elseif test.isFailed() %}error{% else %}warning{% endif %}">
-                <td>
-                    {% if test.isSkipped() %}
-                        {{ test.method }}
-                    {% else %}
-                        <a id="{{ test.method }}" href="{{ case.class|getPathByNamespace }}/{{ test.method }}.html">
-                            {{ test.method }}
-                        </a>
-                    {% endif %}
-                </td>
+                <td>{{ test.method }}</td>
                 <td>{{ test.asserts }}</td>
                 <td>{{ test.time|number_format(4) }} sec.</td>
                 <td>{{ macros.depends(test.depends) }}</td>

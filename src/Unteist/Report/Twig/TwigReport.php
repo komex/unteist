@@ -11,7 +11,6 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
-use Unteist\Event\TestEvent;
 
 /**
  * Class TwigReport
@@ -97,11 +96,7 @@ class TwigReport implements EventSubscriberInterface
      */
     public static function getSubscribedEvents()
     {
-        return [
-            EventStorage::EV_BEFORE_CASE => 'onBeforeTestCase',
-            EventStorage::EV_AFTER_TEST => 'onAfterTest',
-            EventStorage::EV_AFTER_CASE => 'onAfterTestCase',
-        ];
+        return [EventStorage::EV_AFTER_CASE => 'onAfterTestCase'];
     }
 
     /**
@@ -123,17 +118,6 @@ class TwigReport implements EventSubscriberInterface
     }
 
     /**
-     * Create directory before TestCase start.
-     *
-     * @param TestCaseEvent $event
-     */
-    public function onBeforeTestCase(TestCaseEvent $event)
-    {
-        $path = $this->getPathByNamespace($event->getClass(), true);
-        $this->fs->mkdir($path);
-    }
-
-    /**
      * Generate TestCase report.
      *
      * @param TestCaseEvent $event TestCase information
@@ -142,24 +126,7 @@ class TwigReport implements EventSubscriberInterface
     {
         $content = $this->twig->render('case.html.twig', ['case' => $event, 'base_dir' => $this->output_dir]);
         $path = $this->getPathByNamespace($event->getClass(), true);
+        $this->fs->mkdir($path);
         file_put_contents($path . DIRECTORY_SEPARATOR . 'index.html', $content);
-    }
-
-    /**
-     * Generate Test report.
-     *
-     * @param TestEvent $event Test information
-     */
-    public function onAfterTest(TestEvent $event)
-    {
-        $content = $this->twig->render('test.html.twig', ['test' => $event, 'base_dir' => $this->output_dir]);
-        $class = $event->getTestCaseEvent()->getClass();
-        $path = $this->getPathByNamespace($class, true);
-        $data_set = $event->getDataSet();
-        if (empty($data_set)) {
-            file_put_contents($path . DIRECTORY_SEPARATOR . $event->getMethod() . '.html', $content);
-        } else {
-            //@todo: Доделать отчеты с dataProvider
-        }
     }
 }
