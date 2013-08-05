@@ -1,0 +1,56 @@
+{% extends "layout.html.twig" %}
+
+{% block title %}Report &minus; {{ parent() }}{% endblock %}
+
+{% import "macros.html.twig" as macros %}
+
+{% block content %}
+    <ul class="breadcrumb">
+        <li class="active">Report</li>
+    </ul>
+    <div class="row-fluid">
+        <div class="span3">
+            <span class="label label-success">Success</span>: <b>1</b>
+        </div>
+        <div class="span3">
+            <span class="label label-warning">Skipped</span>: <b>1</b>
+        </div>
+        <div class="span3">
+            <span class="label label-important">Failed</span>:
+            <b>1</b> + <b>1</b>
+        </div>
+        <div class="span3">
+            <span class="label label-info">Incomplete</span>: <b>1</b>
+        </div>
+    </div>
+    <div class="progress">
+        <div class="bar bar-success" style="width: 10%;"
+             title="Success: 1/1"></div>
+        <div class="bar bar-warning" style="width: 10%;"
+             title="Skipped: 1/1"></div>
+        <div class="bar bar-danger" style="width: 10%;"
+             title="Failed: 1/1"></div>
+        <div class="bar bar-info" style="width: 10%;"
+             title="Incomplete: 1/1"></div>
+    </div>
+    <table class="table table-bordered">
+        <thead>
+        <tr>
+            <th>TestCase</th>
+            <th>Tests</th>
+            <th>Asserts</th>
+            <th>Time</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for case in suite %}
+            <tr>
+                <td><a href="{{ case.class|getPathByNamespace }}/index.html">{{ case.class }}</a></td>
+                <td>{{ macros.progress(case) }}</td>
+                <td>{{ case.asserts }}</td>
+                <td>{{ case.time|number_format(4) }} sec.</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

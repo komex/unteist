@@ -162,7 +162,6 @@ class TestEvent extends Event
     public function setAsserts($asserts)
     {
         $this->asserts = $asserts;
-        $this->test_case_event->resetCache();
     }
 
     /**
@@ -183,7 +182,6 @@ class TestEvent extends Event
     public function setTime($time)
     {
         $this->time = floatval($time);
-        $this->test_case_event->resetCache();
     }
 
     /**

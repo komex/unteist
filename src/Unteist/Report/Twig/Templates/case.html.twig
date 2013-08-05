@@ -41,16 +41,7 @@
             <span class="label label-info">Incomplete</span>: <b>{{ case.getTestsCount('incomplete') }}</b>
         </div>
     </div>
-    <div class="progress">
-        <div class="bar bar-success" style="width: {{ testPercent(case, 'success') }}%;"
-             title="Success: {{ case.getTestsCount('success') }}/{{ case.getTestsCount() }}"></div>
-        <div class="bar bar-warning" style="width: {{ testPercent(case, 'skipped') }}%;"
-             title="Skipped: {{ case.getTestsCount('skipped') }}/{{ case.getTestsCount() }}"></div>
-        <div class="bar bar-danger" style="width: {{ testPercent(case, 'fail') + testPercent(case, 'error') }}%;"
-             title="Failed: {{ case.getTestsCount('fail') + case.getTestsCount('error') }}/{{ case.getTestsCount() }}"></div>
-        <div class="bar bar-info" style="width: {{ testPercent(case, 'incomplete') }}%;"
-             title="Incomplete: {{ case.getTestsCount('incomplete') }}/{{ case.getTestsCount() }}"></div>
-    </div>
+    {{ macros.progress(case) }}
     <table class="table table-bordered">
         <thead>
         <tr>

@@ -11,6 +11,8 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
+use Unteist\Report\Statistics\EventStatistics;
+use Unteist\Report\Statistics\StatisticsProcessor;
 
 /**
  * Class TwigReport
@@ -54,6 +56,77 @@ class TwigReport implements EventSubscriberInterface
     }
 
     /**
+     * Returns an array of event names this subscriber wants to listen to.
+     *
+     * The array keys are event names and the value can be:
+     *
+     *  * The method name to call (priority defaults to 0)
+     *  * An array composed of the method name to call and the priority
+     *  * An array of arrays composed of the method names to call and respective
+     *    priorities, or 0 if unset
+     *
+     * For instance:
+     *
+     *  * array('eventName' => 'methodName')
+     *  * array('eventName' => array('methodName', $priority))
+     *  * array('eventName' => array(array('methodName1', $priority), array('methodName2'))
+     *
+     * @return array The event names to listen to
+     *
+     * @api
+     */
+    public static function getSubscribedEvents()
+    {
+        return [EventStorage::EV_AFTER_CASE => 'onAfterTestCase'];
+    }
+
+    /**
+     * Get percenf of specified status type.
+     *
+     * @param StatisticsProcessor $statistics
+     * @param string $type Status type
+     *
+     * @return float
+     */
+    public function getTestPercent(StatisticsProcessor $statistics, $type)
+    {
+        return ($statistics->getTestsCount($type) / $statistics->getTestsCount()) * 100;
+    }
+
+    /**
+     * Generate TestCase report.
+     *
+     * @param TestCaseEvent $event TestCase information
+     */
+    public function onAfterTestCase(TestCaseEvent $event)
+    {
+        $statistics = new EventStatistics();
+        $statistics->addTestCaseEvents($event);
+        $content = $this->twig->render('case.html.twig', ['case' => $statistics, 'base_dir' => $this->output_dir]);
+        $path = $this->getPathByNamespace($event->getClass(), true);
+        $this->fs->mkdir($path);
+        file_put_contents($path . DIRECTORY_SEPARATOR . 'index.html', $content);
+    }
+
+    /**
+     * Get path by class name (with namespace).
+     *
+     * @param string $namespace
+     * @param bool $absolute
+     *
+     * @return string
+     */
+    public function getPathByNamespace($namespace, $absolute = false)
+    {
+        $path = str_replace('\\', DIRECTORY_SEPARATOR, $namespace);
+        if ($absolute) {
+            $path = $this->output_dir . DIRECTORY_SEPARATOR . $path;
+        }
+
+        return $path;
+    }
+
+    /**
      * Compile Bootstrap for reports.
      */
     private function prepareReport()
@@ -89,74 +162,5 @@ class TwigReport implements EventSubscriberInterface
         } else {
             return $path;
         }
-    }
-
-    /**
-     * Returns an array of event names this subscriber wants to listen to.
-     *
-     * The array keys are event names and the value can be:
-     *
-     *  * The method name to call (priority defaults to 0)
-     *  * An array composed of the method name to call and the priority
-     *  * An array of arrays composed of the method names to call and respective
-     *    priorities, or 0 if unset
-     *
-     * For instance:
-     *
-     *  * array('eventName' => 'methodName')
-     *  * array('eventName' => array('methodName', $priority))
-     *  * array('eventName' => array(array('methodName1', $priority), array('methodName2'))
-     *
-     * @return array The event names to listen to
-     *
-     * @api
-     */
-    public static function getSubscribedEvents()
-    {
-        return [EventStorage::EV_AFTER_CASE => 'onAfterTestCase'];
-    }
-
-    /**
-     * Get percenf of specified status type.
-     *
-     * @param TestCaseEvent $case
-     * @param string $type Status type
-     *
-     * @return float
-     */
-    public function getTestPercent(TestCaseEvent $case, $type)
-    {
-        return ($case->getTestsCount($type) / $case->getTestsCount()) * 100;
-    }
-
-    /**
-     * Generate TestCase report.
-     *
-     * @param TestCaseEvent $event TestCase information
-     */
-    public function onAfterTestCase(TestCaseEvent $event)
-    {
-        $content = $this->twig->render('case.html.twig', ['case' => $event, 'base_dir' => $this->output_dir]);
-        $path = $this->getPathByNamespace($event->getClass(), true);
-        $this->fs->mkdir($path);
-        file_put_contents($path . DIRECTORY_SEPARATOR . 'index.html', $content);
-    }
-
-    /**
-     * Get path by class name (with namespace).
-     *
-     * @param string $namespace
-     * @param bool $absolute
-     *
-     * @return string
-     */
-    public function getPathByNamespace($namespace, $absolute = false)
-    {
-        $path = str_replace('\\', DIRECTORY_SEPARATOR, $namespace);
-        if ($absolute) {
-            $path = $this->output_dir . DIRECTORY_SEPARATOR . $path;
-        }
-
-        return $path;
     }
 }
