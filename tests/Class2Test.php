@@ -4,7 +4,7 @@ use Unteist\Assert\Assert;
 /**
  * This file is a part of Unteist project.
  *
- * (c) Andrey Kolchenko <komexx@gmail.com>
+ * (c) Andrey Kolchenko <andrey@kolchenko.me>
  */
 
 class Class2Test extends \Unteist\TestCase

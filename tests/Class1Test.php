@@ -8,10 +8,14 @@ use Unteist\TestCase;
 /**
  * This file is a part of Unteist project.
  *
- * (c) Andrey Kolchenko <komexx@gmail.com>
+ * (c) Andrey Kolchenko <andrey@kolchenko.me>
  */
 class Class1Test extends TestCase
 {
+    public function testIncomplete()
+    {
+        $this->markAsIncomplete('incomplete');
+    }
 
     /**
      * @depends testOK
@@ -25,6 +29,6 @@ class Class1Test extends TestCase
 
     public function testOK()
     {
-        Assert::fail('ff');
+        $this->markAsFail('ff');
     }
 }
