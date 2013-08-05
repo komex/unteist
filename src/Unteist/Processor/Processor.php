@@ -65,10 +65,6 @@ class Processor
     /**
      * @var int
      */
-    protected $strategy = Context::STRATEGY_IGNORE_FAILS;
-    /**
-     * @var int
-     */
     protected $exit_code = 0;
     /**
      * @var Connector
@@ -78,37 +74,23 @@ class Processor
      * @var array
      */
     protected $globals = [];
+    /**
+     * @var Context
+     */
+    protected $context;
 
     /**
      * @param EventDispatcherInterface $dispatcher
      * @param LoggerInterface $logger
+     * @param Context $context
      */
-    public function __construct(EventDispatcherInterface $dispatcher, LoggerInterface $logger)
+    public function __construct(EventDispatcherInterface $dispatcher, LoggerInterface $logger, Context $context)
     {
         $this->dispatcher = $dispatcher;
         $this->logger = $logger;
         $this->global_storage = new \ArrayObject();
         $this->connector = new Connector($this->dispatcher);
-    }
-
-    /**
-     * Get current strategy
-     *
-     * @return int
-     */
-    public function getStrategy()
-    {
-        return $this->strategy;
-    }
-
-    /**
-     * Set default strategy.
-     *
-     * @param int $strategy
-     */
-    public function setStrategy($strategy)
-    {
-        $this->strategy = intval($strategy, 10);
+        $this->context = $context;
     }
 
     /**
@@ -300,8 +282,7 @@ class Processor
                 }
             }
             $class->setGlobalStorage($this->global_storage);
-            $runner = new Runner($this->dispatcher, $this->logger);
-            $runner->setStrategy($this->strategy);
+            $runner = new Runner($this->dispatcher, $this->logger, $this->context);
             $runner->setFilters($this->methods_filters);
             $runner->precondition($class);
 

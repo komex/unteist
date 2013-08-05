@@ -7,7 +7,7 @@
 
 namespace Unteist\Assert\Matcher;
 
-use Unteist\Exception\AssertFailException;
+use Unteist\Exception\TestFailException;
 
 /**
  * Class EveryItem
@@ -69,7 +69,7 @@ class EveryItem extends AbstractMatcher
      * @param mixed $actual
      * @param string $message
      *
-     * @throws AssertFailException
+     * @throws TestFailException
      */
     protected function fail($actual, $message)
     {

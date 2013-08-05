@@ -2,7 +2,7 @@
 /**
  * This file is a part of Unteist project.
  *
- * (c) Andrey Kolchenko <komexx@gmail.com>
+ * (c) Andrey Kolchenko <andrey@kolchenko.me>
  */
 
 namespace Unteist\Assert\Matcher;
@@ -12,7 +12,7 @@ namespace Unteist\Assert\Matcher;
  * Class StringEndsWith
  *
  * @package Unteist\Assert\Matcher
- * @author Andrey Kolchenko <komexx@gmail.com>
+ * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
 class StringEndsWith extends AbstractMatcher
 {

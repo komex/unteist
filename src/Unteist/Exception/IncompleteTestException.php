@@ -8,12 +8,12 @@
 namespace Unteist\Exception;
 
 /**
- * Class AssertFailException
+ * Class IncompleteTestException
  *
  * @package Unteist\Exception
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class AssertFailException extends \RuntimeException
+class IncompleteTestException extends \RuntimeException
 {
 
 }

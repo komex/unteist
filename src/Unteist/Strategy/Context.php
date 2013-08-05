@@ -7,7 +7,8 @@
 
 namespace Unteist\Strategy;
 
-use Unteist\Exception\AssertFailException;
+use Unteist\Exception\TestFailException;
+use Unteist\Exception\IncompleteTestException;
 use Unteist\Exception\SkipTestException;
 
 /**
@@ -19,69 +20,148 @@ use Unteist\Exception\SkipTestException;
 class Context
 {
     /**
-     * Ignore test fails and go to next one.
+     * @var StrategyInterface
      */
-    const STRATEGY_IGNORE_FAILS = 0;
+    protected $error_strategy;
     /**
-     * Throw Exception on test fail.
+     * @var StrategyInterface
      */
-    const STRATEGY_STOP_ON_FAILS = 1;
+    protected $failure_strategy;
     /**
-     * Mark test as skipped on fail.
+     * @var StrategyInterface
      */
-    const STRATEGY_SKIP_FAILS = 2;
+    protected $incomplete_strategy;
     /**
-     * @var IgnoreFailsStrategy
+     * @var StrategyInterface
      */
-    protected $strategy;
+    protected $skipped_strategy;
+    /**
+     * @var StrategyInterface[]
+     */
+    protected $default_strategies;
 
     /**
-     * Default context.
+     * Setup default strategy.
      */
-    public function __construct()
-    {
-        $this->setStrategy(self::STRATEGY_STOP_ON_FAILS);
+    public function __construct(
+        StrategyInterface $error,
+        StrategyInterface $failure,
+        StrategyInterface $incomplete,
+        StrategyInterface $skip
+    ) {
+        $this->default_strategies = [
+            'error' => $error,
+            'failure' => $failure,
+            'incomplete' => $incomplete,
+            'skip' => $skip,
+        ];
+        $this->restore();
     }
 
     /**
-     * Set current strategy.
-     *
-     * @param int $strategy
+     * Restore default strategy.
      */
-    public function setStrategy($strategy)
+    public function restore()
     {
-        switch ($strategy) {
-            case self::STRATEGY_STOP_ON_FAILS:
-                $this->strategy = new StopOnFailsStratery();
-                break;
-            case self::STRATEGY_SKIP_FAILS:
-                $this->strategy = new SkipFailsStratery();
-                break;
-            default:
-                $this->strategy = new IgnoreFailsStrategy();
-        }
+        $this->setErrorStrategy($this->default_strategies['error']);
+        $this->setFailureStrategy($this->default_strategies['failure']);
+        $this->setIncompleteStrategy($this->default_strategies['incomplete']);
+        $this->setSkippedStrategy($this->default_strategies['skip']);
     }
 
     /**
-     * Call this method on test fail.
+     * Choose a strategy for the situation in error.
      *
-     * @param AssertFailException $exception
-     *
-     * @throws AssertFailException
-     * @throws SkipTestException
+     * @param StrategyInterface $error_strategy
      */
-    public function assertFail(AssertFailException $exception)
+    public function setErrorStrategy(StrategyInterface $error_strategy)
     {
-        $this->strategy->assertFail($exception);
+        $this->error_strategy = $error_strategy;
     }
 
     /**
-     * Skip current test.
+     * Choose a strategy for the situation in failure test.
+     *
+     * @param StrategyInterface $failure_strategy
+     */
+    public function setFailureStrategy(StrategyInterface $failure_strategy)
+    {
+        $this->failure_strategy = $failure_strategy;
+    }
+
+    /**
+     * Choose a strategy for the situation in incomplete test.
+     *
+     * @param StrategyInterface $incomplete_strategy
+     */
+    public function setIncompleteStrategy(StrategyInterface $incomplete_strategy)
+    {
+        $this->incomplete_strategy = $incomplete_strategy;
+    }
+
+    /**
+     * Choose a strategy for the situation in skiped test.
+     *
+     * @param StrategyInterface $skipped_strategy
+     */
+    public function setSkippedStrategy(StrategyInterface $skipped_strategy)
+    {
+        $this->skipped_strategy = $skipped_strategy;
+    }
+
+    /**
+     * Generate exception on unexpected behaviour.
+     *
+     * @param \Exception $exception
+     *
+     * @return int Status code
+     */
+    public function onError(\Exception $exception)
+    {
+        $this->error_strategy->generateException($exception);
+
+        return 1;
+    }
+
+    /**
+     * Generate exception on failure test.
+     *
+     * @param TestFailException $exception
+     *
+     * @return int Status code
+     */
+    public function onFailure(TestFailException $exception)
+    {
+        $this->failure_strategy->generateException($exception);
+
+        return 1;
+    }
+
+    /**
+     * Generate exception on incomplete test.
+     *
+     * @param IncompleteTestException $exception
+     *
+     * @return int Status code
+     */
+    public function onIncomplete(IncompleteTestException $exception)
+    {
+        $this->incomplete_strategy->generateException($exception);
+
+        return 1;
+    }
+
+    /**
+     * Generate exception on skip test.
      *
      * @param SkipTestException $exception
+     *
+     * @return int Status code
      */
-    public function skipTest(SkipTestException $exception)
+    public function onSkip(SkipTestException $exception)
     {
-        $this->strategy->skipTest($exception);
+        $this->incomplete_strategy->generateException($exception);
+
+        return 1;
     }
 }
