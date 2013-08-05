@@ -197,11 +197,31 @@ class TestEvent extends Event
     }
 
     /**
+     * Set exception message to event.
+     *
      * @param \Exception $exception
      */
     public function setException(\Exception $exception)
     {
-        $this->exception = $exception->getMessage();
+        $this->exception = $this->getMessage($exception);
+    }
+
+    /**
+     * Get exception message.
+     *
+     * @param \Exception $exception
+     *
+     * @return string
+     */
+    private function getMessage(\Exception $exception)
+    {
+        $message = $exception->getMessage();
+        $previous = $exception->getPrevious();
+        if ($previous) {
+            $message .= ': ' . $this->getMessage($previous);
+        }
+
+        return $message;
     }
 
     /**

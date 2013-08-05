@@ -21,11 +21,25 @@
         "sebastian/diff": "1.0.*",
         "twig/twig": "~1.13.1",
         "twitter/bootstrap": "2.3.2",
-        "leafo/lessphp": "~0.3.9"
+        "leafo/lessphp": "~0.3.9",
+        "jquery/jquery": "2.0.3"
     },
     "autoload": {
         "psr-0": {
             "Unteist\\": "src"
         }
-    }
+    },
+    "repositories": [
+        {
+            "type": "package",
+            "package": {
+                "name": "jquery/jquery",
+                "version": "2.0.3",
+                "dist": {
+                    "url": "http://code.jquery.com/jquery-2.0.3.min.js",
+                    "type": "file"
+                }
+            }
+        }
+    ]
 }

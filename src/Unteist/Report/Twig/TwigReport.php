@@ -50,29 +50,45 @@ class TwigReport implements EventSubscriberInterface
             $this->fs->mkdir($report_dir);
         }
         $this->output_dir = realpath($report_dir);
-        $this->compileBootstrap();
+        $this->prepareReport();
     }
 
     /**
      * Compile Bootstrap for reports.
      */
-    protected function compileBootstrap()
+    private function prepareReport()
     {
-        $css_dir = $this->output_dir . DIRECTORY_SEPARATOR . 'css';
-        $bootstrap_dir = realpath(
-            join(
-                DIRECTORY_SEPARATOR,
-                [__DIR__, '..', '..', '..', '..', 'vendor', 'twitter', 'bootstrap', 'less']
-            )
-        );
-        $this->fs->mkdir($css_dir);
+        $css_dir = $this->getPath([$this->output_dir, 'css']);
+        $js_dir = $this->getPath([$this->output_dir, 'js']);
+        $vendor_dir = $this->getPath([__DIR__, '..', '..', '..', '..', 'vendor']);
+        $bootstrap_dir = $this->getPath([$vendor_dir, 'twitter', 'bootstrap']);
+        $this->fs->mkdir([$css_dir, $js_dir]);
         $less = new \lessc();
         $less->setFormatter('compressed');
-        $less->setImportDir($bootstrap_dir);
+        $less->setImportDir($bootstrap_dir . DIRECTORY_SEPARATOR . 'less');
         $less->compileFile(
             __DIR__ . DIRECTORY_SEPARATOR . 'bootstrap.less',
             $css_dir . DIRECTORY_SEPARATOR . 'bootstrap.min.css'
         );
+        $this->fs->copy(
+            $this->getPath([$vendor_dir, 'jquery', 'jquery', 'jquery-2.0.3.min.js']),
+            $js_dir . DIRECTORY_SEPARATOR . 'jquery.min.js'
+        );
+    }
+
+    /**
+     * @param array $parts
+     *
+     * @return string
+     */
+    private function getPath(array $parts)
+    {
+        $path = join(DIRECTORY_SEPARATOR, $parts);
+        if (file_exists($path)) {
+            return realpath($path);
+        } else {
+            return $path;
+        }
     }
 
     /**

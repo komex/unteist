@@ -4,6 +4,23 @@
 
 {% block title %}{{ case.class }} &minus; {{ parent() }}{% endblock %}
 
+{% block javascript %}
+    <script type="text/javascript">
+        <!--
+        $(document).ready(function () {
+            $('tr.additional-info').hide();
+            $('a.test-method').click(function () {
+                $(this).parents('tr').next('tr.additional-info:first').toggle();
+                return false;
+            });
+            $('a.depends').click(function () {
+                return false;
+            });
+        });
+        -->
+    </script>
+{% endblock %}
+
 {% block content %}
     <ul class="breadcrumb">
         <li><a href="./index.html">Report</a> <span class="divider">/</span></li>
@@ -46,11 +63,22 @@
         <tbody>
         {% for test in case.getTestEvents() %}
             <tr class="{{ macros.test_style(test) }}">
-                <td>{{ test.method }}</td>
+                <td>
+                    {% if test.isSuccess() %}
+                        {{ test.method }}
+                    {% else %}
+                        <a href="#" class="test-method">{{ test.method }}</a>
+                    {% endif %}
+                </td>
                 <td>{{ test.asserts }}</td>
                 <td>{{ test.time|number_format(4) }} sec.</td>
                 <td>{{ macros.depends(test.depends) }}</td>
             </tr>
+            {% if not test.isSuccess() %}
+                <tr class="additional-info {{ macros.test_style(test) }}">
+                    <td colspan="4"><i>{{ test.exception }}</i></td>
+                </tr>
+            {% endif %}
         {% endfor %}
         </tbody>
     </table>

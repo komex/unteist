@@ -1,6 +1,6 @@
 {% macro depends(methods) %}
     {% for method in methods %}
-        <a href="#{{ method }}">{{ method }}</a>{% if not loop.last %},{% endif %}
+        <a href="#" data-id="{{ method }}" class="depends">{{ method }}</a>{% if not loop.last %},{% endif %}
     {% else %}
         &minus;
     {% endfor %}
