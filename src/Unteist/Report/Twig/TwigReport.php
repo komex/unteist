@@ -90,7 +90,7 @@ class TwigReport implements EventSubscriberInterface
      */
     public function getTestPercent(StatisticsProcessor $statistics, $type)
     {
-        return ($statistics->getTestsCount($type) / $statistics->getTestsCount()) * 100;
+        return ($statistics->getTestsCount($type) / count($statistics)) * 100;
     }
 
     /**
@@ -100,9 +100,11 @@ class TwigReport implements EventSubscriberInterface
      */
     public function onAfterTestCase(TestCaseEvent $event)
     {
-        $statistics = new EventStatistics();
-        $statistics->addTestCaseEvents($event);
-        $content = $this->twig->render('case.html.twig', ['case' => $statistics, 'base_dir' => $this->output_dir]);
+        $statistics = new StatisticsProcessor($event);
+        $content = $this->twig->render(
+            'case.html.twig',
+            ['case' => $statistics, 'class' => $event->getClass(), 'base_dir' => $this->output_dir]
+        );
         $path = $this->getPathByNamespace($event->getClass(), true);
         $this->fs->mkdir($path);
         file_put_contents($path . DIRECTORY_SEPARATOR . 'index.html', $content);

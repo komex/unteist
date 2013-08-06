@@ -2,7 +2,7 @@
 
 {% import "macros.html.twig" as macros %}
 
-{% block title %}{{ case.class }} &minus; {{ parent() }}{% endblock %}
+{% block title %}{{ class }} &minus; {{ parent() }}{% endblock %}
 
 {% block javascript %}
     <script type="text/javascript">
@@ -24,7 +24,7 @@
 {% block content %}
     <ul class="breadcrumb">
         <li><a href="./index.html">Report</a> <span class="divider">/</span></li>
-        {{ macros.breadcrumb(case.class) }}
+        {{ macros.breadcrumb(class) }}
     </ul>
     <div class="row-fluid">
         <div class="span3">
@@ -52,7 +52,7 @@
         </tr>
         </thead>
         <tbody>
-        {% for test in case.getTestEvents() %}
+        {% for test in case %}
             <tr class="{{ macros.test_style(test) }}">
                 <td>
                     {% if test.isSuccess() %}
