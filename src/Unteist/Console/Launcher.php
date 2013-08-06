@@ -78,7 +78,7 @@ class Launcher extends Command
     public function afterCase(TestCaseEvent $event)
     {
         $this->formatter->advance();
-        $this->statistics->addTestCaseEvents($event);
+        $this->statistics->addTestCaseEvent($event);
     }
 
     /**
@@ -109,10 +109,10 @@ class Launcher extends Command
         $time = (microtime(true) - $this->started);
         $this->formatter->finish(
             $time,
-            $this->statistics->getTestsCount('success'),
+            $this->statistics['success'],
             $this->tests_skipped,
             $this->tests_fail,
-            $this->statistics->getAsserts()
+            $this->statistics['asserts']
         );
     }
 

@@ -90,7 +90,9 @@ class TwigReport implements EventSubscriberInterface
      */
     public function getTestPercent(StatisticsProcessor $statistics, $type)
     {
-        return ($statistics->getTestsCount($type) / count($statistics)) * 100;
+        $count = count($statistics);
+
+        return ($count === 0 || !isset($statistics[$type])) ? 0 : (($statistics[$type] / $count) * 100);
     }
 
     /**

@@ -17,7 +17,7 @@ use Unteist\Meta\TestMeta;
  * @package Unteist\Meta
  * @author Andrey Kolchenko <komexx@gmail.com>
  */
-class StatisticsProcessor implements \Iterator, \Countable
+class StatisticsProcessor implements \Iterator, \Countable, \ArrayAccess
 {
     /**
      * @var TestEvent[]
@@ -26,11 +26,23 @@ class StatisticsProcessor implements \Iterator, \Countable
     /**
      * @var array
      */
-    private $cache;
+    private $cache = [
+        'asserts' => 0,
+        'time' => 0,
+        'success' => 0,
+        'skipped' => 0,
+        'fail' => 0,
+        'error' => 0,
+        'incomplete' => 0,
+    ];
     /**
      * @var int
      */
     private $position = 0;
+    /**
+     * @var bool
+     */
+    private $rebuild_cache = true;
 
     /**
      * @param TestCaseEvent $events
@@ -38,7 +50,7 @@ class StatisticsProcessor implements \Iterator, \Countable
     public function __construct(TestCaseEvent $events = null)
     {
         if ($events !== null) {
-            $this->addTestCaseEvents($events);
+            $this->addTestCaseEvent($events);
         }
     }
 
@@ -47,57 +59,10 @@ class StatisticsProcessor implements \Iterator, \Countable
      *
      * @param TestCaseEvent $event
      */
-    public function addTestCaseEvents(TestCaseEvent $event)
+    public function addTestCaseEvent(TestCaseEvent $event)
     {
         foreach ($event->getTestEvents() as $event) {
             array_push($this->events, $event);
-        }
-    }
-
-    /**
-     * Get total count of asserts in TestCase.
-     *
-     * @return int
-     */
-    public function getAsserts()
-    {
-        if (empty($this->cache)) {
-            $this->rebuildCache();
-        }
-
-        return $this->cache['asserts'];
-    }
-
-    /**
-     * Get execution time of TestCase.
-     *
-     * @return float
-     */
-    public function getTime()
-    {
-        if (empty($this->cache)) {
-            $this->rebuildCache();
-        }
-
-        return $this->cache['time'];
-    }
-
-    /**
-     * Get count of tests by its type name.
-     *
-     * @param string|null $type Test type
-     *
-     * @return int
-     */
-    public function getTestsCount($type = null)
-    {
-        if (empty($this->cache)) {
-            $this->rebuildCache();
-        }
-
-        $type = strtolower($type);
-        if (in_array($type, ['success', 'skipped', 'fail', 'error', 'incomplete'])) {
-            return $this->cache[$type];
         }
     }
 
@@ -178,10 +143,92 @@ class StatisticsProcessor implements \Iterator, \Countable
     }
 
     /**
+     * (PHP 5 &gt;= 5.0.0)<br/>
+     * Whether a offset exists
+     *
+     * @link http://php.net/manual/en/arrayaccess.offsetexists.php
+     *
+     * @param mixed $offset <p>
+     * An offset to check for.
+     * </p>
+     *
+     * @return boolean true on success or false on failure.
+     * </p>
+     * <p>
+     * The return value will be casted to boolean if non-boolean was returned.
+     */
+    public function offsetExists($offset)
+    {
+        return isset($this->cache[$offset]);
+    }
+
+    /**
+     * (PHP 5 &gt;= 5.0.0)<br/>
+     * Offset to retrieve
+     *
+     * @link http://php.net/manual/en/arrayaccess.offsetget.php
+     *
+     * @param mixed $offset <p>
+     * The offset to retrieve.
+     * </p>
+     *
+     * @return mixed Can return all value types.
+     */
+    public function offsetGet($offset)
+    {
+        if ($this->rebuild_cache) {
+            $this->rebuildCache();
+        }
+        $type = strtolower($offset);
+
+        return ($this->offsetExists($type) ? $this->cache[$offset] : null);
+    }
+
+    /**
+     * (PHP 5 &gt;= 5.0.0)<br/>
+     * Offset to set
+     *
+     * @link http://php.net/manual/en/arrayaccess.offsetset.php
+     *
+     * @param mixed $offset <p>
+     * The offset to assign the value to.
+     * </p>
+     * @param mixed $value <p>
+     * The value to set.
+     * </p>
+     *
+     * @throws \UnderflowException
+     * @return void
+     */
+    public function offsetSet($offset, $value)
+    {
+        throw new \UnderflowException('You can not set value to ' . __CLASS__);
+    }
+
+    /**
+     * (PHP 5 &gt;= 5.0.0)<br/>
+     * Offset to unset
+     *
+     * @link http://php.net/manual/en/arrayaccess.offsetunset.php
+     *
+     * @param mixed $offset <p>
+     * The offset to unset.
+     * </p>
+     *
+     * @throws \UnderflowException
+     * @return void
+     */
+    public function offsetUnset($offset)
+    {
+        throw new \UnderflowException('You can not unset value from ' . __CLASS__);
+    }
+
+    /**
      * Evaluate statistics.
      */
     private function rebuildCache()
     {
+        $this->rebuild_cache = false;
         $this->cache = [
             'asserts' => 0,
             'time' => 0,

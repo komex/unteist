@@ -33,13 +33,13 @@
 {% macro progress(statistics) %}
     <div class="progress">
         <div class="bar bar-success" style="width: {{ testPercent(statistics, 'success') }}%;"
-             title="Success: {{ statistics.getTestsCount('success') }}/{{ statistics|length }}"></div>
+             title="Success: {{ statistics.success }}/{{ statistics|length }}"></div>
         <div class="bar bar-warning" style="width: {{ testPercent(statistics, 'skipped') }}%;"
-             title="Skipped: {{ statistics.getTestsCount('skipped') }}/{{ statistics|length }}"></div>
+             title="Skipped: {{ statistics.skipped }}/{{ statistics|length }}"></div>
         <div class="bar bar-danger"
              style="width: {{ testPercent(statistics, 'fail') + testPercent(statistics, 'error') }}%;"
-             title="Failed: {{ statistics.getTestsCount('fail') + statistics.getTestsCount('error') }}/{{ statistics|length }}"></div>
+             title="Failed: {{ statistics.fail + statistics.error }}/{{ statistics|length }}"></div>
         <div class="bar bar-info" style="width: {{ testPercent(statistics, 'incomplete') }}%;"
-             title="Incomplete: {{ statistics.getTestsCount('incomplete') }}/{{ statistics|length }}"></div>
+             title="Incomplete: {{ statistics.incomplete }}/{{ statistics|length }}"></div>
     </div>
 {% endmacro %}

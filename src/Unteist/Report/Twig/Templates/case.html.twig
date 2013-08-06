@@ -28,17 +28,16 @@
     </ul>
     <div class="row-fluid">
         <div class="span3">
-            <span class="label label-success">Success</span>: <b>{{ case.getTestsCount('success') }}</b>
+            <span class="label label-success">Success</span>: <b>{{ case.success }}</b>
         </div>
         <div class="span3">
-            <span class="label label-warning">Skipped</span>: <b>{{ case.getTestsCount('skipped') }}</b>
+            <span class="label label-warning">Skipped</span>: <b>{{ case.skipped }}</b>
         </div>
         <div class="span3">
-            <span class="label label-important">Failed</span>:
-            <b>{{ case.getTestsCount('fail') }}</b> + <b>{{ case.getTestsCount('error') }}</b>
+            <span class="label label-important">Failed</span>: <b>{{ case.fail }}</b> + <b>{{ case.error }}</b>
         </div>
         <div class="span3">
-            <span class="label label-info">Incomplete</span>: <b>{{ case.getTestsCount('incomplete') }}</b>
+            <span class="label label-info">Incomplete</span>: <b>{{ case.incomplete }}</b>
         </div>
     </div>
     {{ macros.progress(case) }}
