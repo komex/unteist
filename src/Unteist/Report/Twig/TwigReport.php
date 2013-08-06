@@ -11,7 +11,6 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
-use Unteist\Report\Statistics\EventStatistics;
 use Unteist\Report\Statistics\StatisticsProcessor;
 
 /**
@@ -91,8 +90,15 @@ class TwigReport implements EventSubscriberInterface
     public function getTestPercent(StatisticsProcessor $statistics, $type)
     {
         $count = count($statistics);
-
-        return ($count === 0 || !isset($statistics[$type])) ? 0 : (($statistics[$type] / $count) * 100);
+        if ($count === 0 || !isset($statistics[$type])) {
+            return 0;
+        } else {
+            $stat = $statistics[$type];
+            if ($stat instanceof StatisticsProcessor) {
+                $stat = count($stat);
+            }
+            return (($stat / $count) * 100);
+        }
     }
 
     /**

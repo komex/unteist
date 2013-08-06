@@ -31,13 +31,14 @@
             <span class="label label-success">Success</span>: <b>{{ case.success }}</b>
         </div>
         <div class="span3">
-            <span class="label label-warning">Skipped</span>: <b>{{ case.skipped }}</b>
+            <span class="label label-warning">Skipped</span>: <b>{{ case.skipped|length }}</b>
         </div>
         <div class="span3">
-            <span class="label label-important">Failed</span>: <b>{{ case.fail }}</b> + <b>{{ case.error }}</b>
+            <span class="label label-important">Failed</span>:
+            <b>{{ case.fail|length }}</b> + <b>{{ case.error|length }}</b>
         </div>
         <div class="span3">
-            <span class="label label-info">Incomplete</span>: <b>{{ case.incomplete }}</b>
+            <span class="label label-info">Incomplete</span>: <b>{{ case.incomplete|length }}</b>
         </div>
     </div>
     {{ macros.progress(case) }}

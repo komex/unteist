@@ -21,7 +21,6 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Finder\Finder;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
-use Unteist\Event\TestEvent;
 use Unteist\Filter\ClassFilter;
 use Unteist\Filter\MethodsFilter;
 use Unteist\Processor\Processor;
@@ -49,14 +48,6 @@ class Launcher extends Command
      */
     protected $statistics;
     /**
-     * @var \SplDoublyLinkedList
-     */
-    protected $tests_skipped;
-    /**
-     * @var \SplDoublyLinkedList
-     */
-    protected $tests_fail;
-    /**
      * @var Formatter
      */
     protected $formatter;
@@ -82,38 +73,12 @@ class Launcher extends Command
     }
 
     /**
-     * Increase skipped tests counter
-     *
-     * @param TestEvent $event
-     */
-    public function skippedTest(TestEvent $event)
-    {
-        $this->tests_skipped->push($event);
-    }
-
-    /**
-     * Increase fail tests counter
-     *
-     * @param TestEvent $event
-     */
-    public function failTest(TestEvent $event)
-    {
-        $this->tests_fail->push($event);
-    }
-
-    /**
      * Listener on application finish.
      */
     public function finish()
     {
         $time = (microtime(true) - $this->started);
-        $this->formatter->finish(
-            $time,
-            $this->statistics['success'],
-            $this->tests_skipped,
-            $this->tests_fail,
-            $this->statistics['asserts']
-        );
+        $this->formatter->finish($time, $this->statistics);
     }
 
     /**
@@ -146,8 +111,6 @@ class Launcher extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->statistics = new StatisticsProcessor();
-        $this->tests_skipped = new \SplDoublyLinkedList();
-        $this->tests_fail = new \SplDoublyLinkedList();
         /** @var ProgressHelper $progress */
         $progress = $this->getHelperSet()->get('progress');
         $this->formatter = new Formatter($output, $progress);
@@ -227,8 +190,6 @@ class Launcher extends Command
     protected function registerListeners(EventDispatcher $dispatcher)
     {
         $dispatcher->addListener(EventStorage::EV_AFTER_CASE, [$this, 'afterCase']);
-        $dispatcher->addListener(EventStorage::EV_TEST_SKIPPED, [$this, 'skippedTest']);
-        $dispatcher->addListener(EventStorage::EV_TEST_FAIL, [$this, 'failTest']);
         $dispatcher->addListener(EventStorage::EV_APP_FINISHED, [$this, 'finish']);
     }
 }

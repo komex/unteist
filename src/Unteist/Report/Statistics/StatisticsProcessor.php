@@ -26,15 +26,7 @@ class StatisticsProcessor implements \Iterator, \Countable, \ArrayAccess
     /**
      * @var array
      */
-    private $cache = [
-        'asserts' => 0,
-        'time' => 0,
-        'success' => 0,
-        'skipped' => 0,
-        'fail' => 0,
-        'error' => 0,
-        'incomplete' => 0,
-    ];
+    private $cache;
     /**
      * @var int
      */
@@ -62,8 +54,18 @@ class StatisticsProcessor implements \Iterator, \Countable, \ArrayAccess
     public function addTestCaseEvent(TestCaseEvent $event)
     {
         foreach ($event->getTestEvents() as $event) {
-            array_push($this->events, $event);
+            $this->addTestEvent($event);
         }
+    }
+
+    /**
+     * Add test event to storage.
+     *
+     * @param TestEvent $event
+     */
+    public function addTestEvent(TestEvent $event)
+    {
+        array_push($this->events, $event);
     }
 
     /**
@@ -159,6 +161,10 @@ class StatisticsProcessor implements \Iterator, \Countable, \ArrayAccess
      */
     public function offsetExists($offset)
     {
+        if ($this->rebuild_cache) {
+            $this->buildCache();
+        }
+
         return isset($this->cache[$offset]);
     }
 
@@ -172,16 +178,11 @@ class StatisticsProcessor implements \Iterator, \Countable, \ArrayAccess
      * The offset to retrieve.
      * </p>
      *
-     * @return mixed Can return all value types.
+     * @return int|self
      */
     public function offsetGet($offset)
     {
-        if ($this->rebuild_cache) {
-            $this->rebuildCache();
-        }
-        $type = strtolower($offset);
-
-        return ($this->offsetExists($type) ? $this->cache[$offset] : null);
+        return ($this->offsetExists($offset) ? $this->cache[$offset] : null);
     }
 
     /**
@@ -226,17 +227,17 @@ class StatisticsProcessor implements \Iterator, \Countable, \ArrayAccess
     /**
      * Evaluate statistics.
      */
-    private function rebuildCache()
+    private function buildCache()
     {
         $this->rebuild_cache = false;
         $this->cache = [
             'asserts' => 0,
             'time' => 0,
             'success' => 0,
-            'skipped' => 0,
-            'fail' => 0,
-            'error' => 0,
-            'incomplete' => 0,
+            'skipped' => new self(),
+            'fail' => new self(),
+            'error' => new self(),
+            'incomplete' => new self(),
         ];
         foreach ($this->events as $event) {
             $this->cache['asserts'] += $event->getAsserts();
@@ -246,16 +247,24 @@ class StatisticsProcessor implements \Iterator, \Countable, \ArrayAccess
                     $this->cache['success']++;
                     break;
                 case TestMeta::TEST_SKIPPED:
-                    $this->cache['skipped']++;
+                    /** @var self $stat */
+                    $stat = $this->cache['skipped'];
+                    $stat->addTestEvent($event);
                     break;
                 case TestMeta::TEST_FAILED:
-                    $this->cache['fail']++;
+                    /** @var self $stat */
+                    $stat = $this->cache['fail'];
+                    $stat->addTestEvent($event);
                     break;
                 case TestMeta::TEST_ERROR:
-                    $this->cache['error']++;
+                    /** @var self $stat */
+                    $stat = $this->cache['error'];
+                    $stat->addTestEvent($event);
                     break;
                 case TestMeta::TEST_INCOMPLETE:
-                    $this->cache['incomplete']++;
+                    /** @var self $stat */
+                    $stat = $this->cache['incomplete'];
+                    $stat->addTestEvent($event);
             }
         }
     }
