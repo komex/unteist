@@ -2,7 +2,7 @@
 
 {% import "macros.html.twig" as macros %}
 
-{% block title %}{{ case.class }} &minus; {{ parent() }}{% endblock %}
+{% block title %}{{ class }} &minus; {{ parent() }}{% endblock %}
 
 {% block javascript %}
     <script type="text/javascript">
@@ -24,33 +24,10 @@
 {% block content %}
     <ul class="breadcrumb">
         <li><a href="./index.html">Report</a> <span class="divider">/</span></li>
-        {{ macros.breadcrumb(case.class) }}
+        {{ macros.breadcrumb(class) }}
     </ul>
-    <div class="row-fluid">
-        <div class="span3">
-            <span class="label label-success">Success</span>: <b>{{ case.getTestsCount('success') }}</b>
-        </div>
-        <div class="span3">
-            <span class="label label-warning">Skipped</span>: <b>{{ case.getTestsCount('skipped') }}</b>
-        </div>
-        <div class="span3">
-            <span class="label label-important">Failed</span>:
-            <b>{{ case.getTestsCount('fail') }}</b> + <b>{{ case.getTestsCount('error') }}</b>
-        </div>
-        <div class="span3">
-            <span class="label label-info">Incomplete</span>: <b>{{ case.getTestsCount('incomplete') }}</b>
-        </div>
-    </div>
-    <div class="progress">
-        <div class="bar bar-success" style="width: {{ testPercent(case, 'success') }}%;"
-             title="Success: {{ case.getTestsCount('success') }}/{{ case.getTestsCount() }}"></div>
-        <div class="bar bar-warning" style="width: {{ testPercent(case, 'skipped') }}%;"
-             title="Skipped: {{ case.getTestsCount('skipped') }}/{{ case.getTestsCount() }}"></div>
-        <div class="bar bar-danger" style="width: {{ testPercent(case, 'fail') + testPercent(case, 'error') }}%;"
-             title="Failed: {{ case.getTestsCount('fail') + case.getTestsCount('error') }}/{{ case.getTestsCount() }}"></div>
-        <div class="bar bar-info" style="width: {{ testPercent(case, 'incomplete') }}%;"
-             title="Incomplete: {{ case.getTestsCount('incomplete') }}/{{ case.getTestsCount() }}"></div>
-    </div>
+    {{ macros.total(case) }}
+    {{ macros.progress(case) }}
     <table class="table table-bordered">
         <thead>
         <tr>
@@ -61,7 +38,7 @@
         </tr>
         </thead>
         <tbody>
-        {% for test in case.getTestEvents() %}
+        {% for test in case %}
             <tr class="{{ macros.test_style(test) }}">
                 <td>
                     {% if test.isSuccess() %}

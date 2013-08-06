@@ -11,6 +11,7 @@ use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Helper\ProgressHelper;
 use Symfony\Component\Console\Output\OutputInterface;
 use Unteist\Event\TestEvent;
+use Unteist\Report\Statistics\StatisticsProcessor;
 
 /**
  * Class Formatter
@@ -74,49 +75,44 @@ class Formatter
      * Display result information.
      *
      * @param float $time
-     * @param int $success
-     * @param \SplDoublyLinkedList $skipped
-     * @param \SplDoublyLinkedList $fail
-     * @param int $asserts
+     * @param StatisticsProcessor $statistics
      */
-    public function finish($time, $success, \SplDoublyLinkedList $skipped, \SplDoublyLinkedList $fail, $asserts)
+    public function finish($time, StatisticsProcessor $statistics)
     {
         $this->progress->finish();
         $this->output->writeln(sprintf('Time: <comment>%F</comment> seconds.', $time));
         $this->output->writeln('');
-        if ($fail->count() > 0) {
-            $this->fail($success, $skipped, $fail, $asserts);
-        } elseif ($success > 0) {
-            $this->success($success, $skipped, $asserts);
+        if (count($statistics['fail']) > 0) {
+            $this->fail($statistics);
+        } elseif ($statistics['success'] > 0) {
+            $this->success($statistics);
         }
     }
 
     /**
      * Output when one or more tests fail.
      *
-     * @param int $success
-     * @param \SplDoublyLinkedList|TestEvent[] $skipped
-     * @param \SplDoublyLinkedList|TestEvent[] $fail
-     * @param int $asserts
+     * @param StatisticsProcessor $statistics
      */
-    protected function fail($success, \SplDoublyLinkedList $skipped, \SplDoublyLinkedList $fail, $asserts)
+    protected function fail(StatisticsProcessor $statistics)
     {
-        if ($skipped->count() > 0) {
+        $skipped_count = count($statistics['skipped']);
+        if ($skipped_count > 0) {
             $style = new OutputFormatterStyle('black', 'yellow');
             $this->output->getFormatter()->setStyle('skipped', $style);
-            $this->testOutput('Skipped tests:', 'skipped', $skipped);
+            $this->testOutput('Skipped tests:', 'skipped', $statistics['skipped']);
             $this->output->writeln('');
         }
-        $this->testOutput('Failed tests:', 'error', $fail);
+        $this->testOutput('Failed tests:', 'error', $statistics['fail']);
 
         $this->output->writeln('');
         $this->output->writeln(
             sprintf(
                 '<error>FAILURES! Tests: %d, Skipped: %d, Assertions: %d, Failures: %d</error>',
-                $success,
-                $skipped->count(),
-                $asserts,
-                $fail->count()
+                $statistics['success'],
+                $skipped_count,
+                $statistics['asserts'],
+                count($statistics['fail'])
             )
         );
     }
@@ -126,9 +122,9 @@ class Formatter
      *
      * @param string $title Group title
      * @param string $tag Tag name for color output
-     * @param \SplDoublyLinkedList|TestEvent[] $tests
+     * @param StatisticsProcessor|TestEvent[] $tests
      */
-    protected function testOutput($title, $tag, \SplDoublyLinkedList $tests)
+    protected function testOutput($title, $tag, StatisticsProcessor $tests)
     {
         $this->output->writeln($title);
         foreach ($tests as $i => $test) {
@@ -142,20 +138,18 @@ class Formatter
     /**
      * Output when all test success.
      *
-     * @param int $success
-     * @param \SplDoublyLinkedList|TestEvent[] $skipped
-     * @param int $asserts
+     * @param StatisticsProcessor $statistics
      */
-    protected function success($success, \SplDoublyLinkedList $skipped, $asserts)
+    protected function success(StatisticsProcessor $statistics)
     {
         $style = new OutputFormatterStyle('black', 'green');
         $this->output->getFormatter()->setStyle('success', $style);
         $this->output->writeln(
             sprintf(
                 '<success>OK (Tests: %d, Skipped: %d, Asserts: %d)</success>',
-                $success,
-                $skipped->count(),
-                $asserts
+                $statistics['success'],
+                count($statistics['skipped']),
+                $statistics['asserts']
             )
         );
     }

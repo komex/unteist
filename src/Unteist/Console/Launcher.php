@@ -21,10 +21,10 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Finder\Finder;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
-use Unteist\Event\TestEvent;
 use Unteist\Filter\ClassFilter;
 use Unteist\Filter\MethodsFilter;
 use Unteist\Processor\Processor;
+use Unteist\Report\Statistics\StatisticsProcessor;
 use Unteist\Report\Twig\TwigReport;
 use Unteist\Strategy\Context;
 use Unteist\Strategy\IncompleteTestStrategy;
@@ -44,21 +44,9 @@ class Launcher extends Command
      */
     protected $started;
     /**
-     * @var int
+     * @var StatisticsProcessor
      */
-    protected $asserts = 0;
-    /**
-     * @var int
-     */
-    protected $tests_success = 0;
-    /**
-     * @var \SplDoublyLinkedList
-     */
-    protected $tests_skipped;
-    /**
-     * @var \SplDoublyLinkedList
-     */
-    protected $tests_fail;
+    protected $statistics;
     /**
      * @var Formatter
      */
@@ -81,35 +69,7 @@ class Launcher extends Command
     public function afterCase(TestCaseEvent $event)
     {
         $this->formatter->advance();
-        $this->asserts += $event->getAsserts();
-    }
-
-    /**
-     * Increase success tests counter
-     */
-    public function successTest()
-    {
-        $this->tests_success++;
-    }
-
-    /**
-     * Increase skipped tests counter
-     *
-     * @param TestEvent $event
-     */
-    public function skippedTest(TestEvent $event)
-    {
-        $this->tests_skipped->push($event);
-    }
-
-    /**
-     * Increase fail tests counter
-     *
-     * @param TestEvent $event
-     */
-    public function failTest(TestEvent $event)
-    {
-        $this->tests_fail->push($event);
+        $this->statistics->addTestCaseEvent($event);
     }
 
     /**
@@ -118,7 +78,7 @@ class Launcher extends Command
     public function finish()
     {
         $time = (microtime(true) - $this->started);
-        $this->formatter->finish($time, $this->tests_success, $this->tests_skipped, $this->tests_fail, $this->asserts);
+        $this->formatter->finish($time, $this->statistics);
     }
 
     /**
@@ -150,8 +110,7 @@ class Launcher extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->tests_skipped = new \SplDoublyLinkedList();
-        $this->tests_fail = new \SplDoublyLinkedList();
+        $this->statistics = new StatisticsProcessor();
         /** @var ProgressHelper $progress */
         $progress = $this->getHelperSet()->get('progress');
         $this->formatter = new Formatter($output, $progress);
@@ -231,9 +190,6 @@ class Launcher extends Command
     protected function registerListeners(EventDispatcher $dispatcher)
     {
         $dispatcher->addListener(EventStorage::EV_AFTER_CASE, [$this, 'afterCase']);
-        $dispatcher->addListener(EventStorage::EV_TEST_SUCCESS, [$this, 'successTest']);
-        $dispatcher->addListener(EventStorage::EV_TEST_SKIPPED, [$this, 'skippedTest']);
-        $dispatcher->addListener(EventStorage::EV_TEST_FAIL, [$this, 'failTest']);
         $dispatcher->addListener(EventStorage::EV_APP_FINISHED, [$this, 'finish']);
     }
 }

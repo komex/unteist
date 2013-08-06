@@ -11,6 +11,7 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
+use Unteist\Report\Statistics\StatisticsProcessor;
 
 /**
  * Class TwigReport
@@ -32,6 +33,14 @@ class TwigReport implements EventSubscriberInterface
      * @var Filesystem
      */
     protected $fs;
+    /**
+     * @var StatisticsProcessor
+     */
+    protected $statistics;
+    /**
+     * @var \ArrayObject
+     */
+    protected $storage;
 
     /**
      * Configure report generator.
@@ -51,6 +60,108 @@ class TwigReport implements EventSubscriberInterface
         }
         $this->output_dir = realpath($report_dir);
         $this->prepareReport();
+        $this->statistics = new StatisticsProcessor();
+        $this->storage = new \ArrayObject();
+    }
+
+    /**
+     * Returns an array of event names this subscriber wants to listen to.
+     *
+     * The array keys are event names and the value can be:
+     *
+     *  * The method name to call (priority defaults to 0)
+     *  * An array composed of the method name to call and the priority
+     *  * An array of arrays composed of the method names to call and respective
+     *    priorities, or 0 if unset
+     *
+     * For instance:
+     *
+     *  * array('eventName' => 'methodName')
+     *  * array('eventName' => array('methodName', $priority))
+     *  * array('eventName' => array(array('methodName1', $priority), array('methodName2'))
+     *
+     * @return array The event names to listen to
+     *
+     * @api
+     */
+    public static function getSubscribedEvents()
+    {
+        return [
+            EventStorage::EV_AFTER_CASE => 'onAfterTestCase',
+            EventStorage::EV_APP_FINISHED => 'onAppFinished',
+        ];
+    }
+
+    /**
+     * Get percenf of specified status type.
+     *
+     * @param StatisticsProcessor $statistics
+     * @param string $type Status type
+     *
+     * @return float
+     */
+    public function getTestPercent(StatisticsProcessor $statistics, $type)
+    {
+        $count = count($statistics);
+        if ($count === 0 || !isset($statistics[$type])) {
+            return 0;
+        } else {
+            $stat = $statistics[$type];
+            if ($stat instanceof StatisticsProcessor) {
+                $stat = count($stat);
+            }
+
+            return (($stat / $count) * 100);
+        }
+    }
+
+    /**
+     * Generate report index file.
+     */
+    public function onAppFinished()
+    {
+        $content = $this->twig->render(
+            'index.html.twig',
+            ['storage' => $this->storage, 'statistics' => $this->statistics, 'base_dir' => $this->output_dir]
+        );
+        file_put_contents($this->output_dir . DIRECTORY_SEPARATOR . 'index.html', $content);
+    }
+
+    /**
+     * Generate TestCase report.
+     *
+     * @param TestCaseEvent $event TestCase information
+     */
+    public function onAfterTestCase(TestCaseEvent $event)
+    {
+        $statistics = new StatisticsProcessor($event);
+        $this->statistics->addTestCaseEvent($event);
+        $this->storage[$event->getClass()] = $statistics;
+        $content = $this->twig->render(
+            'case.html.twig',
+            ['case' => $statistics, 'class' => $event->getClass(), 'base_dir' => $this->output_dir]
+        );
+        $path = $this->getPathByNamespace($event->getClass(), true);
+        $this->fs->mkdir($path);
+        file_put_contents($path . DIRECTORY_SEPARATOR . 'index.html', $content);
+    }
+
+    /**
+     * Get path by class name (with namespace).
+     *
+     * @param string $namespace
+     * @param bool $absolute
+     *
+     * @return string
+     */
+    public function getPathByNamespace($namespace, $absolute = false)
+    {
+        $path = str_replace('\\', DIRECTORY_SEPARATOR, $namespace);
+        if ($absolute) {
+            $path = $this->output_dir . DIRECTORY_SEPARATOR . $path;
+        }
+
+        return $path;
     }
 
     /**
@@ -89,74 +200,5 @@ class TwigReport implements EventSubscriberInterface
         } else {
             return $path;
         }
-    }
-
-    /**
-     * Returns an array of event names this subscriber wants to listen to.
-     *
-     * The array keys are event names and the value can be:
-     *
-     *  * The method name to call (priority defaults to 0)
-     *  * An array composed of the method name to call and the priority
-     *  * An array of arrays composed of the method names to call and respective
-     *    priorities, or 0 if unset
-     *
-     * For instance:
-     *
-     *  * array('eventName' => 'methodName')
-     *  * array('eventName' => array('methodName', $priority))
-     *  * array('eventName' => array(array('methodName1', $priority), array('methodName2'))
-     *
-     * @return array The event names to listen to
-     *
-     * @api
-     */
-    public static function getSubscribedEvents()
-    {
-        return [EventStorage::EV_AFTER_CASE => 'onAfterTestCase'];
-    }
-
-    /**
-     * Get percenf of specified status type.
-     *
-     * @param TestCaseEvent $case
-     * @param string $type Status type
-     *
-     * @return float
-     */
-    public function getTestPercent(TestCaseEvent $case, $type)
-    {
-        return ($case->getTestsCount($type) / $case->getTestsCount()) * 100;
-    }
-
-    /**
-     * Generate TestCase report.
-     *
-     * @param TestCaseEvent $event TestCase information
-     */
-    public function onAfterTestCase(TestCaseEvent $event)
-    {
-        $content = $this->twig->render('case.html.twig', ['case' => $event, 'base_dir' => $this->output_dir]);
-        $path = $this->getPathByNamespace($event->getClass(), true);
-        $this->fs->mkdir($path);
-        file_put_contents($path . DIRECTORY_SEPARATOR . 'index.html', $content);
-    }
-
-    /**
-     * Get path by class name (with namespace).
-     *
-     * @param string $namespace
-     * @param bool $absolute
-     *
-     * @return string
-     */
-    public function getPathByNamespace($namespace, $absolute = false)
-    {
-        $path = str_replace('\\', DIRECTORY_SEPARATOR, $namespace);
-        if ($absolute) {
-            $path = $this->output_dir . DIRECTORY_SEPARATOR . $path;
-        }
-
-        return $path;
     }
 }
