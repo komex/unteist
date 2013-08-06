@@ -43,3 +43,21 @@
              title="Incomplete: {{ statistics.incomplete|length }}/{{ statistics|length }}"></div>
     </div>
 {% endmacro %}
+
+{% macro total(statistics) %}
+    <div class="row-fluid">
+        <div class="span3">
+            <span class="label label-success">Success</span>: <b>{{ statistics.success }}</b>
+        </div>
+        <div class="span3">
+            <span class="label label-warning">Skipped</span>: <b>{{ statistics.skipped|length }}</b>
+        </div>
+        <div class="span3">
+            <span class="label label-important">Failed</span>:
+            <b>{{ statistics.fail|length }}</b> + <b>{{ statistics.error|length }}</b>
+        </div>
+        <div class="span3">
+            <span class="label label-info">Incomplete</span>: <b>{{ statistics.incomplete|length }}</b>
+        </div>
+    </div>
+{% endmacro %}

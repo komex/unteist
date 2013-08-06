@@ -33,6 +33,14 @@ class TwigReport implements EventSubscriberInterface
      * @var Filesystem
      */
     protected $fs;
+    /**
+     * @var StatisticsProcessor
+     */
+    protected $statistics;
+    /**
+     * @var \ArrayObject
+     */
+    protected $storage;
 
     /**
      * Configure report generator.
@@ -52,6 +60,8 @@ class TwigReport implements EventSubscriberInterface
         }
         $this->output_dir = realpath($report_dir);
         $this->prepareReport();
+        $this->statistics = new StatisticsProcessor();
+        $this->storage = new \ArrayObject();
     }
 
     /**
@@ -76,7 +86,10 @@ class TwigReport implements EventSubscriberInterface
      */
     public static function getSubscribedEvents()
     {
-        return [EventStorage::EV_AFTER_CASE => 'onAfterTestCase'];
+        return [
+            EventStorage::EV_AFTER_CASE => 'onAfterTestCase',
+            EventStorage::EV_APP_FINISHED => 'onAppFinished',
+        ];
     }
 
     /**
@@ -97,8 +110,21 @@ class TwigReport implements EventSubscriberInterface
             if ($stat instanceof StatisticsProcessor) {
                 $stat = count($stat);
             }
+
             return (($stat / $count) * 100);
         }
+    }
+
+    /**
+     * Generate report index file.
+     */
+    public function onAppFinished()
+    {
+        $content = $this->twig->render(
+            'index.html.twig',
+            ['storage' => $this->storage, 'statistics' => $this->statistics, 'base_dir' => $this->output_dir]
+        );
+        file_put_contents($this->output_dir . DIRECTORY_SEPARATOR . 'index.html', $content);
     }
 
     /**
@@ -109,6 +135,8 @@ class TwigReport implements EventSubscriberInterface
     public function onAfterTestCase(TestCaseEvent $event)
     {
         $statistics = new StatisticsProcessor($event);
+        $this->statistics->addTestCaseEvent($event);
+        $this->storage[$event->getClass()] = $statistics;
         $content = $this->twig->render(
             'case.html.twig',
             ['case' => $statistics, 'class' => $event->getClass(), 'base_dir' => $this->output_dir]
