@@ -57,6 +57,15 @@
                 </tr>
             {% endif %}
         {% endfor %}
+        <tr>
+            <td colspan="4">&nbsp;</td>
+        </tr>
+        <tr>
+            <td><b>Total</b></td>
+            <td>{{ case.asserts }}</td>
+            <td>{{ case.time|number_format(4) }} sec.</td>
+            <td></td>
+        </tr>
         </tbody>
     </table>
 {% endblock %}

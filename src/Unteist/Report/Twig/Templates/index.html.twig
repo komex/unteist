@@ -28,6 +28,15 @@
                 <td>{{ case.time|number_format(4) }} sec.</td>
             </tr>
         {% endfor %}
+        <tr>
+            <td colspan="4">&nbsp;</td>
+        </tr>
+        <tr>
+            <td><b>Total</b></td>
+            <td>{{ statistics|length }}</td>
+            <td>{{ statistics.asserts }}</td>
+            <td>{{ statistics.time|number_format(4) }} sec.</td>
+        </tr>
         </tbody>
     </table>
 {% endblock %}
