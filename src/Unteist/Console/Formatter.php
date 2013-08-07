@@ -41,17 +41,6 @@ class Formatter
     }
 
     /**
-     * @param string $level
-     * @param string $file
-     */
-    public function loggerInformation($level, $file)
-    {
-        $this->output->writeln(
-            sprintf('The <info>%s</info> logs will be written to <comment>%s</comment>.', $level, $file)
-        );
-    }
-
-    /**
      * @param int $count
      */
     public function start($count)

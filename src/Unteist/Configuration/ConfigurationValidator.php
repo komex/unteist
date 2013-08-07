@@ -63,10 +63,9 @@ class ConfigurationValidator implements ConfigurationInterface
 
         $rootNode->children()
             ->arrayNode('logger')->canBeEnabled()->children()
-            ->enumNode('level')->values(
-                ['DEBUG', 'INFO', 'NOTICE', 'WARNING', 'ERROR', 'CRITICAL']
-            )->defaultValue('DEBUG')->end()
-            ->arrayNode('handlers')->defaultValue(['logger.handler.stream'])->prototype('scalar')->isRequired()->end();
+            ->arrayNode('handlers')->requiresAtLeastOneElement()->defaultValue(
+                ['logger.handler.stream']
+            )->prototype('scalar')->end();
 
 
         return $treeBuilder;

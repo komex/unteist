@@ -1,0 +1,28 @@
+parameters:
+    logger.handler.stream.output: unteist.log
+    logger.handler.stream.level: DEBUG
+
+services:
+    logger:
+        class: \Monolog\Logger
+        arguments: [ unteist ]
+    logger.handler.stream:
+        class: \Monolog\Handler\StreamHandler
+        arguments: [ %logger.handler.stream.output%, %logger.handler.stream.level% ]
+    logger.handler.null:
+        class: \Monolog\Handler\NullHandler
+    reporter:
+        class: \Unteist\Report\Twig\TwigReport
+        arguments: [ %report.dir% ]
+    strategy.fail:
+        class: \Unteist\Strategy\TestFailStrategy
+    strategy.skip:
+        class: \Unteist\Strategy\SkipTestStrategy
+    strategy.incomplete:
+        class: \Unteist\Strategy\IncompleteTestStrategy
+    strategy.ignore:
+        class: \Unteist\Strategy\DoNothingStrategy
+    filter.class.base:
+        class: \Unteist\Filter\ClassFilter
+    filter.methods.base:
+        class: \Unteist\Filter\MethodsFilter
