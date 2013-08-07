@@ -30,44 +30,73 @@ class ConfigurationValidator implements ConfigurationInterface
         $rootNode->children()
             ->integerNode('processes')
             ->min(1)->max(10)
-            ->defaultValue(1)
-            ->end();
+            ->defaultValue(1);
 
         $rootNode->children()
             ->scalarNode('report_dir')
             ->defaultNull()
-            ->cannotBeEmpty()
-            ->end();
+            ->cannotBeEmpty();
+
+        $rootNode->append($this->getContextSection());
 
         $rootNode->children()
-            ->arrayNode('context')->addDefaultsIfNotSet()->children()
-            // error strategy
-            ->enumNode('error')->values(
-                ['strategy.fail', 'strategy.skip', 'strategy.incomplete', 'strategy.ignore']
-            )->cannotBeEmpty()->defaultValue('strategy.fail')->end()
-            // failure strategy
-            ->enumNode('failure')->values(
-                ['strategy.fail', 'strategy.skip', 'strategy.incomplete', 'strategy.ignore']
-            )->cannotBeEmpty()->defaultValue('strategy.fail')->end()
-            // incomplete strategy
-            ->enumNode('incomplete')->values(
-                ['strategy.fail', 'strategy.skip', 'strategy.incomplete', 'strategy.ignore']
-            )->cannotBeEmpty()->defaultValue('strategy.incomplete')->end()
-            // skip strategy
-            ->enumNode('skip')->values(
-                ['strategy.fail', 'strategy.skip', 'strategy.incomplete', 'strategy.ignore']
-            )->cannotBeEmpty()->defaultValue('strategy.skip')->end();
-
-        $rootNode->children()
-            ->arrayNode('listeners')->prototype('scalar')->isRequired()->end();
+            ->arrayNode('listeners')->prototype('scalar')->isRequired();
 
         $rootNode->children()
             ->arrayNode('logger')->canBeEnabled()->children()
             ->arrayNode('handlers')->requiresAtLeastOneElement()->defaultValue(
                 ['logger.handler.stream']
-            )->prototype('scalar')->end();
+            )->prototype('scalar');
+
+        $rootNode->append($this->getFiltersSection());
 
 
         return $treeBuilder;
+    }
+
+    /**
+     * Get section for filters.
+     *
+     * @return \Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition
+     */
+    private function getFiltersSection()
+    {
+        $builder = new TreeBuilder;
+        $filters = $builder->root('filters');
+        $node = $filters->addDefaultsIfNotSet()->children();
+        $node->arrayNode('class')->requiresAtLeastOneElement()->cannotBeEmpty()->defaultValue(
+            ['filter.class.base']
+        )->prototype('scalar');
+        $node->arrayNode('methods')->requiresAtLeastOneElement()->cannotBeEmpty()->defaultValue(
+            ['filter.methods.base']
+        )->prototype('scalar');
+
+        return $filters;
+    }
+
+    /**
+     * Get section for context.
+     *
+     * @return \Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition
+     */
+    private function getContextSection()
+    {
+        $builder = new TreeBuilder;
+        $context = $builder->root('context');
+        $node = $context->addDefaultsIfNotSet()->children();
+        $node->enumNode('error')->values(
+            ['strategy.fail', 'strategy.skip', 'strategy.incomplete', 'strategy.ignore']
+        )->cannotBeEmpty()->defaultValue('strategy.fail');
+        $node->enumNode('failure')->values(
+            ['strategy.fail', 'strategy.skip', 'strategy.incomplete', 'strategy.ignore']
+        )->cannotBeEmpty()->defaultValue('strategy.fail');
+        $node->enumNode('incomplete')->values(
+            ['strategy.fail', 'strategy.skip', 'strategy.incomplete', 'strategy.ignore']
+        )->cannotBeEmpty()->defaultValue('strategy.incomplete');
+        $node->enumNode('skip')->values(
+            ['strategy.fail', 'strategy.skip', 'strategy.incomplete', 'strategy.ignore']
+        )->cannotBeEmpty()->defaultValue('strategy.skip');
+
+        return $context;
     }
 }
