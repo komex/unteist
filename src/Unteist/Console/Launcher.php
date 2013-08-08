@@ -80,7 +80,7 @@ class Launcher extends Command
     protected function configure()
     {
         $this->setName('run')->setDescription('Run tests stored in specified directory.');
-        $this->addArgument('source', InputArgument::REQUIRED, 'Path to TestCase classes.');
+        $this->addArgument('suite', InputArgument::REQUIRED, 'Suite name in config file or path to TestCase classes.');
         $this->addOption('processes', 'p', InputOption::VALUE_REQUIRED, 'Run test in N separated processes.');
         $this->addOption('report-dir', 'r', InputOption::VALUE_REQUIRED, 'Report output directory.');
     }
@@ -103,21 +103,15 @@ class Launcher extends Command
         // Formatter
         $this->formatter = new Formatter($output, $progress);
         // Configurator
-        $configurator = new Configurator($dispatcher);
+        $configurator = new Configurator($dispatcher, $this->formatter);
         $configurator->getFromYaml('./unteist.yml');
         $configurator->getFromInput($input);
-        // Finder
-        $finder = new Finder();
-        $finder->files()->in($input->getArgument('source'))->name('*Test.php');
         // Processor
         $processor = $configurator->getProcessor();
         $processor->addClassFilter(new ClassFilter());
         $processor->addMethodsFilter(new MethodsFilter());
-        $processor->setSuites($finder);
         // Global variables
         $this->started = microtime(true);
-        // Output information and progress bar
-        $this->formatter->start($finder->count());
         // Register listeners
         $this->registerListeners($dispatcher);
 

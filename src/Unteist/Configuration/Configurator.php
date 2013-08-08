@@ -16,7 +16,9 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\Finder\Finder;
 use Symfony\Component\Yaml\Yaml;
+use Unteist\Console\Formatter;
 use Unteist\Processor\Processor;
 use Unteist\Strategy\Context;
 use Unteist\Strategy\StrategyInterface;
@@ -34,6 +36,10 @@ class Configurator
      */
     private $container;
     /**
+     * @var Formatter
+     */
+    private $formatter;
+    /**
      * @var array
      */
     private $config = [];
@@ -45,14 +51,19 @@ class Configurator
      * @var array
      */
     private $configs = [];
+    /**
+     * @var string
+     */
+    private $suite;
 
     /**
      * Prepare configuration loader.
      */
-    public function __construct(EventDispatcherInterface $dispatcher)
+    public function __construct(EventDispatcherInterface $dispatcher, Formatter $formatter)
     {
         $this->container = new ContainerBuilder();
         $this->dispatcher = $dispatcher;
+        $this->formatter = $formatter;
         $locator = new FileLocator(join(DIRECTORY_SEPARATOR, [__DIR__, '..', '..', '..']));
         $loader = new YamlFileLoader($this->container, $locator);
         $loader->load('services.yml');
@@ -78,6 +89,7 @@ class Configurator
      */
     public function getFromInput(InputInterface $input)
     {
+        $this->suite = $input->getArgument('suite');
         $config = [];
         $processes = $input->getOption('processes');
         if ($processes !== null) {
@@ -104,8 +116,41 @@ class Configurator
         $processor->setProcesses($this->config['processes']);
         $this->registerReporter();
         $this->registerListeners();
+        $processor->setSuite($this->getSuite());
 
         return $processor;
+    }
+
+    /**
+     * Get suite files with tests.
+     *
+     * @return \ArrayObject
+     */
+    private function getSuite()
+    {
+        $files = new \ArrayObject();
+        foreach ($this->config['source'] as $source) {
+            $finder = new Finder();
+            $finder->ignoreUnreadableDirs()->files();
+            $finder->in($source['in'])->name($source['name']);
+            if (!empty($source['notName'])) {
+                $finder->notName($source['notName']);
+            }
+            if (!empty($source['exclude'])) {
+                $finder->exclude($source['exclude']);
+            }
+            /** @var \SplFileInfo $file */
+            foreach ($finder as $file) {
+                $real_path = $file->getRealPath();
+                if (!$files->offsetExists($real_path)) {
+                    $files[$real_path] = $file;
+                }
+            }
+        }
+        // Output information and progress bar
+        $this->formatter->start($files->count());
+
+        return $files;
     }
 
     /**
@@ -182,7 +227,35 @@ class Configurator
     private function processConfiguration()
     {
         $processor = new DefinitionProcessor();
-        $this->config = $processor->processConfiguration(new ConfigurationValidator(), $this->configs);
-        var_dump($this->config);
+        $config = $processor->processConfiguration(new ConfigurationValidator(), $this->configs);
+        $this->config = $this->getSuiteConfig($config);
+    }
+
+    /**
+     * Get result config.
+     *
+     * @param array $config All config
+     *
+     * @return array
+     */
+    private function getSuiteConfig(array $config)
+    {
+        if (isset($config['suites'][$this->suite])) {
+            $suite = $config['suites'][$this->suite];
+            if (!empty($suite['report_dir'])) {
+                $config['report_dir'] = $suite['report_dir'];
+            }
+            if (isset($suite['context'])) {
+                $config['context'] = $suite['context'];
+            }
+            $config['source'] = $suite['source'];
+        } else {
+            $config['source'] = [
+                ['in' => '.', 'name' => $this->suite, 'notName' => '', 'exclude' => []],
+            ];
+        }
+        unset($config['suites']);
+
+        return $config;
     }
 }

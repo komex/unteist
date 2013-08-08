@@ -149,7 +149,16 @@ class ConfigurationValidator implements ConfigurationInterface
     {
         $builder = new TreeBuilder;
         $section = $builder->root('source')->requiresAtLeastOneElement();
-        $section->prototype('scalar');
+        /** @var ArrayNodeDefinition $definition */
+        $definition = $section->prototype('array');
+
+        $definition->children()->scalarNode('in')->cannotBeEmpty()->defaultValue('.');
+        $definition->children()->scalarNode('name')->cannotBeEmpty()->defaultValue('*Test.php');
+        $definition->children()->scalarNode('notName')->cannotBeEmpty();
+
+        $exclude = $definition->children()->arrayNode('exclude');
+        $exclude->requiresAtLeastOneElement();
+        $exclude->prototype('scalar')->cannotBeEmpty();
 
         return $section;
     }
@@ -163,7 +172,7 @@ class ConfigurationValidator implements ConfigurationInterface
     {
         $builder = new TreeBuilder;
         $section = $builder->root('suites');
-        $section->requiresAtLeastOneElement()->isRequired();
+        $section->requiresAtLeastOneElement();
         /** @var ArrayNodeDefinition $prototype */
         $prototype = $section->prototype('array');
         $this->configReportDirSection($prototype);
