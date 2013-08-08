@@ -10,7 +10,6 @@ namespace Unteist\Processor;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Finder\Finder;
-use Symfony\Component\Finder\SplFileInfo;
 use Unteist\Event\Connector;
 use Unteist\Event\EventStorage;
 use Unteist\Event\StorageEvent;
@@ -31,7 +30,7 @@ class Processor
      */
     protected $processes = 1;
     /**
-     * @var Finder|SplFileInfo[]
+     * @var \SplFileInfo[]
      */
     protected $suites = [];
     /**
@@ -47,7 +46,7 @@ class Processor
      */
     protected $methods_filters = [];
     /**
-     * @var SplFileInfo[]
+     * @var \SplFileInfo[]
      */
     protected $current_jobs = [];
     /**
@@ -94,9 +93,11 @@ class Processor
     }
 
     /**
-     * @param Finder $suites
+     * Set suite with tests.
+     *
+     * @param \ArrayObject|\SplFileInfo[] $suites
      */
-    public function setSuites(Finder $suites)
+    public function setSuite(\ArrayObject $suites)
     {
         $this->suites = $suites;
     }
@@ -245,24 +246,57 @@ class Processor
     }
 
     /**
-     * Backup all super global variables.
+     * Handler for process signals.
+     *
+     * @param int $signo
+     * @param int $pid
+     * @param int $status
      */
-    private function backupGlobals()
+    public function childSignalHandler($signo = null, $pid = null, $status = null)
     {
-        $this->globals = array_merge([], $GLOBALS);
+        //If no pid is provided, that means we're getting the signal from the system.  Let's figure out
+        //which child process ended
+        if (!$pid) {
+            $pid = pcntl_waitpid(-1, $status, WNOHANG);
+        }
+
+        //Make sure we get all of the exited children
+        while ($pid > 0) {
+            if ($pid && isset($this->current_jobs[$pid])) {
+                $exit_code = pcntl_wexitstatus($status);
+                if ($exit_code == 0) {
+                    $this->logger->debug('TestCase was successful finished.', ['pid' => $pid]);
+                } else {
+                    $this->logger->info(
+                        'Process exited with status != 0.',
+                        ['pid' => $pid, 'exit_code' => $exit_code]
+                    );
+                    $this->exit_code = $exit_code;
+                }
+                unset($this->current_jobs[$pid]);
+            } else {
+                if ($pid) {
+                    //Oh no, our job has finished before this parent process could even note that it had been launched!
+                    //Let's make note of it and handle it when the parent process is ready for it
+                    $this->logger->debug('Adding process to signal queue.', ['pid' => $pid]);
+                    $this->signal_queue[$pid] = $status;
+                }
+            }
+            $pid = pcntl_waitpid(-1, $status, WNOHANG);
+        }
     }
 
     /**
      * Launch TestCase.
      *
-     * @param SplFileInfo $case
+     * @param \SplFileInfo $case
      *
      * @return bool
      */
-    protected function executor(SplFileInfo $case)
+    protected function executor(\SplFileInfo $case)
     {
         try {
-            $this->logger->debug('Trying to load TestCase.', ['pid' => getmypid(), 'file' => $case->getPathname()]);
+            $this->logger->debug('Trying to load TestCase.', ['pid' => getmypid(), 'file' => $case->getRealPath()]);
             $class = TestCaseLoader::load($case);
             $this->logger->debug('TestCase was found.', ['pid' => getmypid(), 'class' => get_class($class)]);
             if (!empty($this->class_filters)) {
@@ -295,21 +329,13 @@ class Processor
     }
 
     /**
-     * Restore all super global variables.
-     */
-    private function restoreGlobals()
-    {
-        $GLOBALS = $this->globals;
-    }
-
-    /**
      * Launch TestCase in parallel processes.
      *
-     * @param SplFileInfo $case TestCase file
+     * @param \SplFileInfo $case TestCase file
      *
      * @return bool
      */
-    protected function launchJob(SplFileInfo $case)
+    protected function launchJob(\SplFileInfo $case)
     {
         $this->connector->add();
         $pid = pcntl_fork();
@@ -353,43 +379,18 @@ class Processor
     }
 
     /**
-     * Handler for process signals.
-     *
-     * @param int $signo
-     * @param int $pid
-     * @param int $status
+     * Backup all super global variables.
      */
-    public function childSignalHandler($signo = null, $pid = null, $status = null)
+    private function backupGlobals()
     {
-        //If no pid is provided, that means we're getting the signal from the system.  Let's figure out
-        //which child process ended
-        if (!$pid) {
-            $pid = pcntl_waitpid(-1, $status, WNOHANG);
-        }
+        $this->globals = array_merge([], $GLOBALS);
+    }
 
-        //Make sure we get all of the exited children
-        while ($pid > 0) {
-            if ($pid && isset($this->current_jobs[$pid])) {
-                $exit_code = pcntl_wexitstatus($status);
-                if ($exit_code == 0) {
-                    $this->logger->debug('TestCase was successful finished.', ['pid' => $pid]);
-                } else {
-                    $this->logger->info(
-                        'Process exited with status != 0.',
-                        ['pid' => $pid, 'exit_code' => $exit_code]
-                    );
-                    $this->exit_code = $exit_code;
-                }
-                unset($this->current_jobs[$pid]);
-            } else {
-                if ($pid) {
-                    //Oh no, our job has finished before this parent process could even note that it had been launched!
-                    //Let's make note of it and handle it when the parent process is ready for it
-                    $this->logger->debug('Adding process to signal queue.', ['pid' => $pid]);
-                    $this->signal_queue[$pid] = $status;
-                }
-            }
-            $pid = pcntl_waitpid(-1, $status, WNOHANG);
-        }
+    /**
+     * Restore all super global variables.
+     */
+    private function restoreGlobals()
+    {
+        $GLOBALS = $this->globals;
     }
 }

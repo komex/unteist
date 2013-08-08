@@ -7,7 +7,6 @@
 
 namespace Unteist\Processor;
 
-use Symfony\Component\Finder\SplFileInfo;
 use Unteist\TestCase;
 
 /**
@@ -21,17 +20,17 @@ class TestCaseLoader
     /**
      * Load class from specified file.
      *
-     * @param SplFileInfo $file
+     * @param \SplFileInfo $file
      *
      * @return TestCase
      *
      * @throws \RuntimeException If cannot open file
      * @throws \RuntimeException If TestCase class does not exists in this file
      */
-    public static function load(SplFileInfo $file)
+    public static function load(\SplFileInfo $file)
     {
         if (!$file->isReadable()) {
-            throw new \RuntimeException(sprintf('Cannot open file "%s"', $file->getFilename()));
+            throw new \RuntimeException(sprintf('Cannot open file "%s"', $file->getRealPath()));
         }
         $loaded_classes = get_declared_classes();
         include_once $file;
@@ -49,6 +48,6 @@ class TestCaseLoader
                 }
             }
         }
-        throw new \RuntimeException(sprintf('TestCase class does not found in file "%s"', $file));
+        throw new \RuntimeException(sprintf('TestCase class does not found in file "%s"', $file->getRealPath()));
     }
 }
