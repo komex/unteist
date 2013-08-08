@@ -19,6 +19,8 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Yaml\Yaml;
 use Unteist\Console\Formatter;
+use Unteist\Filter\ClassFilterInterface;
+use Unteist\Filter\MethodsFilterInterface;
 use Unteist\Processor\Processor;
 use Unteist\Strategy\Context;
 use Unteist\Strategy\StrategyInterface;
@@ -116,6 +118,16 @@ class Configurator
         $processor->setProcesses($this->config['processes']);
         $this->registerReporter();
         $this->registerListeners();
+        foreach ($this->config['filters']['class'] as $filter_id) {
+            /** @var ClassFilterInterface $filter */
+            $filter = $this->container->get($filter_id);
+            $processor->addClassFilter($filter);
+        }
+        foreach ($this->config['filters']['methods'] as $filter_id) {
+            /** @var MethodsFilterInterface $filter */
+            $filter = $this->container->get($filter_id);
+            $processor->addMethodsFilter($filter);
+        }
         $processor->setSuite($this->getSuite());
 
         return $processor;
@@ -142,7 +154,7 @@ class Configurator
             /** @var \SplFileInfo $file */
             foreach ($finder as $file) {
                 $real_path = $file->getRealPath();
-                if (!$files->offsetExists($real_path)) {
+                if (!$files->offsetExists($real_path) && substr($file->getFilename(), -8) === 'Test.php') {
                     $files[$real_path] = $file;
                 }
             }
@@ -250,9 +262,23 @@ class Configurator
             }
             $config['source'] = $suite['source'];
         } else {
-            $config['source'] = [
-                ['in' => '.', 'name' => $this->suite, 'notName' => '', 'exclude' => []],
-            ];
+            $config['source'] = [];
+            $suite = new \SplFileInfo($this->suite);
+            if ($suite->isFile() && $suite->isReadable()) {
+                $config['source'][] = [
+                    'in' => ($suite->getPath() ? : '.'),
+                    'name' => $suite->getFilename(),
+                    'notName' => '',
+                    'exclude' => []
+                ];
+            } elseif ($suite->isDir()) {
+                $config['source'][] = [
+                    'in' => $suite->getRealPath(),
+                    'name' => '*Test.php',
+                    'notName' => '',
+                    'exclude' => []
+                ];
+            }
         }
         unset($config['suites']);
 

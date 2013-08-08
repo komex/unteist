@@ -108,8 +108,6 @@ class Launcher extends Command
         $configurator->getFromInput($input);
         // Processor
         $processor = $configurator->getProcessor();
-        $processor->addClassFilter(new ClassFilter());
-        $processor->addMethodsFilter(new MethodsFilter());
         // Global variables
         $this->started = microtime(true);
         // Register listeners
