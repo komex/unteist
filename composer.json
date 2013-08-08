@@ -35,7 +35,8 @@
         "jquery/jquery": "2.0.*"
     },
     "suggest": {
-        "ext-pcntl": "Required for run in separate processes."
+        "ext-pcntl": "Required for run in separate processes.",
+        "codeception/aspect-mock": "AspectMock allows you to stub and mock practically anything in your PHP code."
     },
     "autoload": {
         "psr-0": {
@@ -44,18 +45,5 @@
     },
     "bin": [
         "bin/unteist.php"
-    ],
-    "repositories": [
-        {
-            "type": "package",
-            "package": {
-                "name": "jquery/jquery",
-                "version": "2.0.3",
-                "dist": {
-                    "url": "http://code.jquery.com/jquery-2.0.3.min.js",
-                    "type": "file"
-                }
-            }
-        }
     ]
 }
