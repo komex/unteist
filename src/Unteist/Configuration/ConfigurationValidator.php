@@ -34,6 +34,7 @@ class ConfigurationValidator implements ConfigurationInterface
         $rootNode->append($this->getContextSection());
         $rootNode->append($this->getFiltersSection());
         $rootNode->append($this->getLoggerSection());
+        $rootNode->append($this->getSuitesSection());
 
         return $treeBuilder;
     }
@@ -42,48 +43,30 @@ class ConfigurationValidator implements ConfigurationInterface
      * Get definition of processes number.
      *
      * @param ArrayNodeDefinition $rootNode
-     *
-     * @return ArrayNodeDefinition
      */
     private function configProcessesSection(ArrayNodeDefinition $rootNode)
     {
-        $rootNode->children()
-            ->integerNode('processes')
-            ->min(1)->max(10)
-            ->defaultValue(1);
-
-        return $rootNode;
+        $rootNode->children()->integerNode('processes')->min(1)->max(10)->defaultValue(1);
     }
 
     /**
      * Get definition of report directory.
      *
      * @param ArrayNodeDefinition $rootNode
-     *
-     * @return ArrayNodeDefinition
      */
     private function configReportDirSection(ArrayNodeDefinition $rootNode)
     {
-        $rootNode->children()
-            ->scalarNode('report_dir')
-            ->defaultNull()
-            ->cannotBeEmpty();
-
-        return $rootNode;
+        $rootNode->children()->scalarNode('report_dir')->defaultNull()->cannotBeEmpty();
     }
 
     /**
      * Get definition of listeners.
      *
      * @param ArrayNodeDefinition $rootNode
-     *
-     * @return ArrayNodeDefinition
      */
     private function configListenerSection(ArrayNodeDefinition $rootNode)
     {
-        $rootNode->children()->arrayNode('listeners')->prototype('scalar')->isRequired();
-
-        return $rootNode;
+        $rootNode->children()->arrayNode('listeners')->requiresAtLeastOneElement()->prototype('scalar')->isRequired();
     }
 
     /**
@@ -126,12 +109,17 @@ class ConfigurationValidator implements ConfigurationInterface
     /**
      * Get section for context.
      *
+     * @param bool $defaults Use defaults if sections is not set.
+     *
      * @return ArrayNodeDefinition
      */
-    private function getContextSection()
+    private function getContextSection($defaults = true)
     {
         $builder = new TreeBuilder;
-        $section = $builder->root('context')->addDefaultsIfNotSet();
+        $section = $builder->root('context');
+        if ($defaults) {
+            $section->addDefaultsIfNotSet();
+        }
 
         $definition = $section->children()->enumNode('error');
         $definition->values(['strategy.fail', 'strategy.skip', 'strategy.incomplete', 'strategy.ignore']);
@@ -148,6 +136,39 @@ class ConfigurationValidator implements ConfigurationInterface
         $definition = $section->children()->enumNode('skip');
         $definition->values(['strategy.fail', 'strategy.skip', 'strategy.incomplete', 'strategy.ignore']);
         $definition->cannotBeEmpty()->defaultValue('strategy.skip');
+
+        return $section;
+    }
+
+    /**
+     * Get section for source.
+     *
+     * @return ArrayNodeDefinition
+     */
+    private function getSourceSection()
+    {
+        $builder = new TreeBuilder;
+        $section = $builder->root('source')->requiresAtLeastOneElement();
+        $section->prototype('scalar');
+
+        return $section;
+    }
+
+    /**
+     * Get section for suites.
+     *
+     * @return ArrayNodeDefinition
+     */
+    private function getSuitesSection()
+    {
+        $builder = new TreeBuilder;
+        $section = $builder->root('suites');
+        $section->requiresAtLeastOneElement()->isRequired();
+        /** @var ArrayNodeDefinition $prototype */
+        $prototype = $section->prototype('array');
+        $this->configReportDirSection($prototype);
+        $prototype->append($this->getContextSection(false));
+        $prototype->append($this->getSourceSection());
 
         return $section;
     }
