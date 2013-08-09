@@ -31,6 +31,7 @@
     <table class="table table-bordered">
         <thead>
         <tr>
+            <th>#</th>
             <th>Test method</th>
             <th>Asserts</th>
             <th>Time</th>
@@ -40,6 +41,7 @@
         <tbody>
         {% for test in case %}
             <tr class="{{ macros.test_style(test) }}">
+                <td>{{ loop.index }}</td>
                 <td>
                     {% if test.isSuccess() %}
                         {{ test.method }}
@@ -53,14 +55,15 @@
             </tr>
             {% if not test.isSuccess() %}
                 <tr class="additional-info {{ macros.test_style(test) }}">
-                    <td colspan="4"><i>{{ test.exception }}</i></td>
+                    <td colspan="5"><i>{{ test.exception }}</i></td>
                 </tr>
             {% endif %}
         {% endfor %}
         <tr>
-            <td colspan="4">&nbsp;</td>
+            <td colspan="5">&nbsp;</td>
         </tr>
         <tr>
+            <td></td>
             <td><b>Total</b></td>
             <td>{{ case.asserts }}</td>
             <td>{{ case.time|number_format(4) }} sec.</td>

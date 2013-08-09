@@ -71,7 +71,7 @@ class Formatter
         $this->progress->finish();
         $this->output->writeln(sprintf('Time: <comment>%F</comment> seconds.', $time));
         $this->output->writeln('');
-        if (count($statistics['fail']) > 0) {
+        if (count($statistics['fail']) > 0 || count($statistics['error']) > 0 || count($statistics['incomplete']) > 0) {
             $this->fail($statistics);
         } elseif ($statistics['success'] > 0) {
             $this->success($statistics);
@@ -86,22 +86,38 @@ class Formatter
     protected function fail(StatisticsProcessor $statistics)
     {
         $skipped_count = count($statistics['skipped']);
+        $incomplete_count = count($statistics['incomplete']);
+        $error_count = count($statistics['error']);
+        $fail_count = count($statistics['fail']);
         if ($skipped_count > 0) {
             $style = new OutputFormatterStyle('black', 'yellow');
             $this->output->getFormatter()->setStyle('skipped', $style);
             $this->testOutput('Skipped tests:', 'skipped', $statistics['skipped']);
             $this->output->writeln('');
         }
-        $this->testOutput('Failed tests:', 'error', $statistics['fail']);
+        if ($incomplete_count > 0) {
+            $style = new OutputFormatterStyle('white', 'blue');
+            $this->output->getFormatter()->setStyle('incomplete', $style);
+            $this->testOutput('Incomplete tests:', 'incomplete', $statistics['incomplete']);
+            $this->output->writeln('');
+        }
+        if ($fail_count > 0) {
+            $this->testOutput('Failed tests:', 'error', $statistics['fail']);
+            $this->output->writeln('');
+        }
+        if ($error_count > 0) {
+            $this->testOutput('Error tests:', 'error', $statistics['error']);
+            $this->output->writeln('');
+        }
 
-        $this->output->writeln('');
         $this->output->writeln(
             sprintf(
-                '<error>FAILURES! Tests: %d, Skipped: %d, Assertions: %d, Failures: %d</error>',
+                '<error>FAILURES! Success: %d, Skipped: %d, Assertions: %d, Incomplete: %d, Failures: %d</error>',
                 $statistics['success'],
                 $skipped_count,
                 $statistics['asserts'],
-                count($statistics['fail'])
+                $incomplete_count,
+                ($fail_count + $error_count)
             )
         );
     }

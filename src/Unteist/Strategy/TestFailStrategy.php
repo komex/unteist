@@ -29,7 +29,7 @@ class TestFailStrategy implements StrategyInterface
         if ($exception instanceof TestFailException) {
             throw $exception;
         } else {
-            throw new TestFailException('Test was marked as failure by chosen strategy.', 0, $exception);
+            throw new TestFailException('Test was marked as failure by chosen strategy', 0, $exception);
         }
     }
 }

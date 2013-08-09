@@ -31,42 +31,15 @@ class Context
      * @var StrategyInterface
      */
     protected $incomplete_strategy;
-    /**
-     * @var StrategyInterface
-     */
-    protected $skipped_strategy;
-    /**
-     * @var StrategyInterface[]
-     */
-    protected $default_strategies;
 
     /**
      * Setup default strategy.
      */
-    public function __construct(
-        StrategyInterface $error,
-        StrategyInterface $failure,
-        StrategyInterface $incomplete,
-        StrategyInterface $skip
-    ) {
-        $this->default_strategies = [
-            'error' => $error,
-            'failure' => $failure,
-            'incomplete' => $incomplete,
-            'skip' => $skip,
-        ];
-        $this->restore();
-    }
-
-    /**
-     * Restore default strategy.
-     */
-    public function restore()
+    public function __construct(StrategyInterface $error, StrategyInterface $failure, StrategyInterface $incomplete)
     {
-        $this->setErrorStrategy($this->default_strategies['error']);
-        $this->setFailureStrategy($this->default_strategies['failure']);
-        $this->setIncompleteStrategy($this->default_strategies['incomplete']);
-        $this->setSkippedStrategy($this->default_strategies['skip']);
+        $this->setErrorStrategy($error);
+        $this->setFailureStrategy($failure);
+        $this->setIncompleteStrategy($incomplete);
     }
 
     /**
@@ -97,16 +70,6 @@ class Context
     public function setIncompleteStrategy(StrategyInterface $incomplete_strategy)
     {
         $this->incomplete_strategy = $incomplete_strategy;
-    }
-
-    /**
-     * Choose a strategy for the situation in skiped test.
-     *
-     * @param StrategyInterface $skipped_strategy
-     */
-    public function setSkippedStrategy(StrategyInterface $skipped_strategy)
-    {
-        $this->skipped_strategy = $skipped_strategy;
     }
 
     /**
@@ -145,20 +108,6 @@ class Context
      * @return int Status code
      */
     public function onIncomplete(IncompleteTestException $exception)
-    {
-        $this->incomplete_strategy->generateException($exception);
-
-        return 1;
-    }
-
-    /**
-     * Generate exception on skip test.
-     *
-     * @param SkipTestException $exception
-     *
-     * @return int Status code
-     */
-    public function onSkip(SkipTestException $exception)
     {
         $this->incomplete_strategy->generateException($exception);
 

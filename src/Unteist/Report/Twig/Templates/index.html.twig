@@ -13,6 +13,7 @@
     <table class="table table-bordered">
         <thead>
         <tr>
+            <th>#</th>
             <th>TestCase</th>
             <th>Tests</th>
             <th>Asserts</th>
@@ -22,6 +23,7 @@
         <tbody>
         {% for class, case in storage %}
             <tr>
+                <td>{{ loop.index }}</td>
                 <td><a href="{{ class|getPathByNamespace }}/index.html">{{ class }}</a></td>
                 <td>{{ macros.progress(case) }}</td>
                 <td>{{ case.asserts }}</td>
@@ -29,9 +31,10 @@
             </tr>
         {% endfor %}
         <tr>
-            <td colspan="4">&nbsp;</td>
+            <td colspan="5">&nbsp;</td>
         </tr>
         <tr>
+            <td></td>
             <td><b>Total</b></td>
             <td>{{ statistics|length }}</td>
             <td>{{ statistics.asserts }}</td>

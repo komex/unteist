@@ -9,6 +9,7 @@ namespace Unteist;
 
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Unteist\Exception\IncompleteTestException;
+use Unteist\Exception\SkipTestException;
 use Unteist\Exception\TestFailException;
 
 /**
@@ -38,6 +39,42 @@ class TestCase
     public function __construct()
     {
         $this->local_storage = new \ArrayObject();
+    }
+
+    /**
+     * Mark test as incomplete.
+     *
+     * @param string $message
+     *
+     * @throws IncompleteTestException
+     */
+    public static function markAsIncomplete($message = '')
+    {
+        throw new IncompleteTestException($message);
+    }
+
+    /**
+     * Mark test as fail.
+     *
+     * @param string $message
+     *
+     * @throws TestFailException
+     */
+    public static function markAsFail($message = '')
+    {
+        throw new TestFailException($message);
+    }
+
+    /**
+     * Mark test skipped.
+     *
+     * @param string $message
+     *
+     * @throws SkipTestException
+     */
+    public static function skip($message = '')
+    {
+        throw new SkipTestException($message);
     }
 
     /**
@@ -92,29 +129,5 @@ class TestCase
     public function getService($name)
     {
         return $this->config->get($name);
-    }
-
-    /**
-     * Mark test as incomplete.
-     *
-     * @param string $message
-     *
-     * @throws IncompleteTestException
-     */
-    public static function markAsIncomplete($message = '')
-    {
-        throw new IncompleteTestException($message);
-    }
-
-    /**
-     * Mark test as fail.
-     *
-     * @param string $message
-     *
-     * @throws TestFailException
-     */
-    public static function markAsFail($message = '')
-    {
-        throw new TestFailException($message);
     }
 }
