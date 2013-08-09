@@ -171,7 +171,7 @@ class Runner
                         $return_code = 1;
                     }
                 } catch (SkipTestException $e) {
-                    // Hack for reset execution time for skipped tests.
+                    // Hack for reset execution time of skipped tests.
                     $this->started = microtime(true);
                     $event = new TestEvent($test->getMethod(), $this->test_case_event);
                     $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e, false);

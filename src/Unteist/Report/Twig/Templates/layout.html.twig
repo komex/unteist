@@ -17,7 +17,8 @@
     </div>
     {% block content %}{% endblock %}
 </div>
-</body>
+<p class="text-center">Generated at {{ "now"|date("H:i:s m.d.Y") }}</p>
 <script type="text/javascript" src="js/jquery.min.js"></script>
 {% block javascript %}{% endblock %}
+</body>
 </html>
