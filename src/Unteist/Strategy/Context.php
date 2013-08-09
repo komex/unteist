@@ -31,24 +31,15 @@ class Context
      * @var StrategyInterface
      */
     protected $incomplete_strategy;
-    /**
-     * @var StrategyInterface
-     */
-    protected $skipped_strategy;
 
     /**
      * Setup default strategy.
      */
-    public function __construct(
-        StrategyInterface $error,
-        StrategyInterface $failure,
-        StrategyInterface $incomplete,
-        StrategyInterface $skip
-    ) {
+    public function __construct(StrategyInterface $error, StrategyInterface $failure, StrategyInterface $incomplete)
+    {
         $this->setErrorStrategy($error);
         $this->setFailureStrategy($failure);
         $this->setIncompleteStrategy($incomplete);
-        $this->setSkippedStrategy($skip);
     }
 
     /**
@@ -79,16 +70,6 @@ class Context
     public function setIncompleteStrategy(StrategyInterface $incomplete_strategy)
     {
         $this->incomplete_strategy = $incomplete_strategy;
-    }
-
-    /**
-     * Choose a strategy for the situation in skiped test.
-     *
-     * @param StrategyInterface $skipped_strategy
-     */
-    public function setSkippedStrategy(StrategyInterface $skipped_strategy)
-    {
-        $this->skipped_strategy = $skipped_strategy;
     }
 
     /**
@@ -129,20 +110,6 @@ class Context
     public function onIncomplete(IncompleteTestException $exception)
     {
         $this->incomplete_strategy->generateException($exception);
-
-        return 1;
-    }
-
-    /**
-     * Generate exception on skip test.
-     *
-     * @param SkipTestException $exception
-     *
-     * @return int Status code
-     */
-    public function onSkip(SkipTestException $exception)
-    {
-        $this->skipped_strategy->generateException($exception);
 
         return 1;
     }

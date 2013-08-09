@@ -178,10 +178,8 @@ class Configurator
         $failure = $this->container->get($this->config['context']['failure']);
         /** @var StrategyInterface $incomplete */
         $incomplete = $this->container->get($this->config['context']['incomplete']);
-        /** @var StrategyInterface $skip */
-        $skip = $this->container->get($this->config['context']['skip']);
 
-        return new Context($error, $failure, $incomplete, $skip);
+        return new Context($error, $failure, $incomplete);
     }
 
     /**

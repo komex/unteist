@@ -399,8 +399,6 @@ class Runner
                         if ($test->getExpectedException()) {
                             throw new TestFailException('Expected exception ' . $test->getExpectedException());
                         }
-                    } catch (SkipTestException $e) {
-                        $this->context->onSkip($e);
                     } catch (TestFailException $e) {
                         $this->context->onFailure($e);
                     } catch (IncompleteTestException $e) {
@@ -408,10 +406,7 @@ class Runner
                     }
                     $this->finish($test, $event, TestMeta::TEST_DONE);
                 } catch (SkipTestException $e) {
-                    // Hack for reset execution time for skipped tests.
-                    $this->started = microtime(true);
-                    $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e, false);
-                    $status_code = $this->context->onSkip($e);
+                    $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e);
                 } catch (TestFailException $e) {
                     $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
                     $status_code = $this->context->onFailure($e);

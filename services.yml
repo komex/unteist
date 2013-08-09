@@ -16,8 +16,6 @@ services:
         arguments: [ %report.dir% ]
     strategy.fail:
         class: \Unteist\Strategy\TestFailStrategy
-    strategy.skip:
-        class: \Unteist\Strategy\SkipTestStrategy
     strategy.incomplete:
         class: \Unteist\Strategy\IncompleteTestStrategy
     strategy.ignore:
