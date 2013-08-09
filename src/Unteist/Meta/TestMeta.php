@@ -69,6 +69,18 @@ class TestMeta
      * @var LoggerInterface
      */
     protected $logger;
+    /**
+     * @var string
+     */
+    protected $expected_exception;
+    /**
+     * @var string
+     */
+    protected $expected_exception_message;
+    /**
+     * @var int
+     */
+    protected $expected_exception_code;
 
     /**
      * @param string $class TestCase name
@@ -85,7 +97,8 @@ class TestMeta
             'Registering a new test method.',
             ['pid' => getmypid(), 'method' => $method, 'modifiers' => $modifiers]
         );
-        if (!empty($modifiers['depends'])) {
+        // Depends
+        if (!empty($modifiers['depends']) && $modifiers['depends'] !== true) {
             $depends = preg_replace('{[^\w,]}i', '', $modifiers['depends']);
             $depends = array_unique(explode(',', $depends));
             $position = array_search($method, $depends);
@@ -93,14 +106,57 @@ class TestMeta
                 array_splice($depends, $position, 1);
             }
             $this->logger->debug(
-                'The test has depends',
+                'The test has dependencies.',
                 ['pid' => getmypid(), 'test' => $method, 'depends' => $depends]
             );
             $this->dependencies = $depends;
         }
-        if (!empty($modifiers['dataProvider']) && $modifiers['dataProvider'] != $method) {
+        // DataProvider
+        if (!empty($modifiers['dataProvider']) && !in_array($modifiers['dataProvider'], [$method, true])) {
             $this->dataProvider = $modifiers['dataProvider'];
         }
+        // Exceptions
+        if (!empty($modifiers['expectedException']) && $modifiers['expectedException'] !== true) {
+            $this->expected_exception = $modifiers['expectedException'];
+            // Exception message
+            if (!empty($modifiers['expectedExceptionMessage']) && $modifiers['expectedExceptionMessage'] !== true) {
+                $this->expected_exception_message = $modifiers['expectedExceptionMessage'];
+            }
+            // Exception code
+            if (!empty($modifiers['expectedExceptionCode']) && $modifiers['expectedExceptionCode'] !== true) {
+                $this->expected_exception_code = intval($modifiers['expectedExceptionCode'], 10);
+            }
+        }
+    }
+
+    /**
+     * Get class name of expected exception.
+     *
+     * @return string
+     */
+    public function getExpectedException()
+    {
+        return $this->expected_exception;
+    }
+
+    /**
+     * Get code of expected exception.
+     *
+     * @return int
+     */
+    public function getExpectedExceptionCode()
+    {
+        return $this->expected_exception_code;
+    }
+
+    /**
+     * Get message of expected exception.
+     *
+     * @return string
+     */
+    public function getExpectedExceptionMessage()
+    {
+        return $this->expected_exception_message;
     }
 
     /**
