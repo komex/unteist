@@ -90,7 +90,7 @@ class StackTest extends \Unteist\TestCase
 ## What next
 
 * Store you configuration in different formats (yml, xml, json or all together);
-* Testing Exceptions;
+* A lot of new kind of class and methods filters (like namespace filter, mask filter, groups);
 * Code Coverage Analysis.
 
 ## Credits
