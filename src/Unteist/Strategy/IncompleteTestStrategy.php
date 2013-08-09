@@ -29,7 +29,7 @@ class IncompleteTestStrategy implements StrategyInterface
         if ($exception instanceof IncompleteTestException) {
             throw $exception;
         } else {
-            throw new IncompleteTestException('Test was marked as incomplete by chosen strategy.', 0, $exception);
+            throw new IncompleteTestException('Test was marked as incomplete by chosen strategy', 0, $exception);
         }
     }
 }

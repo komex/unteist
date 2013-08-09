@@ -35,10 +35,6 @@ class Context
      * @var StrategyInterface
      */
     protected $skipped_strategy;
-    /**
-     * @var StrategyInterface[]
-     */
-    protected $default_strategies;
 
     /**
      * Setup default strategy.
@@ -49,24 +45,10 @@ class Context
         StrategyInterface $incomplete,
         StrategyInterface $skip
     ) {
-        $this->default_strategies = [
-            'error' => $error,
-            'failure' => $failure,
-            'incomplete' => $incomplete,
-            'skip' => $skip,
-        ];
-        $this->restore();
-    }
-
-    /**
-     * Restore default strategy.
-     */
-    public function restore()
-    {
-        $this->setErrorStrategy($this->default_strategies['error']);
-        $this->setFailureStrategy($this->default_strategies['failure']);
-        $this->setIncompleteStrategy($this->default_strategies['incomplete']);
-        $this->setSkippedStrategy($this->default_strategies['skip']);
+        $this->setErrorStrategy($error);
+        $this->setFailureStrategy($failure);
+        $this->setIncompleteStrategy($incomplete);
+        $this->setSkippedStrategy($skip);
     }
 
     /**
@@ -160,7 +142,7 @@ class Context
      */
     public function onSkip(SkipTestException $exception)
     {
-        $this->incomplete_strategy->generateException($exception);
+        $this->skipped_strategy->generateException($exception);
 
         return 1;
     }

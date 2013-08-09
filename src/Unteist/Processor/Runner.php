@@ -20,7 +20,6 @@ use Unteist\Exception\SkipTestException;
 use Unteist\Filter\MethodsFilterInterface;
 use Unteist\Meta\TestMeta;
 use Unteist\Strategy\Context;
-use Unteist\Strategy\SkipTestStrategy;
 use Unteist\TestCase;
 
 /**
@@ -166,9 +165,16 @@ class Runner
             $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
             $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
             $return_code = 0;
-            foreach ($this->tests as $meta) {
-                $this->context->restore();
-                if ($this->runTest($meta)) {
+            foreach ($this->tests as $test) {
+                try {
+                    if ($this->runTest($test)) {
+                        $return_code = 1;
+                    }
+                } catch (SkipTestException $e) {
+                    // Hack for reset execution time for skipped tests.
+                    $this->started = microtime(true);
+                    $event = new TestEvent($test->getMethod(), $this->test_case_event);
+                    $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e, false);
                     $return_code = 1;
                 }
             }
@@ -234,29 +240,32 @@ class Runner
                 $test = $this->tests[$depend];
                 switch ($test->getStatus()) {
                     case TestMeta::TEST_NEW:
-                        $this->context->setErrorStrategy(new SkipTestStrategy());
-                        $this->context->setFailureStrategy(new SkipTestStrategy());
-                        $this->context->setIncompleteStrategy(new SkipTestStrategy());
-                        $this->context->setSkippedStrategy(new SkipTestStrategy());
-                        $this->runTest($test);
-                        $this->context->restore();
+                        try {
+                            $this->runTest($test);
+                        } catch (\Exception $e) {
+                            throw new SkipTestException(
+                                'The test was skipped because of unresolved dependencies',
+                                0,
+                                $e
+                            );
+                        }
                         break;
                     case TestMeta::TEST_MARKED:
                         throw new \LogicException(
-                            sprintf('Found infinitive loop in depends for test method "%s:%s".', $this->name, $depend)
+                            sprintf('Found infinitive loop in depends for test method "%s:%s"', $this->name, $depend)
                         );
                     case TestMeta::TEST_SKIPPED:
                         throw new SkipTestException(
-                            sprintf('Test method "%s:%s" was skipped.', $this->name, $depend)
+                            sprintf('Test method "%s:%s" was skipped', $this->name, $depend)
                         );
                     case TestMeta::TEST_FAILED:
                         throw new SkipTestException(
-                            sprintf('Test method "%s:%s" was failed.', $this->name, $depend)
+                            sprintf('Test method "%s:%s" was failed', $this->name, $depend)
                         );
                 }
             } else {
                 throw new \InvalidArgumentException(
-                    sprintf('The depends method "%s:%s" does not exists or is not a test.', $this->name, $depend)
+                    sprintf('The depends method "%s:%s" does not exists or is not a test', $this->name, $depend)
                 );
             }
         }
@@ -312,6 +321,7 @@ class Runner
         $event->setDepends($test->getDependencies());
         $event->setTime(microtime(true) - $this->started);
         $event->setAsserts(Assert::getAssertsCount() - $this->asserts);
+        $this->asserts = Assert::getAssertsCount();
         if ($status === TestMeta::TEST_DONE) {
             $context = [];
         } else {
@@ -363,63 +373,58 @@ class Runner
     private function runTest(TestMeta $test)
     {
         $status_code = 0;
-        try {
-            $depends = $test->getDependencies();
-            if (!empty($depends)) {
-                $test->setStatus(TestMeta::TEST_MARKED);
-                $this->resolveDependencies($depends);
-            }
+        $depends = $test->getDependencies();
+        if (!empty($depends)) {
+            $test->setStatus(TestMeta::TEST_MARKED);
+            $this->resolveDependencies($depends);
+        }
 
-            if ($test->getStatus() == TestMeta::TEST_NEW || $test->getStatus() == TestMeta::TEST_MARKED) {
-                $dataProvider = $this->getDataSet($test->getDataProvider());
-                $method = new \ReflectionMethod($this->test_case, $test->getMethod());
-                foreach ($dataProvider as $data_set) {
+        if ($test->getStatus() == TestMeta::TEST_NEW || $test->getStatus() == TestMeta::TEST_MARKED) {
+            $dataProvider = $this->getDataSet($test->getDataProvider());
+            $method = new \ReflectionMethod($this->test_case, $test->getMethod());
+            foreach ($dataProvider as $data_set) {
 
-                    $event = new TestEvent($test->getMethod(), $this->test_case_event);
-                    $event->setDataSet($data_set);
-                    $event->setDepends($test->getDependencies());
-                    $this->asserts = Assert::getAssertsCount();
+                $event = new TestEvent($test->getMethod(), $this->test_case_event);
+                $event->setDataSet($data_set);
+                $event->setDepends($test->getDependencies());
 
+                try {
                     try {
                         $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $event);
                         $this->started = microtime(true);
                         $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $event);
+                        $this->asserts = Assert::getAssertsCount();
 
                         $method->invokeArgs($this->test_case, $data_set);
                         if ($test->getExpectedException()) {
                             throw new TestFailException('Expected exception ' . $test->getExpectedException());
                         }
-                        $this->finish($test, $event, TestMeta::TEST_DONE);
                     } catch (SkipTestException $e) {
-                        $event = new TestEvent($test->getMethod(), $this->test_case_event);
-                        // Hack for reset execution time for skipped tests.
-                        $this->started = microtime(true);
-                        $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e, false);
-
-                        $status_code = $this->context->onSkip($e);
+                        $this->context->onSkip($e);
                     } catch (TestFailException $e) {
-                        $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
-
-                        $status_code = $this->context->onFailure($e);
+                        $this->context->onFailure($e);
                     } catch (IncompleteTestException $e) {
-                        $this->finish($test, $event, TestMeta::TEST_INCOMPLETE, $e);
-
-                        $status_code = $this->context->onIncomplete($e);
-                    } catch (\Exception $e) {
-                        $status = $this->exceptionControl($test, $event, $e);
-                        if ($status > 0) {
-                            $status_code = $status;
-                        }
+                        $this->context->onIncomplete($e);
+                    }
+                    $this->finish($test, $event, TestMeta::TEST_DONE);
+                } catch (SkipTestException $e) {
+                    // Hack for reset execution time for skipped tests.
+                    $this->started = microtime(true);
+                    $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e, false);
+                    $status_code = $this->context->onSkip($e);
+                } catch (TestFailException $e) {
+                    $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
+                    $status_code = $this->context->onFailure($e);
+                } catch (IncompleteTestException $e) {
+                    $this->finish($test, $event, TestMeta::TEST_INCOMPLETE, $e);
+                    $status_code = $this->context->onIncomplete($e);
+                } catch (\Exception $e) {
+                    $status = $this->exceptionControl($test, $event, $e);
+                    if ($status > 0) {
+                        $status_code = $status;
                     }
                 }
             }
-        } catch (SkipTestException $e) {
-            $event = new TestEvent($test->getMethod(), $this->test_case_event);
-            // Hack for reset execution time for skipped tests.
-            $this->started = microtime(true);
-            $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e, false);
-
-            $status_code = $this->context->onSkip($e);
         }
 
         return $status_code;
