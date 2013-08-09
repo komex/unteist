@@ -124,11 +124,11 @@ class Assert
     /**
      * Assert that actual variable equal to expected variable.
      *
-     * @param mixed $actual
      * @param mixed $expected
+     * @param mixed $actual
      * @param string $message
      */
-    public static function equalTo($actual, $expected, $message = '')
+    public static function equals($expected, $actual, $message = '')
     {
         self::assertThat($actual, new EqualTo($expected), $message);
     }
@@ -136,11 +136,11 @@ class Assert
     /**
      * Assert that actual variable identical to expected variable.
      *
-     * @param mixed $actual
      * @param mixed $expected
+     * @param mixed $actual
      * @param string $message
      */
-    public static function identicalTo($actual, $expected, $message = '')
+    public static function identical($expected, $actual, $message = '')
     {
         self::assertThat($actual, new IdenticalTo($expected), $message);
     }
@@ -148,11 +148,11 @@ class Assert
     /**
      * Assert that actual variable is instance of specified class.
      *
-     * @param mixed $actual
      * @param mixed $expected
+     * @param mixed $actual
      * @param string $message
      */
-    public static function sameInstance($actual, $expected, $message = '')
+    public static function sameInstance($expected, $actual, $message = '')
     {
         self::assertThat($actual, new SameInstance($expected), $message);
     }
@@ -196,11 +196,11 @@ class Assert
     /**
      * Assert that actual variable has specified type.
      *
-     * @param mixed $actual
      * @param mixed $expected
+     * @param mixed $actual
      * @param string $message
      */
-    public static function typeOf($actual, $expected, $message = '')
+    public static function typeOf($expected, $actual, $message = '')
     {
         self::assertThat($actual, new TypeOf($expected), $message);
     }
