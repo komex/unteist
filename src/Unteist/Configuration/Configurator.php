@@ -38,6 +38,10 @@ class Configurator
      */
     private $container;
     /**
+     * @var InputInterface
+     */
+    private $input;
+    /**
      * @var Formatter
      */
     private $formatter;
@@ -53,59 +57,20 @@ class Configurator
      * @var array
      */
     private $configs = [];
-    /**
-     * @var string
-     */
-    private $suite;
 
     /**
      * Prepare configuration loader.
      */
-    public function __construct(EventDispatcherInterface $dispatcher, Formatter $formatter)
+    public function __construct(EventDispatcherInterface $dispatcher, InputInterface $input, Formatter $formatter)
     {
         $this->container = new ContainerBuilder();
         $this->dispatcher = $dispatcher;
+        $this->input = $input;
         $this->formatter = $formatter;
         $locator = new FileLocator(join(DIRECTORY_SEPARATOR, [__DIR__, '..', '..', '..']));
         $loader = new YamlFileLoader($this->container, $locator);
         $loader->load('services.yml');
-    }
-
-    /**
-     * Load config from specified file.
-     *
-     * @param string $file Filename
-     */
-    public function getFromYaml($file)
-    {
-        $config = Yaml::parse($file);
-        if (is_array($config)) {
-            array_push($this->configs, $config);
-        }
-    }
-
-    /**
-     * Load config from Console Input.
-     *
-     * @param InputInterface $input
-     */
-    public function getFromInput(InputInterface $input)
-    {
-        $this->suite = $input->getArgument('suite');
-        $config = [];
-        $processes = $input->getOption('processes');
-        if ($processes !== null) {
-            $config['processes'] = $processes;
-        }
-        $report_dir = $input->getOption('report-dir');
-        if ($report_dir !== null) {
-            $config['report_dir'] = $report_dir;
-        }
-        $groups = $input->getOption('group');
-        if (!empty($groups)) {
-            $config['groups'] = $groups;
-        }
-        array_push($this->configs, $config);
+        $this->loadFromYaml('./unteist.yml');
     }
 
     /**
@@ -123,7 +88,7 @@ class Configurator
         $this->registerReporter();
         $this->registerListeners();
         if (!empty($this->config['groups'])) {
-            $this->config['filters']['methods'][] = 'filter.methods.group';
+            array_unshift($this->config['filters']['methods'], 'filter.methods.group');
         }
         foreach ($this->config['filters']['class'] as $filter_id) {
             /** @var ClassFilterInterface $filter */
@@ -140,6 +105,19 @@ class Configurator
         $processor->setSuite($this->getSuite());
 
         return $processor;
+    }
+
+    /**
+     * Load config from specified file.
+     *
+     * @param string $file Filename
+     */
+    private function loadFromYaml($file)
+    {
+        $config = Yaml::parse($file);
+        if (is_array($config)) {
+            array_push($this->configs, $config);
+        }
     }
 
     /**
@@ -247,7 +225,21 @@ class Configurator
     {
         $processor = new DefinitionProcessor();
         $config = $processor->processConfiguration(new ConfigurationValidator(), $this->configs);
-        $this->config = $this->getSuiteConfig($config);
+        $config = $this->getSuiteConfig($config);
+        // Rewrite options from input
+        $processes = $this->input->getOption('processes');
+        if ($processes !== null) {
+            $config['processes'] = $processes;
+        }
+        $report_dir = $this->input->getOption('report-dir');
+        if ($report_dir !== null) {
+            $config['report_dir'] = $report_dir;
+        }
+        $groups = $this->input->getOption('group');
+        if (!empty($groups)) {
+            $config['groups'] = $groups;
+        }
+        $this->config = $config;
     }
 
     /**
@@ -259,8 +251,8 @@ class Configurator
      */
     private function getSuiteConfig(array $config)
     {
-        if (isset($config['suites'][$this->suite])) {
-            $suite = $config['suites'][$this->suite];
+        if (isset($config['suites'][$this->input->getArgument('suite')])) {
+            $suite = $config['suites'][$this->input->getArgument('suite')];
             if (!empty($suite['report_dir'])) {
                 $config['report_dir'] = $suite['report_dir'];
             }
@@ -270,13 +262,13 @@ class Configurator
             if (isset($suite['filters'])) {
                 $config['filters'] = $suite['filters'];
             }
-            if (empty($config['groups']) && !empty($suite['groups'])) {
+            if (empty($config['groups'])) {
                 $config['groups'] = $suite['groups'];
             }
             $config['source'] = $suite['source'];
         } else {
             $config['source'] = [];
-            $suite = new \SplFileInfo($this->suite);
+            $suite = new \SplFileInfo($this->input->getArgument('suite'));
             if ($suite->isFile() && $suite->isReadable()) {
                 $config['source'][] = [
                     'in' => ($suite->getPath() ? : '.'),

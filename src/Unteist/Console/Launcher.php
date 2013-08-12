@@ -7,7 +7,6 @@
 
 namespace Unteist\Console;
 
-
 use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressHelper;
@@ -20,8 +19,6 @@ use Symfony\Component\Finder\Finder;
 use Unteist\Configuration\Configurator;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
-use Unteist\Filter\ClassFilter;
-use Unteist\Filter\MethodsFilter;
 use Unteist\Report\Statistics\StatisticsProcessor;
 
 /**
@@ -117,9 +114,7 @@ class Launcher extends Command
         // Formatter
         $this->formatter = new Formatter($output, $progress);
         // Configurator
-        $configurator = new Configurator($dispatcher, $this->formatter);
-        $configurator->getFromYaml('./unteist.yml');
-        $configurator->getFromInput($input);
+        $configurator = new Configurator($dispatcher, $input, $this->formatter);
         // Processor
         $processor = $configurator->getProcessor();
         // Global variables
