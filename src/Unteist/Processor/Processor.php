@@ -8,6 +8,7 @@
 namespace Unteist\Processor;
 
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Finder\Finder;
 use Unteist\Event\Connector;
@@ -58,6 +59,10 @@ class Processor
      */
     protected $global_storage;
     /**
+     * @var ContainerBuilder
+     */
+    protected $container;
+    /**
      * @var LoggerInterface
      */
     protected $logger;
@@ -79,14 +84,22 @@ class Processor
     protected $context;
 
     /**
+     * Create general processor.
+     *
      * @param EventDispatcherInterface $dispatcher
+     * @param ContainerBuilder $container
      * @param LoggerInterface $logger
      * @param Context $context
      */
-    public function __construct(EventDispatcherInterface $dispatcher, LoggerInterface $logger, Context $context)
-    {
+    public function __construct(
+        EventDispatcherInterface $dispatcher,
+        ContainerBuilder $container,
+        LoggerInterface $logger,
+        Context $context
+    ) {
         $this->dispatcher = $dispatcher;
         $this->logger = $logger;
+        $this->container = $container;
         $this->global_storage = new \ArrayObject();
         $this->connector = new Connector($this->dispatcher);
         $this->context = $context;
@@ -317,6 +330,7 @@ class Processor
                 }
             }
             $class->setGlobalStorage($this->global_storage);
+            $class->setConfig($this->container);
             $runner = new Runner($this->dispatcher, $this->logger, $this->context);
             $runner->setFilters($this->methods_filters);
             $runner->precondition($class);

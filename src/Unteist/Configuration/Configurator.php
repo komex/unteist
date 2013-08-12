@@ -82,7 +82,7 @@ class Configurator
         if (empty($this->config)) {
             $this->processConfiguration();
         }
-        $processor = new Processor($this->dispatcher, $this->getLogger(), $this->getContext());
+        $processor = new Processor($this->dispatcher, $this->container, $this->getLogger(), $this->getContext());
         $processor->setProcesses($this->config['processes']);
         $this->registerReporter();
         $this->registerListeners();
