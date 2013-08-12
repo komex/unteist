@@ -96,6 +96,30 @@ class Runner
     }
 
     /**
+     * Parse block with annotations.
+     *
+     * @param string $doc Comments string
+     * @param array $keywords Allowed keywords
+     *
+     * @return array
+     */
+    public static function parseDocBlock($doc, array $keywords)
+    {
+        if (empty($doc)) {
+            $annotation = [];
+        } else {
+            $pattern = sprintf('{\*\s*@(%s)\b(?:\s+([\w\s]+))?[\r\n]*(?!\*)}', join('|', $keywords));
+            preg_match_all($pattern, $doc, $matches, PREG_SET_ORDER);
+            $annotation = [];
+            foreach ($matches as $match) {
+                $annotation[trim($match[1])] = trim($match[2]) ? : true;
+            }
+        }
+
+        return $annotation;
+    }
+
+    /**
      * Setup TestCase.
      *
      * @param TestCase $test_case
@@ -107,7 +131,7 @@ class Runner
         $this->name = $class->getName();
         foreach ($class->getMethods() as $method) {
             $is_test_method = true;
-            $modifiers = $this->parseDocBlock($method);
+            $modifiers = $this->getModifiers($method);
             foreach ($this->filters as $filter) {
                 if (!$filter->condition($method, $modifiers)) {
                     $this->logger->debug(
@@ -194,13 +218,11 @@ class Runner
      *
      * @return array
      */
-    protected function parseDocBlock(\ReflectionMethod $method)
+    protected function getModifiers(\ReflectionMethod $method)
     {
-        $doc = $method->getDocComment();
-        if (empty($doc)) {
-            $modifiers = [];
-        } else {
-            $keywords = [
+        return self::parseDocBlock(
+            $method->getDocComment(),
+            [
                 'beforeTest',
                 'afterTest',
                 'beforeCase',
@@ -212,16 +234,8 @@ class Runner
                 'expectedException',
                 'expectedExceptionMessage',
                 'expectedExceptionCode',
-            ];
-            $pattern = sprintf('{\*\s*@(%s)\b(?:\s+([\w\s]+))?[\r\n]*(?!\*)}', join('|', $keywords));
-            preg_match_all($pattern, $doc, $matches, PREG_SET_ORDER);
-            $modifiers = [];
-            foreach ($matches as $match) {
-                $modifiers[trim($match[1])] = trim($match[2]) ? : true;
-            }
-        }
-
-        return $modifiers;
+            ]
+        );
     }
 
     /**

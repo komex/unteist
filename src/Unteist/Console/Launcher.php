@@ -57,11 +57,19 @@ class Launcher extends Command
     ];
 
     /**
+     * Increase progress bar.
+     */
+    public function incProgress()
+    {
+        $this->formatter->advance();
+    }
+
+    /**
      * Listener on TestCase finish.
      */
     public function afterCase(TestCaseEvent $event)
     {
-        $this->formatter->advance();
+        $this->incProgress();
         $this->statistics->addTestCaseEvent($event);
     }
 
@@ -126,5 +134,6 @@ class Launcher extends Command
     {
         $dispatcher->addListener(EventStorage::EV_AFTER_CASE, [$this, 'afterCase']);
         $dispatcher->addListener(EventStorage::EV_APP_FINISHED, [$this, 'finish']);
+        $dispatcher->addListener(EventStorage::EV_CASE_FILTERED, [$this, 'incProgress']);
     }
 }

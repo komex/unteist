@@ -70,6 +70,16 @@ class ConfigurationValidator implements ConfigurationInterface
     }
 
     /**
+     * Get definition of custom parameters.
+     *
+     * @param ArrayNodeDefinition $rootNode
+     */
+    private function configCustomSection(ArrayNodeDefinition $rootNode)
+    {
+        $rootNode->children()->arrayNode('params')->requiresAtLeastOneElement()->prototype('variable')->isRequired();
+    }
+
+    /**
      * Get section for logger.
      *
      * @return ArrayNodeDefinition
@@ -88,12 +98,17 @@ class ConfigurationValidator implements ConfigurationInterface
     /**
      * Get section for filters.
      *
+     * @param bool $defaults Use defaults if sections is not set.
+     *
      * @return ArrayNodeDefinition
      */
-    private function getFiltersSection()
+    private function getFiltersSection($defaults = true)
     {
         $builder = new TreeBuilder;
-        $section = $builder->root('filters')->addDefaultsIfNotSet();
+        $section = $builder->root('filters');
+        if ($defaults) {
+            $section->addDefaultsIfNotSet();
+        }
 
         $definition = $section->children()->arrayNode('class');
         $definition->requiresAtLeastOneElement()->cannotBeEmpty()->defaultValue(['filter.class.base']);
@@ -172,7 +187,9 @@ class ConfigurationValidator implements ConfigurationInterface
         /** @var ArrayNodeDefinition $prototype */
         $prototype = $section->prototype('array');
         $this->configReportDirSection($prototype);
+        $this->configCustomSection($prototype);
         $prototype->append($this->getContextSection(false));
+        $prototype->append($this->getFiltersSection(false));
         $prototype->append($this->getSourceSection());
 
         return $section;

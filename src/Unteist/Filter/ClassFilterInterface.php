@@ -7,6 +7,8 @@
 
 namespace Unteist\Filter;
 
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+
 /**
  * Class ClassFilterInterface
  *
@@ -30,4 +32,11 @@ interface ClassFilterInterface
      * @return string
      */
     public function getName();
+
+    /**
+     * Get tests parameters.
+     *
+     * @param array $config
+     */
+    public function setParams(array $config);
 }

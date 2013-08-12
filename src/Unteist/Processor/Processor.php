@@ -310,6 +310,7 @@ class Processor
                                 'filter' => $filter->getName(),
                             ]
                         );
+                        $this->dispatcher->dispatch(EventStorage::EV_CASE_FILTERED);
 
                         return 1;
                     }

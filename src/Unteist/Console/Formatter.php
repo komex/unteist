@@ -73,7 +73,7 @@ class Formatter
         $this->output->writeln('');
         if (count($statistics['fail']) > 0 || count($statistics['error']) > 0 || count($statistics['incomplete']) > 0) {
             $this->fail($statistics);
-        } elseif ($statistics['success'] > 0) {
+        } else {
             $this->success($statistics);
         }
     }
