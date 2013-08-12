@@ -16,17 +16,31 @@ namespace Unteist\Filter;
 final class MethodsFilter implements MethodsFilterInterface
 {
     /**
+     * @var bool
+     */
+    private $annotation_test = false;
+
+    /**
      * @inheritdoc
      */
-    public function condition(\ReflectionMethod $method, array $modifiers)
+    public function condition(\ReflectionMethod $method)
     {
         if ($method->isPublic() && !($method->isAbstract() || $method->isConstructor() || $method->isDestructor())) {
-            if (isset($modifiers['test']) || (strlen($method->name) > 4 && substr($method->name, 0, 4) === 'test')) {
+            if ($this->annotation_test || (strlen($method->name) > 4 && substr($method->name, 0, 4) === 'test')) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * Set
+     * @param array $modifiers
+     */
+    public function setModifiers(array $modifiers)
+    {
+        $this->annotation_test = isset($modifiers['test']);
     }
 
     /**
@@ -37,5 +51,14 @@ final class MethodsFilter implements MethodsFilterInterface
     public function getName()
     {
         return 'named';
+    }
+
+    /**
+     * Get tests parameters.
+     *
+     * @param array $config
+     */
+    public function setParams(array $config)
+    {
     }
 }

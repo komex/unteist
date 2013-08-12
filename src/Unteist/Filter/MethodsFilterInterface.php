@@ -20,11 +20,10 @@ interface MethodsFilterInterface
      * Condition for filter test methods.
      *
      * @param \ReflectionMethod $method Method to check
-     * @param array $modifiers Method modifiers
      *
      * @return bool Is it right method?
      */
-    public function condition(\ReflectionMethod $method, array $modifiers);
+    public function condition(\ReflectionMethod $method);
 
     /**
      * Get name of this methods filter.
@@ -32,4 +31,11 @@ interface MethodsFilterInterface
      * @return string
      */
     public function getName();
+
+    /**
+     * Get tests parameters.
+     *
+     * @param array $config
+     */
+    public function setParams(array $config);
 }

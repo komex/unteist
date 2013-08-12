@@ -101,6 +101,11 @@ class Configurator
         if ($report_dir !== null) {
             $config['report_dir'] = $report_dir;
         }
+        $groups = $input->getOption('group');
+        if (!empty($groups)) {
+            $config['groups'] = $groups;
+            $config['filters']['methods'][] = 'filter.methods.group';
+        }
         array_push($this->configs, $config);
     }
 
@@ -127,6 +132,7 @@ class Configurator
         foreach ($this->config['filters']['methods'] as $filter_id) {
             /** @var MethodsFilterInterface $filter */
             $filter = $this->container->get($filter_id);
+            $filter->setParams($this->config);
             $processor->addMethodsFilter($filter);
         }
         $processor->setSuite($this->getSuite());
@@ -262,8 +268,10 @@ class Configurator
             if (isset($suite['filters'])) {
                 $config['filters'] = $suite['filters'];
             }
+            if (!empty($suite['groups'])) {
+                $config['groups'] = $suite['groups'];
+            }
             $config['source'] = $suite['source'];
-            $config['params'] = $suite['params'];
         } else {
             $config['source'] = [];
             $suite = new \SplFileInfo($this->suite);

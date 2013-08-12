@@ -91,6 +91,12 @@ class Launcher extends Command
         $this->addArgument('suite', InputArgument::REQUIRED, 'Suite name in config file or path to TestCase classes.');
         $this->addOption('processes', 'p', InputOption::VALUE_REQUIRED, 'Run test in N separated processes.');
         $this->addOption('report-dir', 'r', InputOption::VALUE_REQUIRED, 'Report output directory.');
+        $this->addOption(
+            'group',
+            'g',
+            InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
+            'Filter tests by groups.'
+        );
     }
 
     /**

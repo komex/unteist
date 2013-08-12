@@ -31,6 +31,7 @@ class ConfigurationValidator implements ConfigurationInterface
         $this->configProcessesSection($rootNode);
         $this->configReportDirSection($rootNode);
         $this->configListenerSection($rootNode);
+        $this->configGroupSection($rootNode);
         $rootNode->append($this->getContextSection());
         $rootNode->append($this->getFiltersSection());
         $rootNode->append($this->getLoggerSection());
@@ -70,13 +71,13 @@ class ConfigurationValidator implements ConfigurationInterface
     }
 
     /**
-     * Get definition of custom parameters.
+     * Get definition of group filter.
      *
      * @param ArrayNodeDefinition $rootNode
      */
-    private function configCustomSection(ArrayNodeDefinition $rootNode)
+    private function configGroupSection(ArrayNodeDefinition $rootNode)
     {
-        $rootNode->children()->arrayNode('params')->requiresAtLeastOneElement()->prototype('variable')->isRequired();
+        $rootNode->children()->arrayNode('groups')->prototype('scalar')->cannotBeEmpty();
     }
 
     /**
@@ -115,7 +116,7 @@ class ConfigurationValidator implements ConfigurationInterface
         $definition->prototype('scalar');
 
         $definition = $section->children()->arrayNode('methods');
-        $definition->requiresAtLeastOneElement()->cannotBeEmpty()->defaultValue(['filter.methods.base']);
+        $definition->requiresAtLeastOneElement()->cannotBeEmpty()->defaultValue([]);
         $definition->prototype('scalar');
 
         return $section;
@@ -187,7 +188,7 @@ class ConfigurationValidator implements ConfigurationInterface
         /** @var ArrayNodeDefinition $prototype */
         $prototype = $section->prototype('array');
         $this->configReportDirSection($prototype);
-        $this->configCustomSection($prototype);
+        $this->configGroupSection($prototype);
         $prototype->append($this->getContextSection(false));
         $prototype->append($this->getFiltersSection(false));
         $prototype->append($this->getSourceSection());
