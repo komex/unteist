@@ -104,7 +104,6 @@ class Configurator
         $groups = $input->getOption('group');
         if (!empty($groups)) {
             $config['groups'] = $groups;
-            $config['filters']['methods'][] = 'filter.methods.group';
         }
         array_push($this->configs, $config);
     }
@@ -123,6 +122,9 @@ class Configurator
         $processor->setProcesses($this->config['processes']);
         $this->registerReporter();
         $this->registerListeners();
+        if (!empty($this->config['groups'])) {
+            $this->config['filters']['methods'][] = 'filter.methods.group';
+        }
         foreach ($this->config['filters']['class'] as $filter_id) {
             /** @var ClassFilterInterface $filter */
             $filter = $this->container->get($filter_id);
@@ -268,7 +270,7 @@ class Configurator
             if (isset($suite['filters'])) {
                 $config['filters'] = $suite['filters'];
             }
-            if (!empty($suite['groups'])) {
+            if (empty($config['groups']) && !empty($suite['groups'])) {
                 $config['groups'] = $suite['groups'];
             }
             $config['source'] = $suite['source'];
