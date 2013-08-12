@@ -113,8 +113,11 @@ class Configurator
      */
     private function loadServiceConfig(FileLocator $locator)
     {
-        $loader = new YamlFileLoader($this->container, $locator);
-        $loader->load('untesit.services.yml');
+        try {
+            $loader = new YamlFileLoader($this->container, $locator);
+            $loader->load('untesit.services.yml');
+        } catch (\InvalidArgumentException $e) {
+        }
     }
 
     /**
