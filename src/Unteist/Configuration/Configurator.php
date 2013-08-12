@@ -67,9 +67,14 @@ class Configurator
         $this->dispatcher = $dispatcher;
         $this->input = $input;
         $this->formatter = $formatter;
-        $locator = new FileLocator(join(DIRECTORY_SEPARATOR, [__DIR__, '..', '..', '..']));
+        $locator = new FileLocator(
+            [
+                join(DIRECTORY_SEPARATOR, [__DIR__, '..', '..', '..']),
+                realpath('.'),
+            ]
+        );
         $loader = new YamlFileLoader($this->container, $locator);
-        $loader->load('services.yml');
+        $loader->load('untesit.services.yml');
         $this->loadFromYaml('./unteist.yml');
     }
 
