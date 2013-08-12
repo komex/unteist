@@ -67,14 +67,8 @@ class Configurator
         $this->dispatcher = $dispatcher;
         $this->input = $input;
         $this->formatter = $formatter;
-        $locator = new FileLocator(
-            [
-                join(DIRECTORY_SEPARATOR, [__DIR__, '..', '..', '..']),
-                realpath('.'),
-            ]
-        );
-        $loader = new YamlFileLoader($this->container, $locator);
-        $loader->load('untesit.services.yml');
+        $this->loadServiceConfig(new FileLocator(join(DIRECTORY_SEPARATOR, [__DIR__, '..', '..', '..'])));
+        $this->loadServiceConfig(new FileLocator(realpath('.')));
         $this->loadFromYaml('./unteist.yml');
     }
 
@@ -110,6 +104,17 @@ class Configurator
         $processor->setSuite($this->getSuite());
 
         return $processor;
+    }
+
+    /**
+     * Load service config from "untesit.services.yml".
+     *
+     * @param FileLocator $locator Where to find
+     */
+    private function loadServiceConfig(FileLocator $locator)
+    {
+        $loader = new YamlFileLoader($this->container, $locator);
+        $loader->load('untesit.services.yml');
     }
 
     /**
