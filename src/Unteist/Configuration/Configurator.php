@@ -107,7 +107,7 @@ class Configurator
     }
 
     /**
-     * Load service config from "untesit.services.yml".
+     * Load service config from "unteist.services.yml".
      *
      * @param FileLocator $locator Where to find
      */
@@ -115,7 +115,7 @@ class Configurator
     {
         try {
             $loader = new YamlFileLoader($this->container, $locator);
-            $loader->load('untesit.services.yml');
+            $loader->load('unteist.services.yml');
         } catch (\InvalidArgumentException $e) {
         }
     }
