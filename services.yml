@@ -24,3 +24,5 @@ services:
         class: \Unteist\Filter\ClassFilter
     filter.methods.base:
         class: \Unteist\Filter\MethodsFilter
+    filter.methods.group:
+        class: \Unteist\Filter\GroupMethodsFilter

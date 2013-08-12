@@ -57,11 +57,19 @@ class Launcher extends Command
     ];
 
     /**
+     * Increase progress bar.
+     */
+    public function incProgress()
+    {
+        $this->formatter->advance();
+    }
+
+    /**
      * Listener on TestCase finish.
      */
     public function afterCase(TestCaseEvent $event)
     {
-        $this->formatter->advance();
+        $this->incProgress();
         $this->statistics->addTestCaseEvent($event);
     }
 
@@ -83,6 +91,12 @@ class Launcher extends Command
         $this->addArgument('suite', InputArgument::REQUIRED, 'Suite name in config file or path to TestCase classes.');
         $this->addOption('processes', 'p', InputOption::VALUE_REQUIRED, 'Run test in N separated processes.');
         $this->addOption('report-dir', 'r', InputOption::VALUE_REQUIRED, 'Report output directory.');
+        $this->addOption(
+            'group',
+            'g',
+            InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
+            'Filter tests by groups.'
+        );
     }
 
     /**
@@ -126,5 +140,6 @@ class Launcher extends Command
     {
         $dispatcher->addListener(EventStorage::EV_AFTER_CASE, [$this, 'afterCase']);
         $dispatcher->addListener(EventStorage::EV_APP_FINISHED, [$this, 'finish']);
+        $dispatcher->addListener(EventStorage::EV_CASE_FILTERED, [$this, 'incProgress']);
     }
 }

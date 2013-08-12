@@ -101,6 +101,10 @@ class Configurator
         if ($report_dir !== null) {
             $config['report_dir'] = $report_dir;
         }
+        $groups = $input->getOption('group');
+        if (!empty($groups)) {
+            $config['groups'] = $groups;
+        }
         array_push($this->configs, $config);
     }
 
@@ -118,14 +122,19 @@ class Configurator
         $processor->setProcesses($this->config['processes']);
         $this->registerReporter();
         $this->registerListeners();
+        if (!empty($this->config['groups'])) {
+            $this->config['filters']['methods'][] = 'filter.methods.group';
+        }
         foreach ($this->config['filters']['class'] as $filter_id) {
             /** @var ClassFilterInterface $filter */
             $filter = $this->container->get($filter_id);
+            $filter->setParams($this->config);
             $processor->addClassFilter($filter);
         }
         foreach ($this->config['filters']['methods'] as $filter_id) {
             /** @var MethodsFilterInterface $filter */
             $filter = $this->container->get($filter_id);
+            $filter->setParams($this->config);
             $processor->addMethodsFilter($filter);
         }
         $processor->setSuite($this->getSuite());
@@ -257,6 +266,12 @@ class Configurator
             }
             if (isset($suite['context'])) {
                 $config['context'] = $suite['context'];
+            }
+            if (isset($suite['filters'])) {
+                $config['filters'] = $suite['filters'];
+            }
+            if (empty($config['groups']) && !empty($suite['groups'])) {
+                $config['groups'] = $suite['groups'];
             }
             $config['source'] = $suite['source'];
         } else {

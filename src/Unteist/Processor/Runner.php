@@ -17,6 +17,7 @@ use Unteist\Event\TestEvent;
 use Unteist\Exception\TestFailException;
 use Unteist\Exception\IncompleteTestException;
 use Unteist\Exception\SkipTestException;
+use Unteist\Filter\MethodsFilter;
 use Unteist\Filter\MethodsFilterInterface;
 use Unteist\Meta\TestMeta;
 use Unteist\Strategy\Context;
@@ -96,6 +97,30 @@ class Runner
     }
 
     /**
+     * Parse block with annotations.
+     *
+     * @param string $doc Comments string
+     * @param array $keywords Allowed keywords
+     *
+     * @return array
+     */
+    public static function parseDocBlock($doc, array $keywords)
+    {
+        if (empty($doc)) {
+            $annotation = [];
+        } else {
+            $pattern = sprintf('{\*\s*@(%s)\b(?:\s+([\w\s]+))?[\r\n]*(?!\*)}', join('|', $keywords));
+            preg_match_all($pattern, $doc, $matches, PREG_SET_ORDER);
+            $annotation = [];
+            foreach ($matches as $match) {
+                $annotation[trim($match[1])] = trim($match[2]) ? : true;
+            }
+        }
+
+        return $annotation;
+    }
+
+    /**
      * Setup TestCase.
      *
      * @param TestCase $test_case
@@ -105,25 +130,11 @@ class Runner
         $this->test_case = $test_case;
         $class = new \ReflectionClass($this->test_case);
         $this->name = $class->getName();
+        $filter = new MethodsFilter();
         foreach ($class->getMethods() as $method) {
-            $is_test_method = true;
-            $modifiers = $this->parseDocBlock($method);
-            foreach ($this->filters as $filter) {
-                if (!$filter->condition($method, $modifiers)) {
-                    $this->logger->debug(
-                        'Method is NOT a test.',
-                        [
-                            'pid' => getmypid(),
-                            'method' => $method->getName(),
-                            'modifiers' => $modifiers,
-                            'filter' => $filter->getName()
-                        ]
-                    );
-                    $is_test_method = false;
-                    break;
-                }
-            }
-            if ($is_test_method) {
+            $modifiers = $this->getModifiers($method);
+            $filter->setModifiers($modifiers);
+            if ($filter->condition($method)) {
                 $this->tests[$method->getName()] = new TestMeta(
                     $this->name,
                     $method->getName(),
@@ -166,6 +177,20 @@ class Runner
             $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
             $return_code = 0;
             foreach ($this->tests as $test) {
+                $method = new \ReflectionMethod($this->test_case, $test->getMethod());
+                foreach ($this->filters as $filter) {
+                    if (!$filter->condition($method)) {
+                        $this->logger->debug(
+                            'Test was filtered.',
+                            [
+                                'pid' => getmypid(),
+                                'method' => $test->getMethod(),
+                                'filter' => $filter->getName()
+                            ]
+                        );
+                        continue 2;
+                    }
+                }
                 try {
                     if ($this->runTest($test)) {
                         $return_code = 1;
@@ -194,13 +219,11 @@ class Runner
      *
      * @return array
      */
-    protected function parseDocBlock(\ReflectionMethod $method)
+    protected function getModifiers(\ReflectionMethod $method)
     {
-        $doc = $method->getDocComment();
-        if (empty($doc)) {
-            $modifiers = [];
-        } else {
-            $keywords = [
+        return self::parseDocBlock(
+            $method->getDocComment(),
+            [
                 'beforeTest',
                 'afterTest',
                 'beforeCase',
@@ -212,16 +235,8 @@ class Runner
                 'expectedException',
                 'expectedExceptionMessage',
                 'expectedExceptionCode',
-            ];
-            $pattern = sprintf('{\*\s*@(%s)\b(?:\s+([\w\s]+))?[\r\n]*(?!\*)}', join('|', $keywords));
-            preg_match_all($pattern, $doc, $matches, PREG_SET_ORDER);
-            $modifiers = [];
-            foreach ($matches as $match) {
-                $modifiers[trim($match[1])] = trim($match[2]) ? : true;
-            }
-        }
-
-        return $modifiers;
+            ]
+        );
     }
 
     /**

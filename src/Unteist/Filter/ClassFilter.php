@@ -38,4 +38,14 @@ class ClassFilter implements ClassFilterInterface
     {
         return 'named';
     }
+
+    /**
+     * Get tests parameters.
+     *
+     * @param array $config
+     */
+    public function setParams(array $config)
+    {
+
+    }
 }

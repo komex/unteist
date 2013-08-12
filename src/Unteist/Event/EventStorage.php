@@ -16,15 +16,19 @@ namespace Unteist\Event;
 final class EventStorage
 {
     /**
-     * Calls on application started
+     * Calls on application started.
      */
     const EV_APP_STARTED = 'application.started';
     /**
-     * Calls before all tests in TestCase
+     * The case was filtered.
+     */
+    const EV_CASE_FILTERED = 'case.filtered';
+    /**
+     * Calls before all tests in TestCase.
      */
     const EV_BEFORE_CASE = 'case.before';
     /**
-     * Calls before each test in TestCase
+     * Calls before each test in TestCase.
      */
     const EV_BEFORE_TEST = 'test.before';
     /**
@@ -48,19 +52,19 @@ final class EventStorage
      */
     const EV_TEST_INCOMPLETE = 'test.incomplete';
     /**
-     * Calls after each test in TestCase
+     * Calls after each test in TestCase.
      */
     const EV_AFTER_TEST = 'test.after';
     /**
-     * Calls after all tests in TestCase
+     * Calls after all tests in TestCase.
      */
     const EV_AFTER_CASE = 'case.after';
     /**
-     * Calls on application finished
+     * Calls on application finished.
      */
     const EV_APP_FINISHED = 'application.finished';
     /**
-     * Global storage was changed - processor shall update it
+     * Global storage was changed - processor shall update it.
      */
     const EV_STORAGE_GLOBAL_UPDATE = 'storage.global.update';
 }
