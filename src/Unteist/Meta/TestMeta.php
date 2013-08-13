@@ -112,7 +112,7 @@ class TestMeta
             $this->dependencies = $depends;
         }
         // DataProvider
-        if (!empty($modifiers['dataProvider']) && !in_array($modifiers['dataProvider'], [$method, true])) {
+        if (!empty($modifiers['dataProvider']) && !in_array($modifiers['dataProvider'], [$method, true], true)) {
             $this->dataProvider = $modifiers['dataProvider'];
         }
         // Exceptions

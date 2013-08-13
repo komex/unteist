@@ -109,7 +109,7 @@ class Runner
         if (empty($doc)) {
             $annotation = [];
         } else {
-            $pattern = sprintf('{\*\s*@(%s)\b(?:\s+([\w\s]+))?[\r\n]*(?!\*)}', join('|', $keywords));
+            $pattern = sprintf('{\*\s*@(%s)\b(?:\s+([\w\s\\\\]+))?[\r\n]*(?!\*)}', join('|', $keywords));
             preg_match_all($pattern, $doc, $matches, PREG_SET_ORDER);
             $annotation = [];
             foreach ($matches as $match) {
@@ -300,6 +300,11 @@ class Runner
             return [[]];
         }
         if (empty($this->data_sets[$method])) {
+            if (!method_exists($this->test_case, $method)) {
+                throw new \InvalidArgumentException(
+                    sprintf('DataProvider "%s:%s" does not exists.', $this->name, $method)
+                );
+            }
             $data_set_method = new \ReflectionMethod($this->test_case, $method);
             $data_set = $data_set_method->invoke($this->test_case);
             //@todo: Обработка пустых data_set
@@ -451,7 +456,7 @@ class Runner
      */
     private function exceptionControl(TestMeta $test, TestEvent $event, \Exception $e)
     {
-        if ($test->getExpectedException() == get_class($e)) {
+        if (is_a($e, $test->getExpectedException())) {
             $code = $test->getExpectedExceptionCode();
             if ($code !== null && $code !== $e->getCode()) {
                 $error = new TestFailException(
