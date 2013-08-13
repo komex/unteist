@@ -170,7 +170,7 @@ class TwigReport implements EventSubscriberInterface
     private function prepareReport()
     {
         $css_dir = $this->getPath([$this->output_dir, 'css']);
-        $vendor_dir = $this->getPath([__DIR__, '..', '..', '..', '..', 'vendor']);
+        $vendor_dir = realpath('./vendor');
         $bootstrap_dir = $this->getPath([$vendor_dir, 'twitter', 'bootstrap']);
         $this->fs->mkdir($css_dir);
         $less = new \lessc();
