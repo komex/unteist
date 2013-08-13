@@ -170,20 +170,15 @@ class TwigReport implements EventSubscriberInterface
     private function prepareReport()
     {
         $css_dir = $this->getPath([$this->output_dir, 'css']);
-        $js_dir = $this->getPath([$this->output_dir, 'js']);
         $vendor_dir = $this->getPath([__DIR__, '..', '..', '..', '..', 'vendor']);
         $bootstrap_dir = $this->getPath([$vendor_dir, 'twitter', 'bootstrap']);
-        $this->fs->mkdir([$css_dir, $js_dir]);
+        $this->fs->mkdir($css_dir);
         $less = new \lessc();
         $less->setFormatter('compressed');
         $less->setImportDir($bootstrap_dir . DIRECTORY_SEPARATOR . 'less');
         $less->compileFile(
             __DIR__ . DIRECTORY_SEPARATOR . 'bootstrap.less',
             $css_dir . DIRECTORY_SEPARATOR . 'bootstrap.min.css'
-        );
-        $this->fs->copy(
-            $this->getPath([$vendor_dir, 'jquery', 'jquery', 'jquery-2.0.3.min.js']),
-            $js_dir . DIRECTORY_SEPARATOR . 'jquery.min.js'
         );
     }
 

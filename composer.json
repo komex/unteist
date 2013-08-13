@@ -31,8 +31,7 @@
         "sebastian/diff": "1.0.*",
         "twig/twig": "1.13.*",
         "twitter/bootstrap": "2.3.2",
-        "leafo/lessphp": "~0.3.9",
-        "jquery/jquery": "2.0.*"
+        "leafo/lessphp": "~0.3.9"
     },
     "suggest": {
         "ext-pcntl": "Required for run in separate processes.",
@@ -44,6 +43,6 @@
         }
     },
     "bin": [
-        "bin/unteist.php"
+        "bin/unteist"
     ]
 }

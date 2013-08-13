@@ -21,23 +21,6 @@ To add Unteist as a dependency to your project, simply add a dependency on `kome
 
 Unteist may generate reports in HTML format. Right now, reports are very simple, but it may be more complex in future.
 So, framework needs [Bootstrap](http://getbootstrap.com/2.3.2/), [lessphp](http://leafo.net/lessphp/) and jQuery for working.
-All modules will be loaded by composer, but you need to specify the jQuery repository in general `composer.json` file:
-
-    {
-        "repositories": [
-            {
-                "type": "package",
-                "package": {
-                    "name": "jquery/jquery",
-                    "version": "2.0.3",
-                    "dist": {
-                        "url": "http://code.jquery.com/jquery-2.0.3.min.js",
-                        "type": "file"
-                    }
-                }
-            }
-        ]
-    }
 
 ## Writing tests
 
