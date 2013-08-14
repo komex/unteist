@@ -7,15 +7,24 @@
 
 namespace Unteist\Console;
 
-use Monolog\Logger;
+use Symfony\Component\Config\FileLocator;
+use Symfony\Component\Config\FileLocatorInterface;
+use Symfony\Component\Config\Loader\DelegatingLoader;
+use Symfony\Component\Config\Loader\LoaderResolver;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressHelper;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Loader\IniFileLoader;
+use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
+use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
+use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\EventDispatcher\EventDispatcher;
-use Symfony\Component\Finder\Finder;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\Yaml\Yaml;
 use Unteist\Configuration\Configurator;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
@@ -30,28 +39,36 @@ use Unteist\Report\Statistics\StatisticsProcessor;
 class Launcher extends Command
 {
     /**
+     * @var EventDispatcherInterface
+     */
+    protected $dispatcher;
+    /**
+     * @var ContainerBuilder
+     */
+    protected $container;
+    /**
      * @var float
      */
-    protected $started;
+    private $started;
     /**
      * @var StatisticsProcessor
      */
-    protected $statistics;
+    private $statistics;
     /**
      * @var Formatter
      */
-    protected $formatter;
+    private $formatter;
+
     /**
-     * @var array
+     * Configure Launcher
      */
-    protected $log_levels = [
-        'DEBUG' => Logger::DEBUG,
-        'INFO' => Logger::INFO,
-        'NOTICE' => Logger::NOTICE,
-        'WARNING' => Logger::WARNING,
-        'ERROR' => Logger::ERROR,
-        'CRITICAL' => Logger::CRITICAL,
-    ];
+    public function __construct()
+    {
+        $this->statistics = new StatisticsProcessor();
+        $this->dispatcher = new EventDispatcher();
+        $this->container = new ContainerBuilder();
+        parent::__construct();
+    }
 
     /**
      * Increase progress bar.
@@ -80,6 +97,29 @@ class Launcher extends Command
     }
 
     /**
+     * Load services definition to ContainerBuilder.
+     *
+     * @param ContainerBuilder $container Save definition to this container
+     * @param FileLocatorInterface $locator Where to find config file
+     * @param string $filename The name of config file
+     */
+    protected function loadServicesDefinition(ContainerBuilder $container, FileLocatorInterface $locator, $filename)
+    {
+        try {
+            $loaders = [
+                new YamlFileLoader($container, $locator),
+                new XmlFileLoader($container, $locator),
+                new IniFileLoader($container, $locator),
+                new PhpFileLoader($container, $locator),
+            ];
+            $loaderResolver = new LoaderResolver($loaders);
+            $loader = new DelegatingLoader($loaderResolver);
+            $loader->load($filename);
+        } catch (\InvalidArgumentException $e) {
+        }
+    }
+
+    /**
      * Configure command.
      */
     protected function configure()
@@ -97,30 +137,41 @@ class Launcher extends Command
     }
 
     /**
+     * Load all custom configuration to Configurator.
+     *
+     * @param Configurator $configurator
+     */
+    protected function loadConfig(Configurator $configurator)
+    {
+        $config = Yaml::parse('./unteist.yml');
+        $configurator->addConfig(is_array($config) ? $config : []);
+        $this->loadServicesDefinition($this->container, new FileLocator(realpath('.')), 'unteist.services.yml');
+    }
+
+    /**
      * Start searching and executing tests.
      *
      * @param InputInterface $input
      * @param OutputInterface $output
      *
-     * @return int|null
+     * @return int Status code
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $output->writeln($this->getApplication()->getLongVersion());
-        $dispatcher = new EventDispatcher();
-        $this->statistics = new StatisticsProcessor();
         /** @var ProgressHelper $progress */
         $progress = $this->getHelperSet()->get('progress');
         // Formatter
         $this->formatter = new Formatter($output, $progress);
         // Configurator
-        $configurator = new Configurator($dispatcher, $input, $this->formatter);
+        $configurator = new Configurator($this->container, $this->dispatcher, $input, $this->formatter);
+        $this->loadConfig($configurator);
         // Processor
         $processor = $configurator->getProcessor();
         // Global variables
         $this->started = microtime(true);
         // Register listeners
-        $this->registerListeners($dispatcher);
+        $this->registerListeners($this->dispatcher);
 
         // Run tests
         return $processor->run();
@@ -129,9 +180,9 @@ class Launcher extends Command
     /**
      * Register all listeners for getting statistics.
      *
-     * @param EventDispatcher $dispatcher General dispatcher
+     * @param EventDispatcherInterface $dispatcher General dispatcher
      */
-    private function registerListeners(EventDispatcher $dispatcher)
+    private function registerListeners(EventDispatcherInterface $dispatcher)
     {
         $dispatcher->addListener(EventStorage::EV_AFTER_CASE, [$this, 'afterCase']);
         $dispatcher->addListener(EventStorage::EV_APP_FINISHED, [$this, 'finish']);
