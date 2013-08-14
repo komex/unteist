@@ -1,11 +1,12 @@
 parameters:
     logger.handler.stream.output: unteist.log
     logger.handler.stream.level: DEBUG
+    logger.name: unteist
 
 services:
     logger:
         class: \Monolog\Logger
-        arguments: [ unteist ]
+        arguments: [ %logger.name% ]
     logger.handler.stream:
         class: \Monolog\Handler\StreamHandler
         arguments: [ %logger.handler.stream.output%, %logger.handler.stream.level% ]
