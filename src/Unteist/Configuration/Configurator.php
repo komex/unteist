@@ -60,16 +60,36 @@ class Configurator
 
     /**
      * Prepare configuration loader.
+     *
+     * @param ContainerBuilder $container
+     * @param EventDispatcherInterface $dispatcher
+     * @param InputInterface $input
+     * @param Formatter $formatter
      */
-    public function __construct(EventDispatcherInterface $dispatcher, InputInterface $input, Formatter $formatter)
-    {
-        $this->container = new ContainerBuilder();
+    public function __construct(
+        ContainerBuilder $container,
+        EventDispatcherInterface $dispatcher,
+        InputInterface $input,
+        Formatter $formatter
+    ) {
+        $this->container = $container;
         $this->dispatcher = $dispatcher;
         $this->input = $input;
         $this->formatter = $formatter;
-        $this->loadServiceConfig(new FileLocator(join(DIRECTORY_SEPARATOR, [__DIR__, '..', '..', '..'])));
-        $this->loadServiceConfig(new FileLocator(realpath('.')));
-        $this->loadFromYaml('./unteist.yml');
+
+        $locator = new FileLocator(join(DIRECTORY_SEPARATOR, [__DIR__, '..', '..', '..']));
+        $loader = new YamlFileLoader($this->container, $locator);
+        $loader->load('services.yml');
+    }
+
+    /**
+     * Add tests config.
+     *
+     * @param array $config
+     */
+    public function addConfig(array $config)
+    {
+        array_push($this->configs, $config);
     }
 
     /**
@@ -104,33 +124,6 @@ class Configurator
         $processor->setSuite($this->getSuite());
 
         return $processor;
-    }
-
-    /**
-     * Load service config from "unteist.services.yml".
-     *
-     * @param FileLocator $locator Where to find
-     */
-    private function loadServiceConfig(FileLocator $locator)
-    {
-        try {
-            $loader = new YamlFileLoader($this->container, $locator);
-            $loader->load('unteist.services.yml');
-        } catch (\InvalidArgumentException $e) {
-        }
-    }
-
-    /**
-     * Load config from specified file.
-     *
-     * @param string $file Filename
-     */
-    private function loadFromYaml($file)
-    {
-        $config = Yaml::parse($file);
-        if (is_array($config)) {
-            array_push($this->configs, $config);
-        }
     }
 
     /**
