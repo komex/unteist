@@ -171,40 +171,40 @@ class Runner
 
             return 1;
         }
-        try {
-            $this->test_case_event = new TestCaseEvent($this->name);
-            $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
-            $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
-            $return_code = 0;
-            foreach ($this->tests as $test) {
-                $method = new \ReflectionMethod($this->test_case, $test->getMethod());
-                foreach ($this->filters as $filter) {
-                    if (!$filter->condition($method)) {
-                        $this->logger->debug(
-                            'Test was filtered.',
-                            [
-                                'pid' => getmypid(),
-                                'method' => $test->getMethod(),
-                                'filter' => $filter->getName()
-                            ]
-                        );
-                        continue 2;
-                    }
-                }
-                try {
-                    if ($this->runTest($test)) {
-                        $return_code = 1;
-                    }
-                } catch (SkipTestException $e) {
-                    // Hack for reset execution time of skipped tests.
-                    $this->started = microtime(true);
-                    $event = new TestEvent($test->getMethod(), $this->test_case_event);
-                    $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e, false);
-                    $return_code = 1;
+        $this->test_case_event = new TestCaseEvent($this->name);
+        $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
+        $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
+        $return_code = 0;
+        foreach ($this->tests as $test) {
+            $method = new \ReflectionMethod($this->test_case, $test->getMethod());
+            foreach ($this->filters as $filter) {
+                if (!$filter->condition($method)) {
+                    $this->logger->debug(
+                        'Test was filtered.',
+                        [
+                            'pid' => getmypid(),
+                            'method' => $test->getMethod(),
+                            'filter' => $filter->getName()
+                        ]
+                    );
+                    continue 2;
                 }
             }
-        } catch (\Exception $e) {
-            $return_code = 1;
+            try {
+                if ($this->runTest($test)) {
+                    $return_code = 1;
+                }
+            } catch (SkipTestException $e) {
+                // Hack for reset execution time of skipped tests.
+                $this->started = microtime(true);
+                $event = new TestEvent($test->getMethod(), $this->test_case_event);
+                $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e, false);
+                $return_code = 1;
+            } catch (TestFailException $e) {
+                $return_code = 1;
+            } catch (IncompleteTestException $e) {
+                $return_code = 1;
+            }
         }
         $this->precondition->dispatch(EventStorage::EV_AFTER_CASE);
         $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, $this->test_case_event);
@@ -407,6 +407,7 @@ class Runner
                 $event = new TestEvent($test->getMethod(), $this->test_case_event);
                 $event->setDataSet($data_set);
                 $event->setDepends($test->getDependencies());
+                $status = 0;
 
                 try {
                     try {
@@ -420,25 +421,28 @@ class Runner
                             throw new TestFailException('Expected exception ' . $test->getExpectedException());
                         }
                     } catch (TestFailException $e) {
-                        $this->context->onFailure($e);
+                        $status = $this->context->onFailure($e);
                     } catch (IncompleteTestException $e) {
-                        $this->context->onIncomplete($e);
+                        $status = $this->context->onIncomplete($e);
+                    } catch (\Exception $e) {
+                        $status = $this->exceptionControl($test, $e);
                     }
-                    $this->finish($test, $event, TestMeta::TEST_DONE);
-                } catch (SkipTestException $e) {
-                    $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e);
-                } catch (TestFailException $e) {
-                    $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
-                    $status_code = $this->context->onFailure($e);
-                } catch (IncompleteTestException $e) {
-                    $this->finish($test, $event, TestMeta::TEST_INCOMPLETE, $e);
-                    $status_code = $this->context->onIncomplete($e);
-                } catch (\Exception $e) {
-                    $status = $this->exceptionControl($test, $event, $e);
                     if ($status > 0) {
                         $status_code = $status;
                     }
+                } catch (SkipTestException $e) {
+                    $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e);
+                    continue;
+                } catch (TestFailException $e) {
+                    $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
+                    $status_code = $this->context->onFailure($e);
+                    continue;
+                } catch (IncompleteTestException $e) {
+                    $this->finish($test, $event, TestMeta::TEST_INCOMPLETE, $e);
+                    $status_code = $this->context->onIncomplete($e);
+                    continue;
                 }
+                $this->finish($test, $event, TestMeta::TEST_DONE);
             }
         }
 
@@ -449,12 +453,12 @@ class Runner
      * Try to resolve situation with exception.
      *
      * @param TestMeta $test
-     * @param TestEvent $event
      * @param \Exception $e
      *
+     * @throws \Exception
      * @return int Status code
      */
-    private function exceptionControl(TestMeta $test, TestEvent $event, \Exception $e)
+    private function exceptionControl(TestMeta $test, \Exception $e)
     {
         if (is_a($e, $test->getExpectedException())) {
             $code = $test->getExpectedExceptionCode();
@@ -468,7 +472,6 @@ class Runner
                     0,
                     $e
                 );
-                $this->finish($test, $event, TestMeta::TEST_FAILED, $error);
 
                 return $this->context->onFailure($error);
             }
@@ -483,17 +486,13 @@ class Runner
                     0,
                     $e
                 );
-                $this->finish($test, $event, TestMeta::TEST_FAILED, $error);
 
                 return $this->context->onFailure($error);
             }
-            $this->finish($test, $event, TestMeta::TEST_DONE);
 
             return 0;
         } else {
-            $this->finish($test, $event, TestMeta::TEST_ERROR, $e);
-
-            return $this->context->onError($e);
+            throw $e;
         }
     }
 
