@@ -17,11 +17,16 @@ namespace Unteist\Assert\Matcher;
 class Not extends AbstractMatcher
 {
     /**
+     * @var AbstractMatcher
+     */
+    protected $expected;
+
+    /**
      * @param AbstractMatcher $expected
      */
     public function __construct(AbstractMatcher $expected)
     {
-        parent::__construct($expected);
+        $this->expected = $expected;
     }
 
     /**

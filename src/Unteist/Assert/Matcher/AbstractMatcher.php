@@ -19,19 +19,6 @@ use Unteist\TestCase;
 abstract class AbstractMatcher
 {
     /**
-     * @var mixed
-     */
-    protected $expected;
-
-    /**
-     * @param mixed $expected
-     */
-    public function __construct($expected)
-    {
-        $this->expected = $expected;
-    }
-
-    /**
      * @param mixed $actual
      * @param string $message
      *
@@ -49,7 +36,10 @@ abstract class AbstractMatcher
      *
      * @return string
      */
-    abstract public function getName();
+    public function getName()
+    {
+        return __CLASS__;
+    }
 
     /**
      * Matcher condition.

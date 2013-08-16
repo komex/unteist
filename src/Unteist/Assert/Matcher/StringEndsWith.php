@@ -16,11 +16,16 @@ namespace Unteist\Assert\Matcher;
 class StringEndsWith extends AbstractMatcher
 {
     /**
-     * @inheritdoc
+     * @var string
      */
-    public function getName()
+    protected $expected;
+
+    /**
+     * @param string $expected
+     */
+    public function __construct($expected)
     {
-        return 'StringEndsWith';
+        $this->expected = $expected;
     }
 
     /**
