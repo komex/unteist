@@ -55,7 +55,7 @@
             </tr>
             {% if not test.isSuccess() %}
                 <tr class="additional-info {{ macros.test_style(test) }}">
-                    <td colspan="5"><i>{{ test.exception }}</i></td>
+                    <td colspan="5"><i>{{ test.getExceptionMessage()|nl2br }}</i></td>
                 </tr>
             {% endif %}
         {% endfor %}

@@ -7,9 +7,9 @@
 
 namespace Unteist\Strategy;
 
+use Unteist\Exception\TestErrorException;
 use Unteist\Exception\TestFailException;
 use Unteist\Exception\IncompleteTestException;
-use Unteist\Exception\SkipTestException;
 
 /**
  * Class Context
@@ -75,11 +75,11 @@ class Context
     /**
      * Generate exception on unexpected behaviour.
      *
-     * @param \Exception $exception
+     * @param TestErrorException $exception
      *
      * @return int Status code
      */
-    public function onError(\Exception $exception)
+    public function onError(TestErrorException $exception)
     {
         $this->error_strategy->generateException($exception);
 

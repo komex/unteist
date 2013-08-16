@@ -38,13 +38,9 @@ class TestMeta
      */
     const TEST_MARKED = 5;
     /**
-     * Test done with unexpected error.
-     */
-    const TEST_ERROR = 6;
-    /**
      * Test marked as incomplete.
      */
-    const TEST_INCOMPLETE = 7;
+    const TEST_INCOMPLETE = 6;
     /**
      * @var array
      */

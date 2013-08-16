@@ -50,7 +50,11 @@ class TestEvent extends Event
     /**
      * @var string
      */
-    protected $exception;
+    protected $exception_message;
+    /**
+     * @var string
+     */
+    protected $stacktrace;
 
     /**
      * @param string $method Test name
@@ -189,37 +193,43 @@ class TestEvent extends Event
      *
      * @return string
      */
-    public function getException()
+    public function getExceptionMessage()
     {
-        return $this->exception;
+        return $this->exception_message;
     }
 
     /**
-     * Set exception message to event.
+     * Set exception to event.
      *
      * @param \Exception $exception
      */
     public function setException(\Exception $exception)
     {
-        $this->exception = $this->getMessage($exception);
+        $this->exception_message = $exception->getMessage();
+        $previous = $exception;
+        do {
+            $previous = $previous->getPrevious();
+            if (empty($previous)) {
+                break;
+            }
+            $this->exception_message .= PHP_EOL . $previous->getMessage();
+        } while (true);
+        foreach ($exception->getTrace() as $trace) {
+            if (empty($trace['file'])) {
+                break;
+            }
+            $this->stacktrace = $trace['file'] . ':' . $trace['line'];
+        }
     }
 
     /**
-     * Get exception message.
-     *
-     * @param \Exception $exception
+     * Get exception stack trace.
      *
      * @return string
      */
-    private function getMessage(\Exception $exception)
+    public function getStacktrace()
     {
-        $message = $exception->getMessage();
-        $previous = $exception->getPrevious();
-        if ($previous) {
-            $message .= ': ' . $this->getMessage($previous);
-        }
-
-        return $message;
+        return $this->stacktrace;
     }
 
     /**
@@ -260,15 +270,5 @@ class TestEvent extends Event
     public function isIncomplete()
     {
         return $this->status == TestMeta::TEST_INCOMPLETE;
-    }
-
-    /**
-     * Has test an error?
-     *
-     * @return bool
-     */
-    public function hasError()
-    {
-        return $this->status == TestMeta::TEST_ERROR;
     }
 }

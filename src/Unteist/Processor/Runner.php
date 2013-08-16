@@ -14,6 +14,7 @@ use Unteist\Assert\Assert;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
 use Unteist\Event\TestEvent;
+use Unteist\Exception\TestErrorException;
 use Unteist\Exception\TestFailException;
 use Unteist\Exception\IncompleteTestException;
 use Unteist\Exception\SkipTestException;
@@ -159,6 +160,11 @@ class Runner
         $this->filters = $filters;
     }
 
+    public function errorHandler($errno, $errstr, $errfile, $errline, array $errcontext)
+    {
+        throw new TestErrorException($errstr, $errno);
+    }
+
     /**
      * Run TestCase.
      *
@@ -171,6 +177,7 @@ class Runner
 
             return 1;
         }
+        set_error_handler([$this, 'errorHandler']);
         $this->test_case_event = new TestCaseEvent($this->name);
         $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
         $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
@@ -245,8 +252,9 @@ class Runner
      * @param array $depends
      *
      * @throws \LogicException If found infinitive depends loop.
+     * @throws \Unteist\Exception\SkipTestException
+     * @throws \Unteist\Exception\TestErrorException
      * @throws \InvalidArgumentException If depends methods not found.
-     * @throws SkipTestException If test method has skipped or failed method in depends.
      */
     protected function resolveDependencies(array $depends)
     {
@@ -259,7 +267,7 @@ class Runner
                             $this->runTest($test);
                         } catch (\Exception $e) {
                             throw new SkipTestException(
-                                'The test was skipped because of unresolved dependencies',
+                                sprintf('Unresolved dependencies in %s:%s()', $this->name, $depend),
                                 0,
                                 $e
                             );
@@ -291,7 +299,7 @@ class Runner
      *
      * @param string $method dataProvider method name
      *
-     * @return \ArrayIterator
+     * @return array[]
      * @throws \InvalidArgumentException
      */
     protected function getDataSet($method)
@@ -401,7 +409,6 @@ class Runner
 
         if ($test->getStatus() == TestMeta::TEST_NEW || $test->getStatus() == TestMeta::TEST_MARKED) {
             $dataProvider = $this->getDataSet($test->getDataProvider());
-            $method = new \ReflectionMethod($this->test_case, $test->getMethod());
             foreach ($dataProvider as $data_set) {
 
                 $event = new TestEvent($test->getMethod(), $this->test_case_event);
@@ -416,12 +423,14 @@ class Runner
                         $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $event);
                         $this->asserts = Assert::getAssertsCount();
 
-                        $method->invokeArgs($this->test_case, $data_set);
+                        call_user_func_array([$this->test_case, $test->getMethod()], $data_set);
                         if ($test->getExpectedException()) {
                             throw new TestFailException('Expected exception ' . $test->getExpectedException());
                         }
                     } catch (TestFailException $e) {
                         $status = $this->context->onFailure($e);
+                    } catch (TestErrorException $e) {
+                        $status = $this->context->onError($e);
                     } catch (IncompleteTestException $e) {
                         $status = $this->context->onIncomplete($e);
                     } catch (\Exception $e) {

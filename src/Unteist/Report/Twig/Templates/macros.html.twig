@@ -20,7 +20,7 @@
     {% spaceless %}
         {% if test.isSuccess() %}
             success
-        {% elseif test.isFailed() or test.hasError() %}
+        {% elseif test.isFailed() %}
             error
         {% elseif test.isIncomplete() %}
             info
@@ -38,7 +38,7 @@
              title="Skipped: {{ statistics.skipped|length }}/{{ statistics|length }}"></div>
         <div class="bar bar-danger"
              style="width: {{ testPercent(statistics, 'fail') + testPercent(statistics, 'error') }}%;"
-             title="Failed: {{ statistics.fail|length + statistics.error|length }}/{{ statistics|length }}"></div>
+             title="Failed: {{ statistics.fail|length }}/{{ statistics|length }}"></div>
         <div class="bar bar-info" style="width: {{ testPercent(statistics, 'incomplete') }}%;"
              title="Incomplete: {{ statistics.incomplete|length }}/{{ statistics|length }}"></div>
     </div>
@@ -53,8 +53,7 @@
             <span class="label label-warning">Skipped</span>: <b>{{ statistics.skipped|length }}</b>
         </div>
         <div class="span3">
-            <span class="label label-important">Failed</span>:
-            <b>{{ statistics.fail|length }}</b> + <b>{{ statistics.error|length }}</b>
+            <span class="label label-important">Failed</span>: <b>{{ statistics.fail|length }}</b>
         </div>
         <div class="span3">
             <span class="label label-info">Incomplete</span>: <b>{{ statistics.incomplete|length }}</b>

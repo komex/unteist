@@ -71,7 +71,7 @@ class Formatter
         $this->progress->finish();
         $this->output->writeln(sprintf('Time: <comment>%F</comment> seconds.', $time));
         $this->output->writeln('');
-        if (count($statistics['fail']) > 0 || count($statistics['error']) > 0 || count($statistics['incomplete']) > 0) {
+        if (count($statistics['fail']) > 0 || count($statistics['incomplete']) > 0) {
             $this->fail($statistics);
         } else {
             $this->success($statistics);
@@ -87,7 +87,6 @@ class Formatter
     {
         $skipped_count = count($statistics['skipped']);
         $incomplete_count = count($statistics['incomplete']);
-        $error_count = count($statistics['error']);
         $fail_count = count($statistics['fail']);
         if ($skipped_count > 0) {
             $style = new OutputFormatterStyle('black', 'yellow');
@@ -105,10 +104,6 @@ class Formatter
             $this->testOutput('Failed tests:', 'error', $statistics['fail']);
             $this->output->writeln('');
         }
-        if ($error_count > 0) {
-            $this->testOutput('Error tests:', 'error', $statistics['error']);
-            $this->output->writeln('');
-        }
 
         $this->output->writeln(
             sprintf(
@@ -117,7 +112,7 @@ class Formatter
                 $skipped_count,
                 $statistics['asserts'],
                 $incomplete_count,
-                ($fail_count + $error_count)
+                $fail_count
             )
         );
     }
@@ -134,9 +129,18 @@ class Formatter
         $this->output->writeln($title);
         foreach ($tests as $i => $test) {
             $this->output->writeln(
-                sprintf('<%3$s>%d.</%3$s> %s', ($i + 1), $test->getException(), $tag)
+                sprintf(
+                    '<%4$s>%d.</%4$s> %s::%s()',
+                    ($i + 1),
+                    $test->getTestCaseEvent()->getClass(),
+                    $test->getMethod(),
+                    $tag
+                )
             );
-            //@todo: Output exception stack trace
+            $this->output->writeln($test->getExceptionMessage());
+            if (!$test->isSkipped()) {
+                $this->output->writeln($test->getStacktrace());
+            }
         }
     }
 

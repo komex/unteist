@@ -236,7 +236,6 @@ class StatisticsProcessor implements \Iterator, \Countable, \ArrayAccess
             'success' => 0,
             'skipped' => new self(),
             'fail' => new self(),
-            'error' => new self(),
             'incomplete' => new self(),
         ];
         foreach ($this->events as $event) {
@@ -254,11 +253,6 @@ class StatisticsProcessor implements \Iterator, \Countable, \ArrayAccess
                 case TestMeta::TEST_FAILED:
                     /** @var self $stat */
                     $stat = $this->cache['fail'];
-                    $stat->addTestEvent($event);
-                    break;
-                case TestMeta::TEST_ERROR:
-                    /** @var self $stat */
-                    $stat = $this->cache['error'];
                     $stat->addTestEvent($event);
                     break;
                 case TestMeta::TEST_INCOMPLETE:
