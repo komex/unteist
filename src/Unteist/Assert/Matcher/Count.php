@@ -19,6 +19,10 @@ class Count extends AbstractMatcher
      * @var int
      */
     protected $expected;
+    /**
+     * @var int
+     */
+    private $count;
 
     /**
      * @param int $expected
@@ -39,15 +43,27 @@ class Count extends AbstractMatcher
     protected function condition($actual)
     {
         if (is_array($actual) || $actual instanceof \Countable) {
-            $count = count($actual);
+            $this->count = count($actual);
         } elseif ($actual instanceof \Traversable) {
-            $count = iterator_count($actual);
+            $this->count = iterator_count($actual);
         } else {
             throw new \InvalidArgumentException(
                 'Actual variable must be an instance of Countable, Traversable or an array.'
             );
         }
 
-        return $count === $this->expected;
+        return $this->count === $this->expected;
+    }
+
+    /**
+     * Get description for error output.
+     *
+     * @param mixed $actual
+     *
+     * @return string
+     */
+    protected function getFailDescription($actual)
+    {
+        return sprintf('actual size %d matches expected size %d', $this->count, $this->expected);
     }
 }

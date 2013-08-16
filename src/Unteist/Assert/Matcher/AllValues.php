@@ -8,12 +8,12 @@
 namespace Unteist\Assert\Matcher;
 
 /**
- * Class AllElements
+ * Class AllValues
  *
  * @package Unteist\Assert\Matcher
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class AllElements extends AbstractMatcher
+class AllValues extends AbstractMatcher
 {
     /**
      * @var int
@@ -35,7 +35,7 @@ class AllElements extends AbstractMatcher
     /**
      * Matcher condition.
      *
-     * @param mixed $actual
+     * @param array $actual
      *
      * @throws \InvalidArgumentException If $actual variable not an array or instance of Traversable.
      * @return bool
@@ -56,16 +56,18 @@ class AllElements extends AbstractMatcher
     }
 
     /**
-     * @inheritdoc
+     * Get description for error output.
+     *
+     * @param array $actual
+     *
+     * @return string
      */
-    protected function fail($actual, $message)
+    protected function getFailDescription($actual)
     {
-        $formatted = (empty($message) ? '' : $message . PHP_EOL);
-        $formatted .= sprintf(
-            'Completiotion failed on element #%d of %d',
+        return $this->expected->getFailDescription($actual[$this->number]) . sprintf(
+            ' on element #%d of %d',
             ($this->number + 1),
             count($actual)
         );
-        $this->expected->fail($actual, $formatted);
     }
 }

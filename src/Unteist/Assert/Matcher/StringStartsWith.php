@@ -35,4 +35,16 @@ class StringStartsWith extends AbstractMatcher
     {
         return strpos($actual, $this->expected) === 0;
     }
+
+    /**
+     * Get description for error output.
+     *
+     * @param mixed $actual
+     *
+     * @return string
+     */
+    protected function getFailDescription($actual)
+    {
+        return $this->export($actual) . ' starts with ' . $this->export($this->expected);
+    }
 }

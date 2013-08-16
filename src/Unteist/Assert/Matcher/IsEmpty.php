@@ -16,16 +16,6 @@ namespace Unteist\Assert\Matcher;
 class IsEmpty extends AbstractMatcher
 {
     /**
-     * Get name of matcher.
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return 'empty';
-    }
-
-    /**
      * Matcher condition.
      *
      * @param mixed $actual
@@ -35,5 +25,13 @@ class IsEmpty extends AbstractMatcher
     protected function condition($actual)
     {
         return empty($actual);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function getFailDescription($actual)
+    {
+        return $this->export($actual) . ' is empty';
     }
 }

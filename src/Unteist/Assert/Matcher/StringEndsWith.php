@@ -35,4 +35,16 @@ class StringEndsWith extends AbstractMatcher
     {
         return substr($actual, -strlen($this->expected)) === $this->expected;
     }
+
+    /**
+     * Get description for error output.
+     *
+     * @param mixed $actual
+     *
+     * @return string
+     */
+    protected function getFailDescription($actual)
+    {
+        return $this->export($actual) . ' ends with ' . $this->export($this->expected);
+    }
 }

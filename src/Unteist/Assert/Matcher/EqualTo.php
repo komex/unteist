@@ -8,7 +8,7 @@
 namespace Unteist\Assert\Matcher;
 
 use SebastianBergmann\Diff;
-use Unteist\TestCase;
+use Unteist\Exception\TestFailException;
 
 /**
  * Class EqualTo
@@ -44,9 +44,23 @@ class EqualTo extends AbstractMatcher
      */
     protected function fail($actual, $message)
     {
-        $formatted = (empty($message) ? '' : $message) . PHP_EOL;
         $diff = new Diff('--- Expected' . PHP_EOL . '+++ Actual' . PHP_EOL);
-        $formatted .= $diff->diff(var_export($this->expected, true), var_export($actual, true));
-        TestCase::markAsFail($formatted);
+        $formatted = $diff->diff(var_export($this->expected, true), var_export($actual, true));
+        if (!empty($message)) {
+            $formatted = $message . PHP_EOL . $formatted;
+        }
+        throw new TestFailException($formatted);
+    }
+
+    /**
+     * Get description for error output.
+     *
+     * @param mixed $actual
+     *
+     * @throws \BadMethodCallException
+     */
+    protected function getFailDescription($actual)
+    {
+        throw new \BadMethodCallException(sprintf('Method %s can\'t be called.'));
     }
 }

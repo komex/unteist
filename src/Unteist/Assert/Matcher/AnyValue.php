@@ -7,13 +7,15 @@
 
 namespace Unteist\Assert\Matcher;
 
+use Unteist\Exception\TestFailException;
+
 /**
- * Class AnyElement
+ * Class AnyValue
  *
  * @package Unteist\Assert\Matcher
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class AnyElement extends AbstractMatcher
+class AnyValue extends AbstractMatcher
 {
     /**
      * @var AbstractMatcher
@@ -55,13 +57,27 @@ class AnyElement extends AbstractMatcher
      */
     protected function fail($actual, $message)
     {
-        $formatted = (empty($message) ? '' : $message . PHP_EOL);
         $count = count($actual);
-        $formatted .= sprintf(
+        $formatted = sprintf(
             'It was expected the successful completion of condition at least one of %d %s.',
             $count,
             ($count === 1 ? 'element' : 'elements')
         );
-        parent::fail($actual, $formatted);
+        if (!empty($message)) {
+            $formatted = $message . PHP_EOL . $formatted;
+        }
+        throw new TestFailException($formatted);
+    }
+
+    /**
+     * Get description for error output.
+     *
+     * @param mixed $actual
+     *
+     * @throws \BadMethodCallException
+     */
+    protected function getFailDescription($actual)
+    {
+        throw new \BadMethodCallException(sprintf('Method %s can\'t be called.'));
     }
 }

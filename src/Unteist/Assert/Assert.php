@@ -8,7 +8,7 @@
 namespace Unteist\Assert;
 
 use Unteist\Assert\Matcher\AbstractMatcher;
-use Unteist\Assert\Matcher\ArrayHasKeys;
+use Unteist\Assert\Matcher\ArrayHasKey;
 use Unteist\Assert\Matcher\Count;
 use Unteist\Assert\Matcher\EqualTo;
 use Unteist\Assert\Matcher\GreaterThan;
@@ -16,6 +16,7 @@ use Unteist\Assert\Matcher\GreaterThanOrEqual;
 use Unteist\Assert\Matcher\IdenticalTo;
 use Unteist\Assert\Matcher\IsEmpty;
 use Unteist\Assert\Matcher\LessThan;
+use Unteist\Assert\Matcher\LessThanOrEqual;
 use Unteist\Assert\Matcher\Not;
 use Unteist\Assert\Matcher\SameInstance;
 use Unteist\Assert\Matcher\StringContains;
@@ -112,7 +113,7 @@ class Assert
      */
     public static function arrayHasKey(array $array, $key, $message = '')
     {
-        self::that($array, new ArrayHasKeys((array)$key), $message);
+        self::that($array, new ArrayHasKey($key), $message);
     }
 
     /**
@@ -124,7 +125,7 @@ class Assert
      */
     public static function arrayNotHasKey(array $array, $key, $message = '')
     {
-        self::that($array, new Not(new ArrayHasKeys((array)$key)), $message);
+        self::that($array, new Not(new ArrayHasKey($key)), $message);
     }
 
     /**
@@ -202,11 +203,11 @@ class Assert
     /**
      * Assert that string variable contains specified string.
      *
-     * @param string $haystack
      * @param string $needle
+     * @param string $haystack
      * @param string $message
      */
-    public static function stringContains($haystack, $needle, $message = '')
+    public static function stringContains($needle, $haystack, $message = '')
     {
         self::that($haystack, new StringContains($needle), $message);
     }
@@ -218,7 +219,7 @@ class Assert
      * @param string $needle
      * @param string $message
      */
-    public static function stringNotContains($haystack, $needle, $message = '')
+    public static function stringNotContains($needle, $haystack, $message = '')
     {
         self::that($haystack, new Not(new StringContains($needle)), $message);
     }
@@ -254,11 +255,11 @@ class Assert
     /**
      * Assert that string variable starts with specified string.
      *
-     * @param string $haystack
      * @param string $needle
+     * @param string $haystack
      * @param string $message
      */
-    public static function stringStartsWith($haystack, $needle, $message = '')
+    public static function stringStartsWith($needle, $haystack, $message = '')
     {
         self::that($haystack, new StringStartsWith($needle), $message);
     }
@@ -266,11 +267,11 @@ class Assert
     /**
      * Assert that string variable not starts with specified string.
      *
-     * @param string $haystack
      * @param string $needle
+     * @param string $haystack
      * @param string $message
      */
-    public static function stringNotStartsWith($haystack, $needle, $message = '')
+    public static function stringNotStartsWith($needle, $haystack, $message = '')
     {
         self::that($haystack, new Not(new StringStartsWith($needle)), $message);
     }
@@ -278,11 +279,11 @@ class Assert
     /**
      * Assert that string variable ends with specified string.
      *
-     * @param string $haystack
      * @param string $needle
+     * @param string $haystack
      * @param string $message
      */
-    public static function stringEndsWith($haystack, $needle, $message = '')
+    public static function stringEndsWith($needle, $haystack, $message = '')
     {
         self::that($haystack, new StringEndsWith($needle), $message);
     }
@@ -290,11 +291,11 @@ class Assert
     /**
      * Assert that string variable not ends with specified string.
      *
-     * @param string $haystack
      * @param string $needle
+     * @param string $haystack
      * @param string $message
      */
-    public static function stringNotEndsWith($haystack, $needle, $message = '')
+    public static function stringNotEndsWith($needle, $haystack, $message = '')
     {
         self::that($haystack, new Not(new StringEndsWith($needle)), $message);
     }
@@ -390,6 +391,6 @@ class Assert
      */
     public static function lessThanOrEqual($expected, $actual, $message = '')
     {
-        self::that($actual, new LessThan($expected), $message);
+        self::that($actual, new LessThanOrEqual($expected), $message);
     }
 }

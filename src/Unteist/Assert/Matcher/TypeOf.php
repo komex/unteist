@@ -39,4 +39,16 @@ class TypeOf extends AbstractMatcher
     {
         return gettype($actual) === $this->expected;
     }
+
+    /**
+     * Get description for error output.
+     *
+     * @param mixed $actual
+     *
+     * @return string
+     */
+    protected function getFailDescription($actual)
+    {
+        return $this->export($actual) . ' is type of ' . $this->expected;
+    }
 }

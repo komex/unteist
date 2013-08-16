@@ -39,4 +39,16 @@ class LessThanOrEqual extends AbstractMatcher
     {
         return $actual <= $this->expected;
     }
+
+    /**
+     * Get description for error output.
+     *
+     * @param mixed $actual
+     *
+     * @return string
+     */
+    protected function getFailDescription($actual)
+    {
+        return $this->export($actual) . ' is less than or equal ' . $this->export($this->expected);
+    }
 }

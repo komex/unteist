@@ -39,4 +39,16 @@ class GreaterThan extends AbstractMatcher
     {
         return $actual > $this->expected;
     }
+
+    /**
+     * Get description for error output.
+     *
+     * @param mixed $actual
+     *
+     * @return string
+     */
+    protected function getFailDescription($actual)
+    {
+        return $this->export($actual) . ' is greater than ' . $this->export($this->expected);
+    }
 }

@@ -35,4 +35,16 @@ class StringContains extends AbstractMatcher
     {
         return strpos($actual, $this->expected) !== false;
     }
+
+    /**
+     * Get description for error output.
+     *
+     * @param mixed $actual
+     *
+     * @return string
+     */
+    protected function getFailDescription($actual)
+    {
+        return $this->export($actual) . ' contains ' . $this->export($this->expected);
+    }
 }

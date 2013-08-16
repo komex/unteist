@@ -39,4 +39,16 @@ class SameInstance extends AbstractMatcher
     {
         return $actual instanceof $this->expected;
     }
+
+    /**
+     * Get description for error output.
+     *
+     * @param mixed $actual
+     *
+     * @return string
+     */
+    protected function getFailDescription($actual)
+    {
+        return $this->export($actual) . ' is instance of ' . $this->export($this->expected);
+    }
 }
