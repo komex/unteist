@@ -8,24 +8,21 @@
 namespace Unteist\Assert\Matcher;
 
 /**
- * Class SameInstance
+ * Class IsEmpty
  *
  * @package Unteist\Assert\Matcher
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class SameInstance extends AbstractMatcher
+class IsEmpty extends AbstractMatcher
 {
     /**
-     * @var mixed
+     * Get name of matcher.
+     *
+     * @return string
      */
-    protected $expected;
-
-    /**
-     * @param mixed $expected
-     */
-    public function __construct($expected)
+    public function getName()
     {
-        $this->expected = $expected;
+        return 'empty';
     }
 
     /**
@@ -37,6 +34,6 @@ class SameInstance extends AbstractMatcher
      */
     protected function condition($actual)
     {
-        return $actual instanceof $this->expected;
+        return empty($actual);
     }
 }

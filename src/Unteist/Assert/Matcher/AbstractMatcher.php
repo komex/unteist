@@ -32,16 +32,6 @@ abstract class AbstractMatcher
     }
 
     /**
-     * Get name of matcher.
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return __CLASS__;
-    }
-
-    /**
      * Matcher condition.
      *
      * @param mixed $actual

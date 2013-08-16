@@ -8,12 +8,12 @@
 namespace Unteist\Assert\Matcher;
 
 /**
- * Class SameInstance
+ * Class GreaterThan
  *
  * @package Unteist\Assert\Matcher
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class SameInstance extends AbstractMatcher
+class GreaterThan extends AbstractMatcher
 {
     /**
      * @var mixed
@@ -37,6 +37,6 @@ class SameInstance extends AbstractMatcher
      */
     protected function condition($actual)
     {
-        return $actual instanceof $this->expected;
+        return $actual > $this->expected;
     }
 }

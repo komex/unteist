@@ -32,14 +32,6 @@ class Not extends AbstractMatcher
     /**
      * @inheritdoc
      */
-    public function getName()
-    {
-        return 'not ' . $this->expected->getName();
-    }
-
-    /**
-     * @inheritdoc
-     */
     protected function condition($actual)
     {
         return !$this->expected->condition($actual);

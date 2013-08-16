@@ -7,8 +7,6 @@
 
 namespace Unteist\Assert\Matcher;
 
-use Unteist\Assert\Assert;
-
 /**
  * Class TypeOf
  *
@@ -18,27 +16,27 @@ use Unteist\Assert\Assert;
 class TypeOf extends AbstractMatcher
 {
     /**
+     * @var string
+     */
+    protected $expected;
+
+    /**
      * @param string $expected
      */
     public function __construct($expected)
     {
-        $expected = strtolower($expected);
-        parent::__construct($expected);
+        $this->expected = strtolower($expected);
     }
 
     /**
-     * @inheritdoc
-     */
-    public function getName()
-    {
-        return 'TypeOf';
-    }
-
-    /**
-     * @inheritdoc
+     * Matcher condition.
+     *
+     * @param mixed $actual
+     *
+     * @return bool
      */
     protected function condition($actual)
     {
-        return gettype($actual) == $this->expected;
+        return gettype($actual) === $this->expected;
     }
 }
