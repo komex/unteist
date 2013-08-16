@@ -8,7 +8,6 @@
 namespace Unteist\Assert\Matcher;
 
 use SebastianBergmann\Diff;
-use Unteist\Exception\TestFailException;
 use Unteist\TestCase;
 
 /**
@@ -20,9 +19,7 @@ use Unteist\TestCase;
 class EqualTo extends AbstractMatcher
 {
     /**
-     * Get name of matcher.
-     *
-     * @return string
+     * @inheritdoc
      */
     public function getName()
     {
@@ -30,11 +27,7 @@ class EqualTo extends AbstractMatcher
     }
 
     /**
-     * Matcher condition.
-     *
-     * @param mixed $actual
-     *
-     * @return bool
+     * @inheritdoc
      */
     protected function condition($actual)
     {
@@ -42,10 +35,7 @@ class EqualTo extends AbstractMatcher
     }
 
     /**
-     * @param mixed $actual
-     * @param string $message
-     *
-     * @throws TestFailException
+     * @inheritdoc
      */
     protected function fail($actual, $message)
     {

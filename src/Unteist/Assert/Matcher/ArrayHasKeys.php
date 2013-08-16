@@ -24,9 +24,7 @@ class ArrayHasKeys extends AbstractMatcher
     }
 
     /**
-     * Get name of matcher.
-     *
-     * @return string
+     * @inheritdoc
      */
     public function getName()
     {

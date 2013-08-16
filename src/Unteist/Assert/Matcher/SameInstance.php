@@ -7,7 +7,6 @@
 
 namespace Unteist\Assert\Matcher;
 
-
 use Unteist\Assert\Assert;
 
 /**
@@ -19,11 +18,7 @@ use Unteist\Assert\Assert;
 class SameInstance extends AbstractMatcher
 {
     /**
-     * Matcher condition.
-     *
-     * @param mixed $actual
-     *
-     * @return bool
+     * @inheritdoc
      */
     public function condition($actual)
     {
@@ -31,9 +26,7 @@ class SameInstance extends AbstractMatcher
     }
 
     /**
-     * Get name of matcher.
-     *
-     * @return string
+     * @inheritdoc
      */
     public function getName()
     {

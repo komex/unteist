@@ -7,21 +7,18 @@
 
 namespace Unteist\Assert\Matcher;
 
-use Unteist\Exception\TestFailException;
-
 /**
- * Class EveryItem
+ * Class AnyElement
  *
  * @package Unteist\Assert\Matcher
  * @author Andrey Kolchenko <andrey@kolchenko.me>
- * @property AbstractMatcher $expected
  */
-class EveryItem extends AbstractMatcher
+class AnyElement extends AbstractMatcher
 {
     /**
-     * @var int
+     * @var AbstractMatcher
      */
-    protected $number;
+    protected $expected;
 
     /**
      * @param AbstractMatcher $expected
@@ -32,13 +29,11 @@ class EveryItem extends AbstractMatcher
     }
 
     /**
-     * Get name of matcher.
-     *
-     * @return string
+     * @inheritdoc
      */
     public function getName()
     {
-        return 'EveryItem';
+        return 'AnyElement';
     }
 
     /**
@@ -54,32 +49,27 @@ class EveryItem extends AbstractMatcher
         if (!(is_array($actual) || ($actual instanceof \Traversable))) {
             throw new \InvalidArgumentException('Actual variable must be an array or instance of Traversable.');
         }
-        $this->number = 0;
         foreach ($actual as $value) {
-            if (!$this->expected->condition($value)) {
-                return false;
+            if ($this->expected->condition($value) === true) {
+                return true;
             }
-            $this->number++;
         }
 
-        return true;
+        return false;
     }
 
     /**
-     * @param mixed $actual
-     * @param string $message
-     *
-     * @throws TestFailException
+     * @inheritdoc
      */
     protected function fail($actual, $message)
     {
         $formatted = (empty($message) ? '' : $message . PHP_EOL);
+        $count = count($actual);
         $formatted .= sprintf(
-            'Completiotion failed on element #%d',
-            $this->number
+            'It was expected the successful completion of at least one condition of %d %s.',
+            $count,
+            $count === 1 ? 'element' : 'elements'
         );
-        /** @var AbstractMatcher $matcher */
-        $matcher = $this->expected[$this->number];
-        $matcher->fail($actual, $formatted);
+        parent::fail($actual, $formatted);
     }
 }

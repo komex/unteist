@@ -45,6 +45,13 @@ abstract class AbstractMatcher
     }
 
     /**
+     * Get name of matcher.
+     *
+     * @return string
+     */
+    abstract public function getName();
+
+    /**
      * Matcher condition.
      *
      * @param mixed $actual
@@ -64,11 +71,4 @@ abstract class AbstractMatcher
         $formatted = (empty($message) ? '' : $message . PHP_EOL);
         TestCase::markAsFail($formatted);
     }
-
-    /**
-     * Get name of matcher.
-     *
-     * @return string
-     */
-    abstract public function getName();
 }

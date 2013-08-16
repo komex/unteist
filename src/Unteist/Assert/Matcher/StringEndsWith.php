@@ -7,7 +7,6 @@
 
 namespace Unteist\Assert\Matcher;
 
-
 /**
  * Class StringEndsWith
  *
@@ -17,9 +16,7 @@ namespace Unteist\Assert\Matcher;
 class StringEndsWith extends AbstractMatcher
 {
     /**
-     * Get name of matcher.
-     *
-     * @return string
+     * @inheritdoc
      */
     public function getName()
     {
@@ -27,11 +24,7 @@ class StringEndsWith extends AbstractMatcher
     }
 
     /**
-     * Matcher condition.
-     *
-     * @param mixed $actual
-     *
-     * @return bool
+     * @inheritdoc
      */
     protected function condition($actual)
     {

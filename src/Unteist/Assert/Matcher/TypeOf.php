@@ -17,7 +17,6 @@ use Unteist\Assert\Assert;
  */
 class TypeOf extends AbstractMatcher
 {
-
     /**
      * @param string $expected
      */
@@ -28,9 +27,7 @@ class TypeOf extends AbstractMatcher
     }
 
     /**
-     * Get name of matcher.
-     *
-     * @return string
+     * @inheritdoc
      */
     public function getName()
     {
@@ -38,11 +35,7 @@ class TypeOf extends AbstractMatcher
     }
 
     /**
-     * Matcher condition.
-     *
-     * @param mixed $actual
-     *
-     * @return bool
+     * @inheritdoc
      */
     protected function condition($actual)
     {

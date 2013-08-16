@@ -17,7 +17,6 @@ use Unteist\Assert\Matcher\StringContains;
 use Unteist\Assert\Matcher\StringEndsWith;
 use Unteist\Assert\Matcher\StringStartsWith;
 use Unteist\Assert\Matcher\TypeOf;
-use Unteist\Exception\TestFailException;
 
 /**
  * Class Assert
@@ -50,15 +49,17 @@ class Assert
      */
     public static function isFalse($actual, $message = '')
     {
-        self::assertThat($actual, new IdenticalTo(false), $message);
+        self::that($actual, new IdenticalTo(false), $message);
     }
 
     /**
+     * Make custom assert.
+     *
      * @param mixed $actual
      * @param AbstractMatcher $matcher
      * @param string $message
      */
-    public static function assertThat($actual, AbstractMatcher $matcher, $message = '')
+    public static function that($actual, AbstractMatcher $matcher, $message = '')
     {
         $matcher->match($actual, $message);
         self::$count++;
@@ -72,7 +73,7 @@ class Assert
      */
     public static function isTrue($actual, $message = '')
     {
-        self::assertThat($actual, new IdenticalTo(true), $message);
+        self::that($actual, new IdenticalTo(true), $message);
     }
 
     /**
@@ -83,7 +84,7 @@ class Assert
      */
     public static function isNull($actual, $message = '')
     {
-        self::assertThat($actual, new IdenticalTo(null), $message);
+        self::that($actual, new IdenticalTo(null), $message);
     }
 
     /**
@@ -94,7 +95,7 @@ class Assert
      */
     public static function isNotNull($actual, $message = '')
     {
-        self::assertThat($actual, new Not(new IdenticalTo(null)), $message);
+        self::that($actual, new Not(new IdenticalTo(null)), $message);
     }
 
     /**
@@ -106,7 +107,7 @@ class Assert
      */
     public static function arrayHasKey(array $array, $key, $message = '')
     {
-        self::assertThat($array, new ArrayHasKeys((array)$key), $message);
+        self::that($array, new ArrayHasKeys((array)$key), $message);
     }
 
     /**
@@ -118,7 +119,7 @@ class Assert
      */
     public static function arrayNotHasKey(array $array, $key, $message = '')
     {
-        self::assertThat($array, new Not(new ArrayHasKeys((array)$key)), $message);
+        self::that($array, new Not(new ArrayHasKeys((array)$key)), $message);
     }
 
     /**
@@ -130,7 +131,7 @@ class Assert
      */
     public static function equals($expected, $actual, $message = '')
     {
-        self::assertThat($actual, new EqualTo($expected), $message);
+        self::that($actual, new EqualTo($expected), $message);
     }
 
     /**
@@ -142,7 +143,7 @@ class Assert
      */
     public static function identical($expected, $actual, $message = '')
     {
-        self::assertThat($actual, new IdenticalTo($expected), $message);
+        self::that($actual, new IdenticalTo($expected), $message);
     }
 
     /**
@@ -154,7 +155,7 @@ class Assert
      */
     public static function sameInstance($expected, $actual, $message = '')
     {
-        self::assertThat($actual, new SameInstance($expected), $message);
+        self::that($actual, new SameInstance($expected), $message);
     }
 
     /**
@@ -166,7 +167,7 @@ class Assert
      */
     public static function stringContains($haystack, $needle, $message = '')
     {
-        self::assertThat($haystack, new StringContains($needle), $message);
+        self::that($haystack, new StringContains($needle), $message);
     }
 
     /**
@@ -178,7 +179,7 @@ class Assert
      */
     public static function stringStartsWith($haystack, $needle, $message = '')
     {
-        self::assertThat($haystack, new StringStartsWith($needle), $message);
+        self::that($haystack, new StringStartsWith($needle), $message);
     }
 
     /**
@@ -190,7 +191,7 @@ class Assert
      */
     public static function stringEndsWith($haystack, $needle, $message = '')
     {
-        self::assertThat($haystack, new StringEndsWith($needle), $message);
+        self::that($haystack, new StringEndsWith($needle), $message);
     }
 
     /**
@@ -202,6 +203,6 @@ class Assert
      */
     public static function typeOf($expected, $actual, $message = '')
     {
-        self::assertThat($actual, new TypeOf($expected), $message);
+        self::that($actual, new TypeOf($expected), $message);
     }
 }

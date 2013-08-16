@@ -18,9 +18,7 @@ use Unteist\Assert\Assert;
 class IdenticalTo extends EqualTo
 {
     /**
-     * Get name of matcher.
-     *
-     * @return string
+     * @inheritdoc
      */
     public function getName()
     {
@@ -28,11 +26,7 @@ class IdenticalTo extends EqualTo
     }
 
     /**
-     * Matcher condition.
-     *
-     * @param mixed $actual
-     *
-     * @return bool
+     * @inheritdoc
      */
     protected function condition($actual)
     {

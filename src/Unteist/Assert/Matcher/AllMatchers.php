@@ -7,17 +7,21 @@
 
 namespace Unteist\Assert\Matcher;
 
-use Unteist\Exception\TestFailException;
 use Unteist\Assert\Assert;
 
 /**
- * Class AnyOf
+ * Class AllMatchers
  *
  * @package Unteist\Assert\Matcher
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class AnyOf extends AbstractMatcher
+class AllMatchers extends AbstractMatcher
 {
+    /**
+     * @var int
+     */
+    protected $number;
+
     /**
      * @param AbstractMatcher[] $expected
      */
@@ -27,13 +31,11 @@ class AnyOf extends AbstractMatcher
     }
 
     /**
-     * Get name of matcher.
-     *
-     * @return string
+     * @inheritdoc
      */
     public function getName()
     {
-        return 'AnyOf';
+        return 'AllMatchers';
     }
 
     /**
@@ -47,31 +49,33 @@ class AnyOf extends AbstractMatcher
     protected function condition($actual)
     {
         /** @var AbstractMatcher $expected */
-        foreach ($this->expected as $expected) {
+        foreach ($this->expected as $i => $expected) {
             if (!($expected instanceof AbstractMatcher)) {
                 throw new \InvalidArgumentException('Expects only AbstractMatcher objects.');
             }
-            if ($expected->condition($actual) === true) {
-                return true;
+            if ($expected->condition($actual) === false) {
+                $this->number = $i;
+
+                return false;
             }
         }
 
-        return false;
+        return true;
     }
 
     /**
-     * @param mixed $actual
-     * @param string $message
-     *
-     * @throws TestFailException
+     * @inheritdoc
      */
     protected function fail($actual, $message)
     {
         $formatted = (empty($message) ? '' : $message . PHP_EOL);
         $formatted .= sprintf(
-            'It was expected the successful completion of at least one condition of %d.',
-            count($this->expected)
+            'Expected successful completion of all conditions (%d), but the condition of matcher #%d is not satisfied.',
+            count($this->expected),
+            $this->number + 1
         );
-        parent::fail($actual, $formatted);
+        /** @var AbstractMatcher $matcher */
+        $matcher = $this->expected[$this->number];
+        $matcher->fail($actual, $formatted);
     }
 }
