@@ -160,7 +160,15 @@ class Runner
         $this->filters = $filters;
     }
 
-    public function errorHandler($errno, $errstr, $errfile, $errline, array $errcontext)
+    /**
+     * Handler for PHP errors.
+     *
+     * @param int $errno
+     * @param string $errstr
+     *
+     * @throws TestErrorException
+     */
+    public function errorHandler($errno, $errstr)
     {
         throw new TestErrorException($errstr, $errno);
     }
@@ -253,7 +261,7 @@ class Runner
      *
      * @throws \LogicException If found infinitive depends loop.
      * @throws \Unteist\Exception\SkipTestException
-     * @throws \Unteist\Exception\TestErrorException
+     * @throws TestErrorException
      * @throws \InvalidArgumentException If depends methods not found.
      */
     protected function resolveDependencies(array $depends)
