@@ -21,21 +21,17 @@ class AllMatchers extends AbstractMatcher
      * @var int
      */
     protected $number;
+    /**
+     * @var AbstractMatcher[]
+     */
+    protected $expected;
 
     /**
      * @param AbstractMatcher[] $expected
      */
     public function __construct(array $expected)
     {
-        parent::__construct($expected);
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function getName()
-    {
-        return 'AllMatchers';
+        $this->expected = $expected;
     }
 
     /**

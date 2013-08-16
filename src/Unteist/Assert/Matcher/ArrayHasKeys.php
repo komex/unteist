@@ -16,19 +16,16 @@ namespace Unteist\Assert\Matcher;
 class ArrayHasKeys extends AbstractMatcher
 {
     /**
+     * @var array
+     */
+    protected $expected;
+
+    /**
      * @param array $expected
      */
     public function __construct(array $expected)
     {
-        parent::__construct($expected);
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function getName()
-    {
-        return 'ArrayHasKeys';
+        $this->expected = $expected;
     }
 
     /**

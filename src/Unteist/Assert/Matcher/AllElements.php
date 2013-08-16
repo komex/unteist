@@ -29,15 +29,7 @@ class AllElements extends AbstractMatcher
      */
     public function __construct(AbstractMatcher $expected)
     {
-        parent::__construct($expected);
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function getName()
-    {
-        return 'AllElements';
+        $this->expected = $expected;
     }
 
     /**
@@ -70,11 +62,10 @@ class AllElements extends AbstractMatcher
     {
         $formatted = (empty($message) ? '' : $message . PHP_EOL);
         $formatted .= sprintf(
-            'Completiotion failed on element #%d',
-            $this->number
+            'Completiotion failed on element #%d of %d',
+            ($this->number + 1),
+            count($actual)
         );
-        /** @var AbstractMatcher $matcher */
-        $matcher = $this->expected[$this->number];
-        $matcher->fail($actual, $formatted);
+        $this->expected->fail($actual, $formatted);
     }
 }

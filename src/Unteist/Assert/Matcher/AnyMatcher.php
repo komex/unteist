@@ -18,19 +18,16 @@ use Unteist\Assert\Assert;
 class AnyMatcher extends AbstractMatcher
 {
     /**
+     * @var AbstractMatcher[]
+     */
+    protected $expected;
+
+    /**
      * @param AbstractMatcher[] $expected
      */
     public function __construct(array $expected)
     {
-        parent::__construct($expected);
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function getName()
-    {
-        return 'AnyMatcher';
+        $this->expected = $expected;
     }
 
     /**

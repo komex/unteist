@@ -18,11 +18,16 @@ use Unteist\Assert\Assert;
 class IdenticalTo extends EqualTo
 {
     /**
-     * @inheritdoc
+     * @var mixed
      */
-    public function getName()
+    protected $expected;
+
+    /**
+     * @param mixed $expected
+     */
+    public function __construct($expected)
     {
-        return 'IdenticalTo';
+        $this->expected = $expected;
     }
 
     /**

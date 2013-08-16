@@ -25,15 +25,7 @@ class AnyElement extends AbstractMatcher
      */
     public function __construct(AbstractMatcher $expected)
     {
-        parent::__construct($expected);
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function getName()
-    {
-        return 'AnyElement';
+        $this->expected = $expected;
     }
 
     /**
@@ -66,9 +58,9 @@ class AnyElement extends AbstractMatcher
         $formatted = (empty($message) ? '' : $message . PHP_EOL);
         $count = count($actual);
         $formatted .= sprintf(
-            'It was expected the successful completion of at least one condition of %d %s.',
+            'It was expected the successful completion of condition at least one of %d %s.',
             $count,
-            $count === 1 ? 'element' : 'elements'
+            ($count === 1 ? 'element' : 'elements')
         );
         parent::fail($actual, $formatted);
     }
