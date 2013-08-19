@@ -8,7 +8,6 @@
 namespace Unteist\Assert\Matcher;
 
 use Unteist\Assert\Assert;
-use Unteist\Exception\TestFailException;
 
 /**
  * Class AnyMatcher
@@ -55,29 +54,17 @@ class AnyMatcher extends AbstractMatcher
     }
 
     /**
-     * @inheritdoc
-     */
-    protected function fail($actual, $message)
-    {
-        $formatted = sprintf(
-            'It was expected the successful completion of at least one condition of %d.',
-            count($this->expected)
-        );
-        if (!empty($message)) {
-            $formatted = $message . PHP_EOL . $formatted;
-        }
-        throw new TestFailException($formatted);
-    }
-
-    /**
      * Get description for error output.
      *
      * @param mixed $actual
      *
-     * @throws \BadMethodCallException
+     * @return string
      */
     protected function getFailDescription($actual)
     {
-        throw new \BadMethodCallException(sprintf('Method %s can\'t be called.'));
+        return sprintf(
+            'at least one condition of %d was successful',
+            count($this->expected)
+        );
     }
 }

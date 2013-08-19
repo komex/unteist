@@ -8,7 +8,6 @@
 namespace Unteist\Assert\Matcher;
 
 use SebastianBergmann\Diff;
-use Unteist\Exception\TestFailException;
 
 /**
  * Class EqualTo
@@ -40,16 +39,17 @@ class EqualTo extends AbstractMatcher
     }
 
     /**
-     * @inheritdoc
+     * Get difference of two variables.
+     *
+     * @param mixed $actual
+     *
+     * @return string
      */
-    protected function fail($actual, $message)
+    protected function getDiff($actual)
     {
         $diff = new Diff('--- Expected' . PHP_EOL . '+++ Actual' . PHP_EOL);
-        $formatted = $diff->diff(var_export($this->expected, true), var_export($actual, true));
-        if (!empty($message)) {
-            $formatted = $message . PHP_EOL . $formatted;
-        }
-        throw new TestFailException($formatted);
+
+        return $diff->diff(var_export($this->expected, true), var_export($actual, true));
     }
 
     /**
@@ -57,10 +57,10 @@ class EqualTo extends AbstractMatcher
      *
      * @param mixed $actual
      *
-     * @throws \BadMethodCallException
+     * @return string
      */
     protected function getFailDescription($actual)
     {
-        throw new \BadMethodCallException(sprintf('Method %s can\'t be called.'));
+        return 'variables are equals:' . PHP_EOL . $this->getDiff($actual);
     }
 }

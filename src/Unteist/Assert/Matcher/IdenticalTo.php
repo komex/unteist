@@ -18,23 +18,18 @@ use Unteist\Assert\Assert;
 class IdenticalTo extends EqualTo
 {
     /**
-     * @var mixed
-     */
-    protected $expected;
-
-    /**
-     * @param mixed $expected
-     */
-    public function __construct($expected)
-    {
-        $this->expected = $expected;
-    }
-
-    /**
      * @inheritdoc
      */
     protected function condition($actual)
     {
         return $actual === $this->expected;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function getFailDescription($actual)
+    {
+        return 'variables are identical:' . PHP_EOL . $this->getDiff($actual);
     }
 }
