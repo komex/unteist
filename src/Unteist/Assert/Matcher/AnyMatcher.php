@@ -7,33 +7,27 @@
 
 namespace Unteist\Assert\Matcher;
 
-use Unteist\Exception\TestFailException;
 use Unteist\Assert\Assert;
 
 /**
- * Class AnyOf
+ * Class AnyMatcher
  *
  * @package Unteist\Assert\Matcher
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class AnyOf extends AbstractMatcher
+class AnyMatcher extends AbstractMatcher
 {
+    /**
+     * @var AbstractMatcher[]
+     */
+    protected $expected;
+
     /**
      * @param AbstractMatcher[] $expected
      */
     public function __construct(array $expected)
     {
-        parent::__construct($expected);
-    }
-
-    /**
-     * Get name of matcher.
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return 'AnyOf';
+        $this->expected = $expected;
     }
 
     /**
@@ -60,18 +54,17 @@ class AnyOf extends AbstractMatcher
     }
 
     /**
-     * @param mixed $actual
-     * @param string $message
+     * Get description for error output.
      *
-     * @throws TestFailException
+     * @param mixed $actual
+     *
+     * @return string
      */
-    protected function fail($actual, $message)
+    protected function getFailDescription($actual)
     {
-        $formatted = (empty($message) ? '' : $message . PHP_EOL);
-        $formatted .= sprintf(
-            'It was expected the successful completion of at least one condition of %d.',
+        return sprintf(
+            'at least one condition of %d was successful',
             count($this->expected)
         );
-        parent::fail($actual, $formatted);
     }
 }

@@ -8,35 +8,30 @@
 namespace Unteist\Assert\Matcher;
 
 /**
- * Class ArrayHasKeys
+ * Class ArrayHasKey
  *
  * @package Unteist\Assert\Matcher
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class ArrayHasKeys extends AbstractMatcher
+class ArrayHasKey extends AbstractMatcher
 {
     /**
-     * @param array $expected
+     * @var string
      */
-    public function __construct(array $expected)
-    {
-        parent::__construct($expected);
-    }
+    protected $key;
 
     /**
-     * Get name of matcher.
-     *
-     * @return string
+     * @param string $key
      */
-    public function getName()
+    public function __construct($key)
     {
-        return 'ArrayHasKeys';
+        $this->key = $key;
     }
 
     /**
      * Matcher condition.
      *
-     * @param array $actual
+     * @param array $actual Original array
      *
      * @throws \InvalidArgumentException If variable is not an array
      * @return bool
@@ -46,12 +41,19 @@ class ArrayHasKeys extends AbstractMatcher
         if (!is_array($actual)) {
             throw new \InvalidArgumentException('Specified variable must be an array.');
         }
-        foreach ($this->expected as $expected) {
-            if (!array_key_exists($expected, $actual)) {
-                return false;
-            }
-        }
 
-        return true;
+        return array_key_exists($this->key, $actual);
+    }
+
+    /**
+     * Get description for error output.
+     *
+     * @param array $actual
+     *
+     * @return string
+     */
+    protected function getFailDescription($actual)
+    {
+        return 'array has key "' . $this->key . '"';
     }
 }

@@ -8,7 +8,6 @@
 namespace Unteist\Assert\Matcher;
 
 use Unteist\Exception\TestFailException;
-use Unteist\TestCase;
 
 /**
  * Class AbstractMatcher
@@ -18,19 +17,6 @@ use Unteist\TestCase;
  */
 abstract class AbstractMatcher
 {
-    /**
-     * @var mixed
-     */
-    protected $expected;
-
-    /**
-     * @param mixed $expected
-     */
-    public function __construct($expected)
-    {
-        $this->expected = $expected;
-    }
-
     /**
      * @param mixed $actual
      * @param string $message
@@ -54,6 +40,15 @@ abstract class AbstractMatcher
     abstract protected function condition($actual);
 
     /**
+     * Get description for error output.
+     *
+     * @param mixed $actual
+     *
+     * @return string
+     */
+    abstract protected function getFailDescription($actual);
+
+    /**
      * @param mixed $actual
      * @param string $message
      *
@@ -61,14 +56,31 @@ abstract class AbstractMatcher
      */
     protected function fail($actual, $message)
     {
-        $formatted = (empty($message) ? '' : $message . PHP_EOL);
-        TestCase::markAsFail($formatted);
+        $formatted = 'Failed asserting that ' . $this->getFailDescription($actual);
+        $formatted = (empty($message) ? '' : $message . PHP_EOL) . $formatted;
+        throw new TestFailException($formatted);
     }
 
     /**
-     * Get name of matcher.
+     * Export variable for correct output.
      *
-     * @return string
+     * @param mixed $variable
+     *
+     * @return int|string
      */
-    abstract public function getName();
+    protected function export($variable)
+    {
+        if (is_string($variable)) {
+            return '"' . $variable . '"';
+        } elseif (is_numeric($variable)) {
+            return $variable;
+        } else {
+            $type = gettype($variable);
+            if ($type === 'object') {
+                return '<' . get_class($variable) . ' object>';
+            } else {
+                return '<' . ucfirst($type) . ' variable>';
+            }
+        }
+    }
 }

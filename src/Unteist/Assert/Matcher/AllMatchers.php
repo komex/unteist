@@ -7,38 +7,31 @@
 
 namespace Unteist\Assert\Matcher;
 
-use Unteist\Exception\TestFailException;
 use Unteist\Assert\Assert;
 
 /**
- * Class AllOf
+ * Class AllMatchers
  *
  * @package Unteist\Assert\Matcher
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class AllOf extends AbstractMatcher
+class AllMatchers extends AbstractMatcher
 {
     /**
      * @var int
      */
     protected $number;
+    /**
+     * @var AbstractMatcher[]
+     */
+    protected $matchers;
 
     /**
-     * @param AbstractMatcher[] $expected
+     * @param AbstractMatcher[] $matchers
      */
-    public function __construct(array $expected)
+    public function __construct(array $matchers)
     {
-        parent::__construct($expected);
-    }
-
-    /**
-     * Get name of matcher.
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return 'AllOf';
+        $this->matchers = $matchers;
     }
 
     /**
@@ -52,11 +45,11 @@ class AllOf extends AbstractMatcher
     protected function condition($actual)
     {
         /** @var AbstractMatcher $expected */
-        foreach ($this->expected as $i => $expected) {
-            if (!($expected instanceof AbstractMatcher)) {
+        foreach ($this->matchers as $i => $matcher) {
+            if (!($matcher instanceof AbstractMatcher)) {
                 throw new \InvalidArgumentException('Expects only AbstractMatcher objects.');
             }
-            if ($expected->condition($actual) === false) {
+            if ($matcher->condition($actual) === false) {
                 $this->number = $i;
 
                 return false;
@@ -67,21 +60,30 @@ class AllOf extends AbstractMatcher
     }
 
     /**
-     * @param mixed $actual
-     * @param string $message
-     *
-     * @throws TestFailException
+     * @inheritdoc
      */
     protected function fail($actual, $message)
     {
         $formatted = (empty($message) ? '' : $message . PHP_EOL);
         $formatted .= sprintf(
-            'Expected successful completion of all conditions (%d), but the condition of matcher #%d is not satisfied.',
-            count($this->expected),
+            'Expected successful completion of all conditions (%d), but the condition of matcher #%d is not satisfied:',
+            count($this->matchers),
             $this->number + 1
         );
         /** @var AbstractMatcher $matcher */
-        $matcher = $this->expected[$this->number];
+        $matcher = $this->matchers[$this->number];
         $matcher->fail($actual, $formatted);
+    }
+
+    /**
+     * Get description for error output.
+     *
+     * @param mixed $actual
+     *
+     * @return string
+     */
+    protected function getFailDescription($actual)
+    {
+        return '';
     }
 }

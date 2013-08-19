@@ -10,35 +10,24 @@ namespace Unteist\Assert\Matcher;
 use Unteist\Exception\TestFailException;
 
 /**
- * Class EveryItem
+ * Class AnyValue
  *
  * @package Unteist\Assert\Matcher
  * @author Andrey Kolchenko <andrey@kolchenko.me>
- * @property AbstractMatcher $expected
  */
-class EveryItem extends AbstractMatcher
+class AnyValue extends AbstractMatcher
 {
     /**
-     * @var int
+     * @var AbstractMatcher
      */
-    protected $number;
+    protected $expected;
 
     /**
      * @param AbstractMatcher $expected
      */
     public function __construct(AbstractMatcher $expected)
     {
-        parent::__construct($expected);
-    }
-
-    /**
-     * Get name of matcher.
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return 'EveryItem';
+        $this->expected = $expected;
     }
 
     /**
@@ -54,32 +43,41 @@ class EveryItem extends AbstractMatcher
         if (!(is_array($actual) || ($actual instanceof \Traversable))) {
             throw new \InvalidArgumentException('Actual variable must be an array or instance of Traversable.');
         }
-        $this->number = 0;
         foreach ($actual as $value) {
-            if (!$this->expected->condition($value)) {
-                return false;
+            if ($this->expected->condition($value) === true) {
+                return true;
             }
-            $this->number++;
         }
 
-        return true;
+        return false;
     }
 
     /**
-     * @param mixed $actual
-     * @param string $message
-     *
-     * @throws TestFailException
+     * @inheritdoc
      */
     protected function fail($actual, $message)
     {
-        $formatted = (empty($message) ? '' : $message . PHP_EOL);
-        $formatted .= sprintf(
-            'Completiotion failed on element #%d',
-            $this->number
+        $count = count($actual);
+        $formatted = sprintf(
+            'It was expected the successful completion of condition at least one of %d %s.',
+            $count,
+            ($count === 1 ? 'element' : 'elements')
         );
-        /** @var AbstractMatcher $matcher */
-        $matcher = $this->expected[$this->number];
-        $matcher->fail($actual, $formatted);
+        if (!empty($message)) {
+            $formatted = $message . PHP_EOL . $formatted;
+        }
+        throw new TestFailException($formatted);
+    }
+
+    /**
+     * Get description for error output.
+     *
+     * @param mixed $actual
+     *
+     * @throws \BadMethodCallException
+     */
+    protected function getFailDescription($actual)
+    {
+        throw new \BadMethodCallException(sprintf('Method %s can\'t be called.'));
     }
 }

@@ -12,13 +12,13 @@ Framework is more flexible in configuration of tests, test cases and suites than
 ## Installation
 
 To add Unteist as a dependency to your project, simply add a dependency on `komex/unteist` to your project's `composer.json` file. Here is a minimal example of a `composer.json` file:
-
+```json
     {
         "require": {
             "komex/unteist": "1.0.*"
         }
     }
-
+```
 Unteist may generate reports in HTML format. Right now, reports are very simple, but it may be more complex in future.
 So, framework needs [Bootstrap](http://getbootstrap.com/2.3.2/), [lessphp](http://leafo.net/lessphp/) and jQuery for working.
 
@@ -35,7 +35,7 @@ Alternatively, you can use the `@test` annotation in a method's docblock to mark
 
 ### Example
 
-```
+```php
 <?php
 
 use \Unteist\Assert\Assert;
@@ -67,16 +67,15 @@ class StackTest extends \Unteist\TestCase
 * Test case have two types of data storages:
     * local (access only from tests in same case);
     * global (shared storage for all cases in single process);
-* Project are uses composer and based on PSR-0 standart, uses Symfony components and very simple to extend;
+* Project are uses composer and based on PSR-0 standart, uses [Symfony components](http://symfony.com/doc/current/components/index.html) and very simple to extend;
 * Register your own listeners, use Unteist events and generate custom reports.
 
 ## What next
 
 * Store you configuration in different formats (yml, xml, json or all together);
-* A lot of new kind of class and methods filters (like namespace filter, mask filter, groups);
+* A lot of new kind of class and methods filters (like namespace filter, mask filter);
 * Code Coverage Analysis.
 
 ## Credits
 
-(c) Andrey Kolchenko (andrey@kolchenko.me)
-License: **MIT**.
+(c) Andrey Kolchenko ([andrey@kolchenko.me](mailto:andrey@kolchenko.me))

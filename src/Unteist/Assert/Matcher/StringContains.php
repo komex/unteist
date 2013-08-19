@@ -7,7 +7,6 @@
 
 namespace Unteist\Assert\Matcher;
 
-
 /**
  * Class StringContains
  *
@@ -17,24 +16,35 @@ namespace Unteist\Assert\Matcher;
 class StringContains extends AbstractMatcher
 {
     /**
-     * Get name of matcher.
-     *
-     * @return string
+     * @var string
      */
-    public function getName()
+    protected $expected;
+
+    /**
+     * @param string $expected
+     */
+    public function __construct($expected)
     {
-        return 'StringContains';
+        $this->expected = $expected;
     }
 
     /**
-     * Matcher condition.
-     *
-     * @param mixed $actual
-     *
-     * @return bool
+     * @inheritdoc
      */
     protected function condition($actual)
     {
         return strpos($actual, $this->expected) !== false;
+    }
+
+    /**
+     * Get description for error output.
+     *
+     * @param mixed $actual
+     *
+     * @return string
+     */
+    protected function getFailDescription($actual)
+    {
+        return $this->export($actual) . ' contains ' . $this->export($this->expected);
     }
 }

@@ -7,9 +7,6 @@
 
 namespace Unteist\Assert\Matcher;
 
-
-use Unteist\Assert\Assert;
-
 /**
  * Class SameInstance
  *
@@ -19,24 +16,39 @@ use Unteist\Assert\Assert;
 class SameInstance extends AbstractMatcher
 {
     /**
+     * @var mixed
+     */
+    protected $expected;
+
+    /**
+     * @param mixed $expected
+     */
+    public function __construct($expected)
+    {
+        $this->expected = $expected;
+    }
+
+    /**
      * Matcher condition.
      *
      * @param mixed $actual
      *
      * @return bool
      */
-    public function condition($actual)
+    protected function condition($actual)
     {
         return $actual instanceof $this->expected;
     }
 
     /**
-     * Get name of matcher.
+     * Get description for error output.
+     *
+     * @param mixed $actual
      *
      * @return string
      */
-    public function getName()
+    protected function getFailDescription($actual)
     {
-        return 'SameInstance';
+        return $this->export($actual) . ' is instance of ' . $this->export($this->expected);
     }
 }

@@ -7,22 +7,24 @@
 
 namespace Unteist\Assert\Matcher;
 
-use Unteist\Assert\Assert;
-
 /**
- * Class IdenticalTo
+ * Class IsEmpty
  *
- * @package Unteist\Assert\MatcherInterface
+ * @package Unteist\Assert\Matcher
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class IdenticalTo extends EqualTo
+class IsEmpty extends AbstractMatcher
 {
     /**
-     * @inheritdoc
+     * Matcher condition.
+     *
+     * @param mixed $actual
+     *
+     * @return bool
      */
     protected function condition($actual)
     {
-        return $actual === $this->expected;
+        return empty($actual);
     }
 
     /**
@@ -30,6 +32,6 @@ class IdenticalTo extends EqualTo
      */
     protected function getFailDescription($actual)
     {
-        return 'variables are identical:' . PHP_EOL . $this->getDiff($actual);
+        return $this->export($actual) . ' is empty';
     }
 }

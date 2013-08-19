@@ -8,8 +8,6 @@
 namespace Unteist\Assert\Matcher;
 
 use SebastianBergmann\Diff;
-use Unteist\Exception\TestFailException;
-use Unteist\TestCase;
 
 /**
  * Class EqualTo
@@ -20,21 +18,20 @@ use Unteist\TestCase;
 class EqualTo extends AbstractMatcher
 {
     /**
-     * Get name of matcher.
-     *
-     * @return string
+     * @var mixed
      */
-    public function getName()
+    protected $expected;
+
+    /**
+     * @param mixed $expected
+     */
+    public function __construct($expected)
     {
-        return 'EqualTo';
+        $this->expected = $expected;
     }
 
     /**
-     * Matcher condition.
-     *
-     * @param mixed $actual
-     *
-     * @return bool
+     * @inheritdoc
      */
     protected function condition($actual)
     {
@@ -42,16 +39,28 @@ class EqualTo extends AbstractMatcher
     }
 
     /**
-     * @param mixed $actual
-     * @param string $message
+     * Get difference of two variables.
      *
-     * @throws TestFailException
+     * @param mixed $actual
+     *
+     * @return string
      */
-    protected function fail($actual, $message)
+    protected function getDiff($actual)
     {
-        $formatted = (empty($message) ? '' : $message) . PHP_EOL;
         $diff = new Diff('--- Expected' . PHP_EOL . '+++ Actual' . PHP_EOL);
-        $formatted .= $diff->diff(var_export($this->expected, true), var_export($actual, true));
-        TestCase::markAsFail($formatted);
+
+        return $diff->diff(var_export($this->expected, true), var_export($actual, true));
+    }
+
+    /**
+     * Get description for error output.
+     *
+     * @param mixed $actual
+     *
+     * @return string
+     */
+    protected function getFailDescription($actual)
+    {
+        return 'variables are equals:' . PHP_EOL . $this->getDiff($actual);
     }
 }

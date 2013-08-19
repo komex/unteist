@@ -8,24 +8,24 @@
 namespace Unteist\Assert\Matcher;
 
 /**
- * Class TypeOf
+ * Class GreaterThan
  *
  * @package Unteist\Assert\Matcher
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class TypeOf extends AbstractMatcher
+class GreaterThan extends AbstractMatcher
 {
     /**
-     * @var string
+     * @var mixed
      */
     protected $expected;
 
     /**
-     * @param string $expected
+     * @param mixed $expected
      */
     public function __construct($expected)
     {
-        $this->expected = strtolower($expected);
+        $this->expected = $expected;
     }
 
     /**
@@ -37,7 +37,7 @@ class TypeOf extends AbstractMatcher
      */
     protected function condition($actual)
     {
-        return gettype($actual) === $this->expected;
+        return $actual > $this->expected;
     }
 
     /**
@@ -49,6 +49,6 @@ class TypeOf extends AbstractMatcher
      */
     protected function getFailDescription($actual)
     {
-        return $this->export($actual) . ' is type of ' . $this->expected;
+        return $this->export($actual) . ' is greater than ' . $this->export($this->expected);
     }
 }
