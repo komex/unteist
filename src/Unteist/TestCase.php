@@ -8,6 +8,7 @@
 namespace Unteist;
 
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Exception\IncompleteTestException;
 use Unteist\Exception\SkipTestException;
 use Unteist\Exception\TestFailException;
@@ -32,6 +33,10 @@ class TestCase
      * @var \ArrayObject
      */
     private $global_storage;
+    /**
+     * @var EventDispatcherInterface
+     */
+    private $dispatcher;
 
     /**
      * Create a new TestCase.
@@ -75,6 +80,16 @@ class TestCase
     public static function skip($message = '')
     {
         throw new SkipTestException($message);
+    }
+
+    /**
+     * Set dispatcher for inline methods registration.
+     *
+     * @param EventDispatcherInterface $dispatcher
+     */
+    public function setDispatcher(EventDispatcherInterface $dispatcher)
+    {
+        $this->dispatcher = $dispatcher;
     }
 
     /**
@@ -129,5 +144,16 @@ class TestCase
     public function getService($name)
     {
         return $this->config->get($name);
+    }
+
+    /**
+     * Subscribe a TestCase public method to event.
+     *
+     * @param string $event Event name
+     * @param string $method Method name
+     */
+    protected function registerListener($event, $method)
+    {
+        $this->dispatcher->addListener($event, [$this, $method]);
     }
 }
