@@ -107,10 +107,16 @@ class Formatter
 
         $this->output->writeln(
             sprintf(
-                '<error>FAILURES! Success: %d, Skipped: %d, Assertions: %d, Incomplete: %d, Failures: %d</error>',
+                '<error>FAILURES! A total of %d sets of tests with %d assertions have been processed</error>',
+                $statistics->getCount(),
+                $statistics['asserts']
+            )
+        );
+        $this->output->writeln(
+            sprintf(
+                '<error>Success: %d, Skipped: %d, Incomplete: %d, Failures: %d</error>',
                 $statistics['success'],
                 $skipped_count,
-                $statistics['asserts'],
                 $incomplete_count,
                 $fail_count
             )

@@ -35,6 +35,10 @@ class StatisticsProcessor implements \Iterator, \Countable, \ArrayAccess
      * @var bool
      */
     private $rebuild_cache = true;
+    /**
+     * @var int
+     */
+    private $count = 0;
 
     /**
      * @param TestCaseEvent $events
@@ -53,19 +57,20 @@ class StatisticsProcessor implements \Iterator, \Countable, \ArrayAccess
      */
     public function addTestCaseEvent(TestCaseEvent $event)
     {
+        $this->count++;
         foreach ($event->getTestEvents() as $event) {
             $this->addTestEvent($event);
         }
     }
 
     /**
-     * Add test event to storage.
+     * Get number of TestCase.
      *
-     * @param TestEvent $event
+     * @return int
      */
-    public function addTestEvent(TestEvent $event)
+    public function getCount()
     {
-        array_push($this->events, $event);
+        return $this->count;
     }
 
     /**
@@ -222,6 +227,16 @@ class StatisticsProcessor implements \Iterator, \Countable, \ArrayAccess
     public function offsetUnset($offset)
     {
         throw new \UnderflowException('You can not unset value from ' . __CLASS__);
+    }
+
+    /**
+     * Add test event to storage.
+     *
+     * @param TestEvent $event
+     */
+    private function addTestEvent(TestEvent $event)
+    {
+        array_push($this->events, $event);
     }
 
     /**
