@@ -14,7 +14,9 @@
         }
     ],
     "support": {
-        "email": "andrey@kolchenko.me"
+        "email": "andrey@kolchenko.me",
+        "source": "https://github.com/komex/unteist",
+        "issues": "https://github.com/komex/unteist/issues"
     },
     "require": {
         "php": ">=5.4.0",
