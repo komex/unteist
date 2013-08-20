@@ -32,9 +32,9 @@ class TestEvent extends Event
      */
     protected $depends = [];
     /**
-     * @var array
+     * @var int
      */
-    protected $data_set = [];
+    protected $data_set = 0;
     /**
      * @var int
      */
@@ -89,9 +89,9 @@ class TestEvent extends Event
     }
 
     /**
-     * Get test's data set.
+     * Get test's data set number.
      *
-     * @return array
+     * @return int
      */
     public function getDataSet()
     {
@@ -99,13 +99,13 @@ class TestEvent extends Event
     }
 
     /**
-     * Set test's data set.
+     * Set test's data set number.
      *
-     * @param array $data_set
+     * @param int $data_set
      */
-    public function setDataSet(array $data_set)
+    public function setDataSet($data_set)
     {
-        $this->data_set = $data_set;
+        $this->data_set = intval($data_set, 10);
     }
 
     /**

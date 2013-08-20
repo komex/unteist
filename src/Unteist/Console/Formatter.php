@@ -130,10 +130,11 @@ class Formatter
         foreach ($tests as $i => $test) {
             $this->output->writeln(
                 sprintf(
-                    '<%4$s>%d.</%4$s> %s::%s()',
+                    '<%5$s>%d.</%5$s> %s::%s()%s',
                     ($i + 1),
                     $test->getTestCaseEvent()->getClass(),
                     $test->getMethod(),
+                    (($test->getDataSet() === 1) ? '' : ' with data set #' . $test->getDataSet()),
                     $tag
                 )
             );

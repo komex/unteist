@@ -417,13 +417,14 @@ class Runner
 
         if ($test->getStatus() == TestMeta::TEST_NEW || $test->getStatus() == TestMeta::TEST_MARKED) {
             $dataProvider = $this->getDataSet($test->getDataProvider());
-            foreach ($dataProvider as $data_set) {
+            foreach ($dataProvider as $dp_number => $data_set) {
 
                 $event = new TestEvent($test->getMethod(), $this->test_case_event);
-                $event->setDataSet($data_set);
+                if (count($dataProvider) > 1) {
+                    $event->setDataSet($dp_number + 1);
+                }
                 $event->setDepends($test->getDependencies());
                 $status = 0;
-
                 try {
                     try {
                         $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $event);
