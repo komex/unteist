@@ -48,6 +48,9 @@
                     {% else %}
                         <a href="#" class="test-method">{{ test.method }}</a>
                     {% endif %}
+                    {% if test.getDataSet() > 0 %}
+                        with data set #{{ test.getDataSet() }}
+                    {% endif %}
                 </td>
                 <td>{{ test.asserts }}</td>
                 <td>{{ test.time|number_format(4) }} sec.</td>
