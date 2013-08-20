@@ -162,10 +162,11 @@ class Formatter
         $this->output->getFormatter()->setStyle('success', $style);
         $this->output->writeln(
             sprintf(
-                '<success>OK (Tests: %d, Skipped: %d, Asserts: %d)</success>',
+                '<success>OK (Tests: %d, Skipped: %d, Asserts: %d). Total tests set: %d</success>',
                 $statistics['success'],
                 count($statistics['skipped']),
-                $statistics['asserts']
+                $statistics['asserts'],
+                $statistics->getCount()
             )
         );
     }
