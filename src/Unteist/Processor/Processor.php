@@ -10,6 +10,7 @@ namespace Unteist\Processor;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Finder\Finder;
 use Unteist\Event\Connector;
 use Unteist\Event\EventStorage;
@@ -331,7 +332,10 @@ class Processor
             }
             $class->setGlobalStorage($this->global_storage);
             $class->setConfig($this->container);
-            $this->dispatcher->addSubscriber($class);
+            $class->setDispatcher($this->dispatcher);
+            if ($class instanceof EventSubscriberInterface) {
+                $this->dispatcher->addSubscriber($class);
+            }
             $runner = new Runner($this->dispatcher, $this->logger, $this->context);
             $runner->setFilters($this->methods_filters);
             $runner->precondition($class);
