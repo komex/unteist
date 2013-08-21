@@ -106,8 +106,9 @@ class Connector
      */
     public function onEvent(Event $event)
     {
-        $serialized = serialize($event) . PHP_EOL;
-        if (fwrite($this->current_sockets[0], $serialized) === false) {
+        $serialized = serialize($event);
+        $send_data = pack('N', strlen($serialized)) . $serialized;
+        if (fwrite($this->current_sockets[0], $send_data) === false) {
             throw new \RuntimeException('Could not write event to socket.');
         }
     }
@@ -129,13 +130,16 @@ class Connector
         }
         if ($num > 0) {
             foreach ($read as $socket) {
-                $data = fgets($socket);
-                if (!empty($data)) {
-                    /** @var Event $event */
-                    $event = unserialize($data);
-                    if (!empty($event)) {
-                        $this->dispatcher->dispatch($event->getName(), $event);
-                    }
+                if (feof($socket)) {
+                    continue;
+                }
+                $packed_len = stream_get_contents($socket, 4);
+                $info = unpack('Nlen', $packed_len);
+                $data = stream_get_contents($socket, $info['len']);
+                /** @var Event $event */
+                $event = unserialize($data);
+                if (!empty($event) && $event instanceof Event) {
+                    $this->dispatcher->dispatch($event->getName(), $event);
                 }
             }
         }
