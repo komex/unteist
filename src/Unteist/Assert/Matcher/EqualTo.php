@@ -49,7 +49,7 @@ class EqualTo extends AbstractMatcher
     {
         $diff = new Diff('--- Expected' . PHP_EOL . '+++ Actual' . PHP_EOL);
 
-        return $diff->diff(var_export($this->expected, true), var_export($actual, true));
+        return trim($diff->diff(var_export($this->expected, true), var_export($actual, true)));
     }
 
     /**
