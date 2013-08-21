@@ -331,7 +331,7 @@ class Processor
             }
             $class->setGlobalStorage($this->global_storage);
             $class->setConfig($this->container);
-            $class->setDispatcher($this->dispatcher);
+            $this->dispatcher->addSubscriber($class);
             $runner = new Runner($this->dispatcher, $this->logger, $this->context);
             $runner->setFilters($this->methods_filters);
             $runner->precondition($class);

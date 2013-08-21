@@ -8,7 +8,7 @@
 namespace Unteist;
 
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Unteist\Exception\IncompleteTestException;
 use Unteist\Exception\SkipTestException;
 use Unteist\Exception\TestFailException;
@@ -19,7 +19,7 @@ use Unteist\Exception\TestFailException;
  * @package Unteist
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class TestCase
+class TestCase implements EventSubscriberInterface
 {
     /**
      * @var \ArrayObject
@@ -33,10 +33,6 @@ class TestCase
      * @var \ArrayObject
      */
     private $global_storage;
-    /**
-     * @var EventDispatcherInterface
-     */
-    private $dispatcher;
 
     /**
      * Create a new TestCase.
@@ -83,13 +79,28 @@ class TestCase
     }
 
     /**
-     * Set dispatcher for inline methods registration.
+     * Returns an array of event names this subscriber wants to listen to.
      *
-     * @param EventDispatcherInterface $dispatcher
+     * The array keys are event names and the value can be:
+     *
+     *  * The method name to call (priority defaults to 0)
+     *  * An array composed of the method name to call and the priority
+     *  * An array of arrays composed of the method names to call and respective
+     *    priorities, or 0 if unset
+     *
+     * For instance:
+     *
+     *  * array('eventName' => 'methodName')
+     *  * array('eventName' => array('methodName', $priority))
+     *  * array('eventName' => array(array('methodName1', $priority), array('methodName2'))
+     *
+     * @return array The event names to listen to
+     *
+     * @api
      */
-    public function setDispatcher(EventDispatcherInterface $dispatcher)
+    public static function getSubscribedEvents()
     {
-        $this->dispatcher = $dispatcher;
+        return [];
     }
 
     /**
@@ -144,16 +155,5 @@ class TestCase
     public function getService($name)
     {
         return $this->config->get($name);
-    }
-
-    /**
-     * Subscribe a TestCase public method to event.
-     *
-     * @param string $event Event name
-     * @param string $method Method name
-     */
-    protected function registerListener($event, $method)
-    {
-        $this->dispatcher->addListener($event, [$this, $method]);
     }
 }
