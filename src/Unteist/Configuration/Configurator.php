@@ -18,6 +18,7 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Finder\Finder;
 use Unteist\Console\Formatter;
+use Unteist\Event\Connector;
 use Unteist\Filter\ClassFilterInterface;
 use Unteist\Filter\MethodsFilterInterface;
 use Unteist\Processor\Processor;
@@ -103,6 +104,9 @@ class Configurator
         }
         $processor = new Processor($this->dispatcher, $this->container, $this->getLogger(), $this->getContext());
         $processor->setProcesses($this->config['processes']);
+        if ($this->config['processes'] > 1) {
+            $processor->setConnector($this->getConnector());
+        }
         $this->registerReporter();
         $this->registerListeners();
         if (!empty($this->config['groups'])) {
@@ -123,6 +127,22 @@ class Configurator
         $processor->setSuite($this->getSuite());
 
         return $processor;
+    }
+
+    /**
+     * Get configured connector for multi processors working.
+     *
+     * @return Connector
+     */
+    private function getConnector()
+    {
+        if ($this->container->hasParameter('proxy_events')) {
+            $proxy_events = (array)$this->container->getParameter('proxy_events');
+        } else {
+            $proxy_events = [];
+        }
+
+        return new Connector($this->dispatcher, $proxy_events);
     }
 
     /**

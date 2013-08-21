@@ -101,8 +101,17 @@ class Processor
         $this->logger = $logger;
         $this->container = $container;
         $this->global_storage = new \ArrayObject();
-        $this->connector = new Connector($this->dispatcher);
         $this->context = $context;
+    }
+
+    /**
+     * Set connector for multi processor working.
+     *
+     * @param Connector $connector
+     */
+    public function setConnector(Connector $connector)
+    {
+        $this->connector = $connector;
     }
 
     /**
