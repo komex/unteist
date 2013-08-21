@@ -148,6 +148,7 @@ class Formatter
             if (!$test->isSkipped()) {
                 $this->output->writeln($test->getStacktrace());
             }
+            $this->output->writeln('');
         }
     }
 

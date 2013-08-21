@@ -38,12 +38,13 @@ class Connector
 
     /**
      * @param EventDispatcherInterface $dispatcher
+     * @param array $custom_events Custom events to proxy to parent process.
      */
-    public function __construct(EventDispatcherInterface $dispatcher)
+    public function __construct(EventDispatcherInterface $dispatcher, $custom_events = [])
     {
         $this->dispatcher = $dispatcher;
         $class = new \ReflectionClass('\\Unteist\\Event\\EventStorage');
-        $this->events = array_values($class->getConstants());
+        $this->events = array_unique(array_values($class->getConstants() + $custom_events));
     }
 
     /**

@@ -10,6 +10,7 @@ namespace Unteist\Processor;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Unteist\Assert\Assert;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
@@ -129,6 +130,9 @@ class Runner
     public function precondition(TestCase $test_case)
     {
         $this->test_case = $test_case;
+        if ($test_case instanceof EventSubscriberInterface) {
+            $this->precondition->addSubscriber($test_case);
+        }
         $class = new \ReflectionClass($this->test_case);
         $this->name = $class->getName();
         $filter = new MethodsFilter();
