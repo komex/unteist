@@ -50,7 +50,7 @@ class TwigReport implements EventSubscriberInterface
      */
     public function __construct($report_dir, array $alt_template_paths = [])
     {
-        array_unshift($alt_template_paths, __DIR__ . DIRECTORY_SEPARATOR . 'Templates');
+        array_push($alt_template_paths, __DIR__ . DIRECTORY_SEPARATOR . 'Templates');
         $loader = new \Twig_Loader_Filesystem($alt_template_paths);
         $this->twig = new \Twig_Environment($loader);
         $this->twig->addFunction(new \Twig_SimpleFunction('explode', 'explode'));
