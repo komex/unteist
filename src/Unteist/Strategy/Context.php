@@ -31,6 +31,10 @@ class Context
      * @var StrategyInterface
      */
     protected $incomplete_strategy;
+    /**
+     * @var StrategyInterface[]
+     */
+    protected $custom_exceptions = [];
 
     /**
      * Setup default strategy.
@@ -40,6 +44,17 @@ class Context
         $this->setErrorStrategy($error);
         $this->setFailureStrategy($failure);
         $this->setIncompleteStrategy($incomplete);
+    }
+
+    /**
+     * Associate exception with system strategy.
+     *
+     * @param string $exception Exception class name
+     * @param StrategyInterface $strategy
+     */
+    public function associateException($exception, StrategyInterface $strategy)
+    {
+        $this->custom_exceptions[$exception] = $strategy;
     }
 
     /**
@@ -112,5 +127,21 @@ class Context
         $this->incomplete_strategy->generateException($exception);
 
         return 1;
+    }
+
+    /**
+     * Check associated strategy with specified exception.
+     *
+     * @param \Exception $exception
+     *
+     * @throws \Exception
+     */
+    public function onUnexpectedException(\Exception $exception)
+    {
+        if (isset($this->custom_exceptions[get_class($exception)])) {
+            $this->custom_exceptions[get_class($exception)]->generateException($exception);
+        } else {
+            throw $exception;
+        }
     }
 }
