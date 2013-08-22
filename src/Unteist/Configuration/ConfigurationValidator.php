@@ -8,6 +8,7 @@
 namespace Unteist\Configuration;
 
 use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
+use Symfony\Component\Config\Definition\Builder\EnumNodeDefinition;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 
@@ -148,6 +149,11 @@ class ConfigurationValidator implements ConfigurationInterface
         $definition = $section->children()->enumNode('incomplete');
         $definition->values(['strategy.fail', 'strategy.incomplete', 'strategy.ignore']);
         $definition->cannotBeEmpty()->defaultValue('strategy.incomplete');
+
+        $definition = $section->children()->arrayNode('associations')->requiresAtLeastOneElement();
+        /** @var EnumNodeDefinition $associations */
+        $associations = $definition->prototype('enum');
+        $associations->values(['strategy.fail', 'strategy.incomplete', 'strategy.ignore']);
 
         return $section;
     }

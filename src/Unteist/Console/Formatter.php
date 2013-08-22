@@ -140,7 +140,7 @@ class Formatter
                     ($i + 1),
                     $test->getTestCaseEvent()->getClass(),
                     $test->getMethod(),
-                    (($test->getDataSet() === 1) ? '' : ' with data set #' . $test->getDataSet()),
+                    (($test->getDataSet() === 0) ? '' : ' with data set #' . ($i + 1)),
                     $tag
                 )
             );

@@ -514,7 +514,9 @@ class Runner
 
             return 0;
         } else {
-            throw $e;
+            $this->context->onUnexpectedException($e);
+
+            return 1;
         }
     }
 
