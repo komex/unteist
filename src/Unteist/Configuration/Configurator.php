@@ -190,8 +190,14 @@ class Configurator
         $failure = $this->container->get($this->config['context']['failure']);
         /** @var StrategyInterface $incomplete */
         $incomplete = $this->container->get($this->config['context']['incomplete']);
+        $context = new Context($error, $failure, $incomplete);
+        foreach ($this->config['context']['associations'] as $class => $strategy_id) {
+            /** @var StrategyInterface $strategy */
+            $strategy = $this->container->get($strategy_id);
+            $context->associateException($class, $strategy);
+        }
 
-        return new Context($error, $failure, $incomplete);
+        return $context;
     }
 
     /**
@@ -287,7 +293,7 @@ class Configurator
             if (isset($suite['filters'])) {
                 $config['filters'] = $suite['filters'];
             }
-            if (empty($config['groups'])) {
+            if (isset($suite['groups'])) {
                 $config['groups'] = $suite['groups'];
             }
             $config['source'] = $suite['source'];
