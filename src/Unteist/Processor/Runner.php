@@ -81,6 +81,10 @@ class Runner
      * @var Context
      */
     private $context;
+    /**
+     * @var array
+     */
+    private $listeners = [];
 
     /**
      * @param EventDispatcherInterface $dispatcher Global event dispatcher
@@ -131,6 +135,8 @@ class Runner
     {
         $this->test_case = $test_case;
         if ($test_case instanceof EventSubscriberInterface) {
+            $this->listeners = $test_case->getSubscribedEvents();
+            $this->dispatcher->addSubscriber($test_case);
             $this->precondition->addSubscriber($test_case);
         }
         $class = new \ReflectionClass($this->test_case);
@@ -227,6 +233,7 @@ class Runner
         }
         $this->precondition->dispatch(EventStorage::EV_AFTER_CASE);
         $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, $this->test_case_event);
+        $this->desubscribe();
 
         return $return_code;
     }
@@ -396,6 +403,16 @@ class Runner
         if ($send_event) {
             $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
             $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
+        }
+    }
+
+    /**
+     * Unsubscribe this TestCase from global dispatcher.
+     */
+    private function desubscribe()
+    {
+        foreach ($this->listeners as $event => $listener) {
+            $this->dispatcher->removeListener($event, $listener);
         }
     }
 
