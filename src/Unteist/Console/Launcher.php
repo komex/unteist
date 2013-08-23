@@ -71,14 +71,6 @@ class Launcher extends Command
     }
 
     /**
-     * Increase progress bar.
-     */
-    public function incProgress()
-    {
-        $this->formatter->advance();
-    }
-
-    /**
      * Listener on TestCase finish.
      */
     public function afterCase(TestCaseEvent $event)
@@ -88,12 +80,85 @@ class Launcher extends Command
     }
 
     /**
+     * Increase progress bar.
+     */
+    public function incProgress()
+    {
+        $this->formatter->advance();
+    }
+
+    /**
      * Listener on application finish.
      */
     public function finish()
     {
         $time = (microtime(true) - $this->started);
         $this->formatter->finish($time, $this->statistics);
+    }
+
+    /**
+     * Configure command.
+     */
+    protected function configure()
+    {
+        $this->setName('run')->setDescription('Run tests stored in specified directory.');
+        $this->addArgument('suite', InputArgument::REQUIRED, 'Suite name in config file or path to TestCase classes.');
+        $this->addOption('processes', 'p', InputOption::VALUE_REQUIRED, 'Run test in N separated processes.');
+        $this->addOption('report-dir', 'r', InputOption::VALUE_REQUIRED, 'Report output directory.');
+        $this->addOption(
+            'group',
+            'g',
+            InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
+            'Filter tests by groups.'
+        );
+        $this->addOption(
+            'parameter',
+            'D',
+            InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
+            'Rewrite any parameter from config file or set a new one if parameter does not exists.'
+        );
+    }
+
+    /**
+     * Start searching and executing tests.
+     *
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     *
+     * @return int Status code
+     */
+    protected function execute(InputInterface $input, OutputInterface $output)
+    {
+        $output->writeln($this->getApplication()->getLongVersion());
+        /** @var ProgressHelper $progress */
+        $progress = $this->getHelperSet()->get('progress');
+        // Formatter
+        $this->formatter = new Formatter($output, $progress);
+        // Configurator
+        $configurator = new Configurator($this->container, $this->dispatcher, $input, $this->formatter);
+        $this->loadConfig($configurator);
+        $this->overwriteParams($input);
+        // Processor
+        $processor = $configurator->getProcessor();
+        // Global variables
+        $this->started = microtime(true);
+        // Register listeners
+        $this->registerListeners($this->dispatcher);
+
+        // Run tests
+        return $processor->run();
+    }
+
+    /**
+     * Load all custom configuration to Configurator.
+     *
+     * @param Configurator $configurator
+     */
+    protected function loadConfig(Configurator $configurator)
+    {
+        $config = Yaml::parse('./unteist.yml');
+        $configurator->addConfig(is_array($config) ? $config : []);
+        $this->loadServicesDefinition($this->container, new FileLocator(realpath('.')), 'unteist.services.yml');
     }
 
     /**
@@ -120,61 +185,19 @@ class Launcher extends Command
     }
 
     /**
-     * Configure command.
-     */
-    protected function configure()
-    {
-        $this->setName('run')->setDescription('Run tests stored in specified directory.');
-        $this->addArgument('suite', InputArgument::REQUIRED, 'Suite name in config file or path to TestCase classes.');
-        $this->addOption('processes', 'p', InputOption::VALUE_REQUIRED, 'Run test in N separated processes.');
-        $this->addOption('report-dir', 'r', InputOption::VALUE_REQUIRED, 'Report output directory.');
-        $this->addOption(
-            'group',
-            'g',
-            InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
-            'Filter tests by groups.'
-        );
-    }
-
-    /**
-     * Load all custom configuration to Configurator.
-     *
-     * @param Configurator $configurator
-     */
-    protected function loadConfig(Configurator $configurator)
-    {
-        $config = Yaml::parse('./unteist.yml');
-        $configurator->addConfig(is_array($config) ? $config : []);
-        $this->loadServicesDefinition($this->container, new FileLocator(realpath('.')), 'unteist.services.yml');
-    }
-
-    /**
-     * Start searching and executing tests.
+     * Overwrite parameters from config file or set a new one if parameter does not exists.
      *
      * @param InputInterface $input
-     * @param OutputInterface $output
-     *
-     * @return int Status code
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    private function overwriteParams(InputInterface $input)
     {
-        $output->writeln($this->getApplication()->getLongVersion());
-        /** @var ProgressHelper $progress */
-        $progress = $this->getHelperSet()->get('progress');
-        // Formatter
-        $this->formatter = new Formatter($output, $progress);
-        // Configurator
-        $configurator = new Configurator($this->container, $this->dispatcher, $input, $this->formatter);
-        $this->loadConfig($configurator);
-        // Processor
-        $processor = $configurator->getProcessor();
-        // Global variables
-        $this->started = microtime(true);
-        // Register listeners
-        $this->registerListeners($this->dispatcher);
-
-        // Run tests
-        return $processor->run();
+        $parameters = $input->getOption('parameter');
+        if (!empty($parameters)) {
+            parse_str(join('&', $parameters), $params);
+            foreach ($params as $name => $value) {
+                $this->container->setParameter($name, $value);
+            }
+        }
     }
 
     /**
