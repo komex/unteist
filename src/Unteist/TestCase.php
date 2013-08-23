@@ -133,6 +133,16 @@ class TestCase
     }
 
     /**
+     * Get all parameters from global config.
+     *
+     * @return array
+     */
+    public function getParameters()
+    {
+        return $this->config->getParameterBag()->all();
+    }
+
+    /**
      * Get service by its name.
      *
      * @param string $name Service name
