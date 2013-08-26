@@ -212,10 +212,14 @@ class TestEvent extends Event
             if (empty($previous)) {
                 break;
             }
+            $exception = $previous;
             $this->exception_message .= PHP_EOL . $previous->getMessage();
         } while (true);
         foreach ($exception->getTrace() as $trace) {
             if (empty($trace['file'])) {
+                if ($trace['function'] == 'errorHandler' && count($trace['args']) === 5) {
+                    $this->stacktrace = $trace['args'][2] . ':' . $trace['args'][3];
+                }
                 break;
             }
             $this->stacktrace = $trace['file'] . ':' . $trace['line'];
