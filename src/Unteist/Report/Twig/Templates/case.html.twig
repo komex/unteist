@@ -23,7 +23,7 @@
 
 {% block content %}
     <ul class="breadcrumb">
-        <li><a href="./index.html">Report</a> <span class="divider">/</span></li>
+        <li><a href="{{ levelUp(class) }}index.html">Report</a> <span class="divider">/</span></li>
         {{ macros.breadcrumb(class) }}
     </ul>
     {{ macros.total(case) }}
