@@ -138,15 +138,18 @@ class Launcher extends Command
         $configurator = new Configurator($this->container, $this->dispatcher, $input, $this->formatter);
         $this->loadConfig($configurator);
         $this->overwriteParams($input);
+        $configurator->loadBootstrap();
         // Processor
         $processor = $configurator->getProcessor();
         // Global variables
         $this->started = microtime(true);
         // Register listeners
         $this->registerListeners($this->dispatcher);
-
         // Run tests
-        return $processor->run();
+        $status = $processor->run();
+        $configurator->loadCleanUp();
+
+        return $status;
     }
 
     /**

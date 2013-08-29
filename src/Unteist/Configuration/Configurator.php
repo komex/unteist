@@ -109,6 +109,7 @@ class Configurator
         }
         $this->registerReporter();
         $this->registerListeners();
+
         if (!empty($this->config['groups'])) {
             array_unshift($this->config['filters']['methods'], 'filter.methods.group');
         }
@@ -130,122 +131,28 @@ class Configurator
     }
 
     /**
-     * Get configured connector for multi processors working.
-     *
-     * @return Connector
+     * Load bootstrap file if exists.
      */
-    private function getConnector()
+    public function loadBootstrap()
     {
-        if ($this->container->hasParameter('proxy_events')) {
-            $proxy_events = (array)$this->container->getParameter('proxy_events');
-        } else {
-            $proxy_events = [];
-        }
-
-        return new Connector($this->dispatcher, $proxy_events);
-    }
-
-    /**
-     * Get suite files with tests.
-     *
-     * @return \ArrayObject
-     */
-    private function getSuite()
-    {
-        $files = new \ArrayObject();
-        foreach ($this->config['source'] as $source) {
-            $finder = new Finder();
-            $finder->ignoreUnreadableDirs()->files();
-            $finder->in($source['in'])->name($source['name']);
-            if (!empty($source['notName'])) {
-                $finder->notName($source['notName']);
-            }
-            if (!empty($source['exclude'])) {
-                $finder->exclude($source['exclude']);
-            }
-            /** @var \SplFileInfo $file */
-            foreach ($finder as $file) {
-                $real_path = $file->getRealPath();
-                if (!$files->offsetExists($real_path) && substr($file->getFilename(), -8) === 'Test.php') {
-                    $files[$real_path] = $file;
-                }
+        if ($this->container->hasParameter('bootstrap')) {
+            $file = $this->container->getParameter('bootstrap');
+            if (file_exists($file)) {
+                include($file);
             }
         }
-        // Output information and progress bar
-        $this->formatter->start($files->count());
-
-        return $files;
     }
 
     /**
-     * Get configured context.
-     *
-     * @return Context
+     * Load cleanup file if exists.
      */
-    private function getContext()
+    public function loadCleanUp()
     {
-        /** @var StrategyInterface $error */
-        $error = $this->container->get($this->config['context']['error']);
-        /** @var StrategyInterface $failure */
-        $failure = $this->container->get($this->config['context']['failure']);
-        /** @var StrategyInterface $incomplete */
-        $incomplete = $this->container->get($this->config['context']['incomplete']);
-        $context = new Context($error, $failure, $incomplete);
-        foreach ($this->config['context']['associations'] as $class => $strategy_id) {
-            /** @var StrategyInterface $strategy */
-            $strategy = $this->container->get($strategy_id);
-            $context->associateException($class, $strategy);
-        }
-
-        return $context;
-    }
-
-    /**
-     * Get configured logger.
-     *
-     * @return Logger
-     */
-    private function getLogger()
-    {
-        /** @var Logger $logger */
-        $logger = $this->container->get('logger');
-        if ($this->config['logger']['enabled']) {
-            foreach ($this->config['logger']['handlers'] as $service) {
-                /** @var HandlerInterface $handler */
-                $handler = $this->container->get($service);
-                $logger->pushHandler($handler);
+        if ($this->container->hasParameter('cleanup')) {
+            $file = $this->container->getParameter('cleanup');
+            if (file_exists($file)) {
+                include($file);
             }
-        } else {
-            /** @var HandlerInterface $handler */
-            $handler = $this->container->get('logger.handler.null');
-            $logger->pushHandler($handler);
-        }
-
-        return $logger;
-    }
-
-    /**
-     * Register custom event listeners.
-     */
-    private function registerListeners()
-    {
-        foreach ($this->config['listeners'] as $service) {
-            /** @var EventSubscriberInterface $listener */
-            $listener = $this->container->get($service);
-            $this->dispatcher->addSubscriber($listener);
-        }
-    }
-
-    /**
-     * Register a reporter.
-     */
-    private function registerReporter()
-    {
-        if ($this->config['report_dir'] !== null) {
-            $this->container->setParameter('report.dir', $this->config['report_dir']);
-            /** @var EventSubscriberInterface $listener */
-            $listener = $this->container->get('reporter');
-            $this->dispatcher->addSubscriber($listener);
         }
     }
 
@@ -319,5 +226,125 @@ class Configurator
         unset($config['suites']);
 
         return $config;
+    }
+
+    /**
+     * Get configured logger.
+     *
+     * @return Logger
+     */
+    private function getLogger()
+    {
+        /** @var Logger $logger */
+        $logger = $this->container->get('logger');
+        if ($this->config['logger']['enabled']) {
+            foreach ($this->config['logger']['handlers'] as $service) {
+                /** @var HandlerInterface $handler */
+                $handler = $this->container->get($service);
+                $logger->pushHandler($handler);
+            }
+        } else {
+            /** @var HandlerInterface $handler */
+            $handler = $this->container->get('logger.handler.null');
+            $logger->pushHandler($handler);
+        }
+
+        return $logger;
+    }
+
+    /**
+     * Get configured context.
+     *
+     * @return Context
+     */
+    private function getContext()
+    {
+        /** @var StrategyInterface $error */
+        $error = $this->container->get($this->config['context']['error']);
+        /** @var StrategyInterface $failure */
+        $failure = $this->container->get($this->config['context']['failure']);
+        /** @var StrategyInterface $incomplete */
+        $incomplete = $this->container->get($this->config['context']['incomplete']);
+        $context = new Context($error, $failure, $incomplete);
+        foreach ($this->config['context']['associations'] as $class => $strategy_id) {
+            /** @var StrategyInterface $strategy */
+            $strategy = $this->container->get($strategy_id);
+            $context->associateException($class, $strategy);
+        }
+
+        return $context;
+    }
+
+    /**
+     * Get configured connector for multi processors working.
+     *
+     * @return Connector
+     */
+    private function getConnector()
+    {
+        if ($this->container->hasParameter('proxy_events')) {
+            $proxy_events = (array)$this->container->getParameter('proxy_events');
+        } else {
+            $proxy_events = [];
+        }
+
+        return new Connector($this->dispatcher, $proxy_events);
+    }
+
+    /**
+     * Register a reporter.
+     */
+    private function registerReporter()
+    {
+        if ($this->config['report_dir'] !== null) {
+            $this->container->setParameter('report.dir', $this->config['report_dir']);
+            /** @var EventSubscriberInterface $listener */
+            $listener = $this->container->get('reporter');
+            $this->dispatcher->addSubscriber($listener);
+        }
+    }
+
+    /**
+     * Register custom event listeners.
+     */
+    private function registerListeners()
+    {
+        foreach ($this->config['listeners'] as $service) {
+            /** @var EventSubscriberInterface $listener */
+            $listener = $this->container->get($service);
+            $this->dispatcher->addSubscriber($listener);
+        }
+    }
+
+    /**
+     * Get suite files with tests.
+     *
+     * @return \ArrayObject
+     */
+    private function getSuite()
+    {
+        $files = new \ArrayObject();
+        foreach ($this->config['source'] as $source) {
+            $finder = new Finder();
+            $finder->ignoreUnreadableDirs()->files();
+            $finder->in($source['in'])->name($source['name']);
+            if (!empty($source['notName'])) {
+                $finder->notName($source['notName']);
+            }
+            if (!empty($source['exclude'])) {
+                $finder->exclude($source['exclude']);
+            }
+            /** @var \SplFileInfo $file */
+            foreach ($finder as $file) {
+                $real_path = $file->getRealPath();
+                if (!$files->offsetExists($real_path) && substr($file->getFilename(), -8) === 'Test.php') {
+                    $files[$real_path] = $file;
+                }
+            }
+        }
+        // Output information and progress bar
+        $this->formatter->start($files->count());
+
+        return $files;
     }
 }
