@@ -47,9 +47,17 @@ class EqualTo extends AbstractMatcher
      */
     protected function getDiff($actual)
     {
+        $actual_type = gettype($actual);
+        $expected_type = gettype($this->expected);
+        if ($actual_type !== $expected_type) {
+            return sprintf('expected %s type, but given %s', $expected_type, $actual_type);
+        }
         $diff = new Diff('--- Expected' . PHP_EOL . '+++ Actual' . PHP_EOL);
-
-        return trim($diff->diff(var_export($this->expected, true), var_export($actual, true)));
+        if (is_array($actual) || is_string($actual)) {
+            return trim($diff->diff($this->expected, $actual));
+        } else {
+            return trim($diff->diff(var_export($this->expected, true), var_export($actual, true)));
+        }
     }
 
     /**
