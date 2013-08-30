@@ -2,7 +2,7 @@
 /**
  * This file is a part of unteist project.
  *
- * (c) Andrey Kolchenko <komexx@gmail.com>
+ * (c) Andrey Kolchenko <andrey@kolchenko.me>
  */
 
 namespace Tests\Unteist\Assert\Matcher;
@@ -13,7 +13,7 @@ use Unteist\Assert\Matcher\TypeOf;
  * Class TypeOfTest
  *
  * @package Tests\Unteist\Assert\Matcher
- * @author Andrey Kolchenko <komexx@gmail.com>
+ * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
 class TypeOfTest extends \PHPUnit_Framework_TestCase
 {
