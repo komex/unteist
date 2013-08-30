@@ -139,21 +139,21 @@ class ConfigurationValidator implements ConfigurationInterface
         }
 
         $definition = $section->children()->enumNode('error');
-        $definition->values(['strategy.fail', 'strategy.ignore']);
+        $definition->values(['strategy.fail', 'strategy.continue']);
         $definition->cannotBeEmpty()->defaultValue('strategy.fail');
 
         $definition = $section->children()->enumNode('failure');
-        $definition->values(['strategy.fail', 'strategy.ignore']);
+        $definition->values(['strategy.fail', 'strategy.continue']);
         $definition->cannotBeEmpty()->defaultValue('strategy.fail');
 
         $definition = $section->children()->enumNode('incomplete');
-        $definition->values(['strategy.fail', 'strategy.incomplete', 'strategy.ignore']);
+        $definition->values(['strategy.fail', 'strategy.incomplete', 'strategy.continue']);
         $definition->cannotBeEmpty()->defaultValue('strategy.incomplete');
 
         $definition = $section->children()->arrayNode('associations')->requiresAtLeastOneElement();
         /** @var EnumNodeDefinition $associations */
         $associations = $definition->prototype('enum');
-        $associations->values(['strategy.fail', 'strategy.incomplete', 'strategy.ignore']);
+        $associations->values(['strategy.fail', 'strategy.incomplete', 'strategy.continue']);
 
         return $section;
     }

@@ -103,6 +103,30 @@ class Runner
     }
 
     /**
+     * Parse block with annotations.
+     *
+     * @param string $doc Comments string
+     * @param array $keywords Allowed keywords
+     *
+     * @return array
+     */
+    public static function parseDocBlock($doc, array $keywords)
+    {
+        if (empty($doc)) {
+            $annotation = [];
+        } else {
+            $pattern = sprintf('{\*\s*@(%s)\b(?:\s+([\w\s\\\\]+))?[\r\n]*(?!\*)}', join('|', $keywords));
+            preg_match_all($pattern, $doc, $matches, PREG_SET_ORDER);
+            $annotation = [];
+            foreach ($matches as $match) {
+                $annotation[trim($match[1])] = trim($match[2]) ? : true;
+            }
+        }
+
+        return $annotation;
+    }
+
+    /**
      * Setup TestCase.
      *
      * @param TestCase $test_case
@@ -133,90 +157,6 @@ class Runner
                     $this->registerEventListener($event, $method->getName());
                 }
             }
-        }
-    }
-
-    /**
-     * Parse docBlock and gets Modifiers.
-     *
-     * @param \ReflectionMethod $method Parsed method
-     *
-     * @return array
-     */
-    protected function getModifiers(\ReflectionMethod $method)
-    {
-        return self::parseDocBlock(
-            $method->getDocComment(),
-            [
-                'beforeTest',
-                'afterTest',
-                'beforeCase',
-                'afterCase',
-                'group',
-                'depends',
-                'dataProvider',
-                'test',
-                'expectedException',
-                'expectedExceptionMessage',
-                'expectedExceptionCode',
-            ]
-        );
-    }
-
-    /**
-     * Parse block with annotations.
-     *
-     * @param string $doc Comments string
-     * @param array $keywords Allowed keywords
-     *
-     * @return array
-     */
-    public static function parseDocBlock($doc, array $keywords)
-    {
-        if (empty($doc)) {
-            $annotation = [];
-        } else {
-            $pattern = sprintf('{\*\s*@(%s)\b(?:\s+([\w\s\\\\]+))?[\r\n]*(?!\*)}', join('|', $keywords));
-            preg_match_all($pattern, $doc, $matches, PREG_SET_ORDER);
-            $annotation = [];
-            foreach ($matches as $match) {
-                $annotation[trim($match[1])] = trim($match[2]) ? : true;
-            }
-        }
-
-        return $annotation;
-    }
-
-    /**
-     * Register method as an event listener.
-     *
-     * @param string $event Event name
-     * @param string $listener The method name
-     */
-    private function registerEventListener($event, $listener)
-    {
-        switch ($event) {
-            case 'beforeTest':
-                $name = EventStorage::EV_BEFORE_TEST;
-                break;
-            case 'afterTest':
-                $name = EventStorage::EV_AFTER_TEST;
-                break;
-            case 'beforeCase':
-                $name = EventStorage::EV_BEFORE_CASE;
-                break;
-            case 'afterCase':
-                $name = EventStorage::EV_AFTER_CASE;
-                break;
-            default:
-                $name = null;
-        }
-        if (!empty($name)) {
-            $this->logger->debug(
-                'Register a new event listener',
-                ['pid' => getmypid(), 'event' => $event, 'method' => $listener]
-            );
-            $this->precondition->addListener($name, array($this->test_case, $listener));
         }
     }
 
@@ -285,75 +225,30 @@ class Runner
     }
 
     /**
-     * Run test method.
+     * Parse docBlock and gets Modifiers.
      *
-     * @param TestMeta $test
+     * @param \ReflectionMethod $method Parsed method
      *
-     * @return int Status code
-     * @throws \Exception If catch unexpected exception.
-     * @throws SkipTestException If this test was skipped.
-     * @throws TestFailException If assert was fail.
-     * @throws IncompleteTestException If assert was marked as incomplete.
+     * @return array
      */
-    private function runTest(TestMeta $test)
+    protected function getModifiers(\ReflectionMethod $method)
     {
-        $status_code = 0;
-        $depends = $test->getDependencies();
-        if (!empty($depends)) {
-            $test->setStatus(TestMeta::TEST_MARKED);
-            $this->resolveDependencies($depends);
-        }
-
-        if ($test->getStatus() == TestMeta::TEST_NEW || $test->getStatus() == TestMeta::TEST_MARKED) {
-            $dataProvider = $this->getDataSet($test->getDataProvider());
-            foreach ($dataProvider as $dp_number => $data_set) {
-
-                $event = new TestEvent($test->getMethod(), $this->test_case_event);
-                if (count($dataProvider) > 1) {
-                    $event->setDataSet($dp_number + 1);
-                }
-                $event->setDepends($test->getDependencies());
-                $status = 0;
-                try {
-                    try {
-                        $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $event);
-                        $this->started = microtime(true);
-                        $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $event);
-                        $this->asserts = Assert::getAssertsCount();
-
-                        call_user_func_array([$this->test_case, $test->getMethod()], $data_set);
-                        if ($test->getExpectedException()) {
-                            throw new TestFailException('Expected exception ' . $test->getExpectedException());
-                        }
-                    } catch (TestFailException $e) {
-                        $status = $this->context->onFailure($e);
-                    } catch (TestErrorException $e) {
-                        $status = $this->context->onError($e);
-                    } catch (IncompleteTestException $e) {
-                        $status = $this->context->onIncomplete($e);
-                    } catch (\Exception $e) {
-                        $status = $this->exceptionControl($test, $e);
-                    }
-                    if ($status > 0) {
-                        $status_code = $status;
-                    }
-                } catch (SkipTestException $e) {
-                    $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e);
-                    continue;
-                } catch (TestFailException $e) {
-                    $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
-                    $status_code = $this->context->onFailure($e);
-                    continue;
-                } catch (IncompleteTestException $e) {
-                    $this->finish($test, $event, TestMeta::TEST_INCOMPLETE, $e);
-                    $status_code = $this->context->onIncomplete($e);
-                    continue;
-                }
-                $this->finish($test, $event, TestMeta::TEST_DONE);
-            }
-        }
-
-        return $status_code;
+        return self::parseDocBlock(
+            $method->getDocComment(),
+            [
+                'beforeTest',
+                'afterTest',
+                'beforeCase',
+                'afterCase',
+                'group',
+                'depends',
+                'dataProvider',
+                'test',
+                'expectedException',
+                'expectedExceptionMessage',
+                'expectedExceptionCode',
+            ]
+        );
     }
 
     /**
@@ -443,54 +338,6 @@ class Runner
     }
 
     /**
-     * Try to resolve situation with exception.
-     *
-     * @param TestMeta $test
-     * @param \Exception $e
-     *
-     * @return int Status code
-     */
-    private function exceptionControl(TestMeta $test, \Exception $e)
-    {
-        if (is_a($e, $test->getExpectedException())) {
-            $code = $test->getExpectedExceptionCode();
-            if ($code !== null && $code !== $e->getCode()) {
-                $error = new TestFailException(
-                    sprintf(
-                        'Failed asserting that expected exception code %d is equal to %d',
-                        $code,
-                        $e->getCode()
-                    ),
-                    0,
-                    $e
-                );
-
-                return $this->context->onFailure($error);
-            }
-            $message = $test->getExpectedExceptionMessage();
-            if ($message !== null && strpos($e->getMessage(), $message) === false) {
-                $error = new TestFailException(
-                    sprintf(
-                        'Failed asserting that exception message "%s" contains "%s"',
-                        $e->getMessage(),
-                        $message
-                    ),
-                    0,
-                    $e
-                );
-
-                return $this->context->onFailure($error);
-            }
-
-            return 0;
-        } else {
-            $this->context->onUnexpectedException($e);
-
-            return 1;
-        }
-    }
-
-    /**
      * Do all dirty job after test is finish.
      *
      * @param TestMeta $test Meta description of test
@@ -541,6 +388,164 @@ class Runner
         if ($send_event) {
             $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
             $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
+        }
+    }
+
+    /**
+     * Register method as an event listener.
+     *
+     * @param string $event Event name
+     * @param string $listener The method name
+     */
+    private function registerEventListener($event, $listener)
+    {
+        switch ($event) {
+            case 'beforeTest':
+                $name = EventStorage::EV_BEFORE_TEST;
+                break;
+            case 'afterTest':
+                $name = EventStorage::EV_AFTER_TEST;
+                break;
+            case 'beforeCase':
+                $name = EventStorage::EV_BEFORE_CASE;
+                break;
+            case 'afterCase':
+                $name = EventStorage::EV_AFTER_CASE;
+                break;
+            default:
+                $name = null;
+        }
+        if (!empty($name)) {
+            $this->logger->debug(
+                'Register a new event listener',
+                ['pid' => getmypid(), 'event' => $event, 'method' => $listener]
+            );
+            $this->precondition->addListener($name, array($this->test_case, $listener));
+        }
+    }
+
+    /**
+     * Run test method.
+     *
+     * @param TestMeta $test
+     *
+     * @return int Status code
+     * @throws \Exception If catch unexpected exception.
+     * @throws SkipTestException If this test was skipped.
+     * @throws TestFailException If assert was fail.
+     * @throws IncompleteTestException If assert was marked as incomplete.
+     */
+    private function runTest(TestMeta $test)
+    {
+        $status_code = 0;
+        $depends = $test->getDependencies();
+        if (!empty($depends)) {
+            $test->setStatus(TestMeta::TEST_MARKED);
+            $this->resolveDependencies($depends);
+        }
+
+        if ($test->getStatus() == TestMeta::TEST_NEW || $test->getStatus() == TestMeta::TEST_MARKED) {
+            $dataProvider = $this->getDataSet($test->getDataProvider());
+            foreach ($dataProvider as $dp_number => $data_set) {
+
+                $event = new TestEvent($test->getMethod(), $this->test_case_event);
+                if (count($dataProvider) > 1) {
+                    $event->setDataSet($dp_number + 1);
+                }
+                $event->setDepends($test->getDependencies());
+                try {
+                    try {
+                        $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $event);
+                        $this->started = microtime(true);
+                        $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $event);
+                        $this->asserts = Assert::getAssertsCount();
+
+                        call_user_func_array([$this->test_case, $test->getMethod()], $data_set);
+                        if ($test->getExpectedException()) {
+                            throw new TestFailException('Expected exception ' . $test->getExpectedException());
+                        }
+                    } catch (TestFailException $e) {
+                        $status_code = $this->context->onFailure($e);
+                        $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
+                        continue;
+                    } catch (TestErrorException $e) {
+                        $status_code = $this->context->onError($e);
+                        $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
+                        continue;
+                    } catch (IncompleteTestException $e) {
+                        $status_code = $this->context->onIncomplete($e);
+                        $this->finish($test, $event, TestMeta::TEST_INCOMPLETE, $e);
+                        continue;
+                    } catch (\Exception $e) {
+                        $status = $this->exceptionControl($test, $e);
+                        if ($status > 0) {
+                            $status_code = $status;
+                        }
+                    }
+                } catch (SkipTestException $e) {
+                    $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e);
+                    continue;
+                } catch (TestFailException $e) {
+                    $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
+                    $status_code = $this->context->onFailure($e);
+                    continue;
+                } catch (IncompleteTestException $e) {
+                    $this->finish($test, $event, TestMeta::TEST_INCOMPLETE, $e);
+                    $status_code = $this->context->onIncomplete($e);
+                    continue;
+                }
+                $this->finish($test, $event, TestMeta::TEST_DONE);
+            }
+        }
+
+        return $status_code;
+    }
+
+    /**
+     * Try to resolve situation with exception.
+     *
+     * @param TestMeta $test
+     * @param \Exception $e
+     *
+     * @return int Status code
+     */
+    private function exceptionControl(TestMeta $test, \Exception $e)
+    {
+        if (is_a($e, $test->getExpectedException())) {
+            $code = $test->getExpectedExceptionCode();
+            if ($code !== null && $code !== $e->getCode()) {
+                $error = new TestFailException(
+                    sprintf(
+                        'Failed asserting that expected exception code %d is equal to %d',
+                        $code,
+                        $e->getCode()
+                    ),
+                    0,
+                    $e
+                );
+
+                return $this->context->onFailure($error);
+            }
+            $message = $test->getExpectedExceptionMessage();
+            if ($message !== null && strpos($e->getMessage(), $message) === false) {
+                $error = new TestFailException(
+                    sprintf(
+                        'Failed asserting that exception message "%s" contains "%s"',
+                        $e->getMessage(),
+                        $message
+                    ),
+                    0,
+                    $e
+                );
+
+                return $this->context->onFailure($error);
+            }
+
+            return 0;
+        } else {
+            $this->context->onUnexpectedException($e);
+
+            return 1;
         }
     }
 
