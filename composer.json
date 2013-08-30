@@ -37,11 +37,11 @@
     },
     "suggest": {
         "ext-pcntl": "Required for run in separate processes.",
-        "codeception/aspect-mock": "AspectMock allows you to stub and mock practically anything in your PHP code."
+        "komex/delusion": "Allows you to stub and mock any classes in your PHP code."
     },
     "autoload": {
         "psr-0": {
-            "Unteist\\": "src"
+            "Unteist": "src"
         }
     },
     "bin": [
