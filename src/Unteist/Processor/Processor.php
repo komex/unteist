@@ -283,11 +283,44 @@ class Processor
     }
 
     /**
-     * Backup all super global variables.
+     * Handler for process signals.
+     *
+     * @param int $signo
+     * @param int $pid
+     * @param int $status
      */
-    private function backupGlobals()
+    public function childSignalHandler($signo = null, $pid = null, $status = null)
     {
-        $this->globals = array_merge([], $GLOBALS);
+        //If no pid is provided, that means we're getting the signal from the system.  Let's figure out
+        //which child process ended
+        if (!$pid) {
+            $pid = pcntl_waitpid(-1, $status, WNOHANG);
+        }
+
+        //Make sure we get all of the exited children
+        while ($pid > 0) {
+            if ($pid && isset($this->current_jobs[$pid])) {
+                $exit_code = pcntl_wexitstatus($status);
+                if ($exit_code == 0) {
+                    $this->logger->debug('TestCase was successful finished.', ['pid' => $pid]);
+                } else {
+                    $this->logger->info(
+                        'Process exited with status != 0.',
+                        ['pid' => $pid, 'exit_code' => $exit_code]
+                    );
+                    $this->exit_code = $exit_code;
+                }
+                unset($this->current_jobs[$pid]);
+            } else {
+                if ($pid) {
+                    //Oh no, our job has finished before this parent process could even note that it had been launched!
+                    //Let's make note of it and handle it when the parent process is ready for it
+                    $this->logger->debug('Adding process to signal queue.', ['pid' => $pid]);
+                    $this->signal_queue[$pid] = $status;
+                }
+            }
+            $pid = pcntl_waitpid(-1, $status, WNOHANG);
+        }
     }
 
     /**
@@ -302,45 +335,38 @@ class Processor
         try {
             $this->logger->debug('Trying to load TestCase.', ['pid' => getmypid(), 'file' => $case->getRealPath()]);
             $class = TestCaseLoader::load($case);
-            $this->logger->debug('TestCase was found.', ['pid' => getmypid(), 'class' => get_class($class)]);
-            if (!empty($this->class_filters)) {
-                $reflection_class = new \ReflectionClass($class);
-                foreach ($this->class_filters as $filter) {
-                    if (!$filter->filter($reflection_class)) {
-                        $this->logger->info(
-                            'Class was filtered',
-                            [
-                                'pid' => getmypid(),
-                                'filter' => $filter->getName(),
-                            ]
-                        );
-                        $this->dispatcher->dispatch(EventStorage::EV_CASE_FILTERED);
-
-                        return 1;
-                    }
-                }
-            }
-            $class->setGlobalStorage($this->global_storage);
-            $class->setConfig($this->container);
-            $class->setDispatcher($this->dispatcher);
-            $runner = new Runner($this->dispatcher, $this->logger, $this->context);
-            $runner->setFilters($this->methods_filters);
-            $runner->precondition($class);
-
-            return $runner->run();
         } catch (\RuntimeException $e) {
             $this->logger->notice('TestCase class does not found in file', ['pid' => getmypid(), 'exception' => $e]);
 
             return 1;
         }
-    }
+        $this->logger->debug('TestCase was found.', ['pid' => getmypid(), 'class' => get_class($class)]);
+        if (!empty($this->class_filters)) {
+            $reflection_class = new \ReflectionClass($class);
+            foreach ($this->class_filters as $filter) {
+                if (!$filter->filter($reflection_class)) {
+                    $this->logger->info(
+                        'Class was filtered',
+                        [
+                            'pid' => getmypid(),
+                            'filter' => $filter->getName(),
+                        ]
+                    );
+                    $this->dispatcher->dispatch(EventStorage::EV_CASE_FILTERED);
 
-    /**
-     * Restore all super global variables.
-     */
-    private function restoreGlobals()
-    {
-        $GLOBALS = $this->globals;
+                    return 1;
+                }
+            }
+        }
+        $class->setGlobalStorage($this->global_storage);
+        $class->setConfig($this->container);
+        $class->setDispatcher($this->dispatcher);
+        $runner = new Runner($this->dispatcher, $this->logger, $this->context);
+        $runner->setFilters($this->methods_filters);
+        $runner->precondition($class);
+
+        return $runner->run();
+
     }
 
     /**
@@ -394,43 +420,18 @@ class Processor
     }
 
     /**
-     * Handler for process signals.
-     *
-     * @param int $signo
-     * @param int $pid
-     * @param int $status
+     * Backup all super global variables.
      */
-    public function childSignalHandler($signo = null, $pid = null, $status = null)
+    private function backupGlobals()
     {
-        //If no pid is provided, that means we're getting the signal from the system.  Let's figure out
-        //which child process ended
-        if (!$pid) {
-            $pid = pcntl_waitpid(-1, $status, WNOHANG);
-        }
+        $this->globals = array_merge([], $GLOBALS);
+    }
 
-        //Make sure we get all of the exited children
-        while ($pid > 0) {
-            if ($pid && isset($this->current_jobs[$pid])) {
-                $exit_code = pcntl_wexitstatus($status);
-                if ($exit_code == 0) {
-                    $this->logger->debug('TestCase was successful finished.', ['pid' => $pid]);
-                } else {
-                    $this->logger->info(
-                        'Process exited with status != 0.',
-                        ['pid' => $pid, 'exit_code' => $exit_code]
-                    );
-                    $this->exit_code = $exit_code;
-                }
-                unset($this->current_jobs[$pid]);
-            } else {
-                if ($pid) {
-                    //Oh no, our job has finished before this parent process could even note that it had been launched!
-                    //Let's make note of it and handle it when the parent process is ready for it
-                    $this->logger->debug('Adding process to signal queue.', ['pid' => $pid]);
-                    $this->signal_queue[$pid] = $status;
-                }
-            }
-            $pid = pcntl_waitpid(-1, $status, WNOHANG);
-        }
+    /**
+     * Restore all super global variables.
+     */
+    private function restoreGlobals()
+    {
+        $GLOBALS = $this->globals;
     }
 }
