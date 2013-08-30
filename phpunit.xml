@@ -2,7 +2,7 @@
          convertNoticesToExceptions="true" convertWarningsToExceptions="true">
     <testsuites>
         <testsuite name="Unteist">
-            <directory>tests</directory>
+            <directory phpVersion="5.4.0" phpVersionOperator=">=">tests</directory>
         </testsuite>
     </testsuites>
 </phpunit>
