@@ -10,6 +10,6 @@ before_script:
   - pear install pear/PHP_CodeSniffer
 
 script:
-  - find -type d -name vendor -prune -o -type f -name '*.php' -not -path ./vendor -print0 | xargs -0 -n 1 php -l
+  - find -type d -name vendor -prune -o -type f -name '*.php' -print0 | xargs -0 -n 1 php -l
   - phpcs -p --standard=PSR2 --extensions=php src
   - phpunit
