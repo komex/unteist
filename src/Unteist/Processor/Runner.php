@@ -20,7 +20,6 @@ use Unteist\Exception\SkipTestException;
 use Unteist\Exception\TestErrorException;
 use Unteist\Exception\TestFailException;
 use Unteist\Filter\MethodsFilter;
-use Unteist\Filter\MethodsFilterInterface;
 use Unteist\Meta\TestMeta;
 use Unteist\Strategy\Context;
 use Unteist\TestCase;
@@ -46,7 +45,7 @@ class Runner
      */
     protected $tests;
     /**
-     * @var MethodsFilterInterface[]
+     * @var \Unteist\Filter\MethodsFilterInterface[]
      */
     protected $filters = [];
     /**
@@ -163,7 +162,7 @@ class Runner
     /**
      * Set test method filters.
      *
-     * @param MethodsFilterInterface[] $filters
+     * @param \Unteist\Filter\MethodsFilterInterface[] $filters
      */
     public function setFilters(array $filters)
     {
@@ -271,7 +270,7 @@ class Runner
                             $this->runTest($test);
                         } catch (\Exception $e) {
                             throw new SkipTestException(
-                                sprintf('Unresolved dependencies in %s:%s()', $this->name, $depend),
+                                sprintf('Unresolved dependencies in %s::%s()', $this->name, $depend),
                                 0,
                                 $e
                             );
@@ -279,20 +278,20 @@ class Runner
                         break;
                     case TestMeta::TEST_MARKED:
                         throw new \LogicException(
-                            sprintf('Found infinitive loop in depends for test method "%s:%s"', $this->name, $depend)
+                            sprintf('Found infinitive loop in depends for test method "%s::%s()"', $this->name, $depend)
                         );
                     case TestMeta::TEST_SKIPPED:
                         throw new SkipTestException(
-                            sprintf('Test method "%s:%s" was skipped', $this->name, $depend)
+                            sprintf('Test method "%s::%s()" was skipped', $this->name, $depend)
                         );
                     case TestMeta::TEST_FAILED:
                         throw new SkipTestException(
-                            sprintf('Test method "%s:%s" was failed', $this->name, $depend)
+                            sprintf('Test method "%s::%s()" was failed', $this->name, $depend)
                         );
                 }
             } else {
                 throw new \InvalidArgumentException(
-                    sprintf('The depends method "%s:%s" does not exists or is not a test', $this->name, $depend)
+                    sprintf('The depends method "%s::%s()" does not exists or is not a test', $this->name, $depend)
                 );
             }
         }
@@ -314,7 +313,7 @@ class Runner
         if (empty($this->data_sets[$method])) {
             if (!method_exists($this->test_case, $method)) {
                 throw new \InvalidArgumentException(
-                    sprintf('DataProvider "%s:%s" does not exists.', $this->name, $method)
+                    sprintf('DataProvider "%s::%s()" does not exists.', $this->name, $method)
                 );
             }
             $data_set_method = new \ReflectionMethod($this->test_case, $method);
@@ -326,7 +325,7 @@ class Runner
                 $this->data_sets[$method] = $data_set;
             } else {
                 throw new \InvalidArgumentException(
-                    sprintf('DataProvider "%s:%s" must return an array or Iterator object.', $this->name, $method)
+                    sprintf('DataProvider "%s::%s()" must return an array or Iterator object.', $this->name, $method)
                 );
             }
         } else {
