@@ -7,15 +7,15 @@
 
 namespace Tests\Unteist\Assert\Matcher;
 
-use Unteist\Assert\Matcher\GreaterThanOrEqual;
+use Unteist\Assert\Matcher\Count;
 
 /**
- * Class GreaterThanOrEqualTest
+ * Class CountTest
  *
  * @package Tests\Unteist\Assert\Matcher
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class GreaterThanOrEqualTest extends \PHPUnit_Framework_TestCase
+class CountTest extends \PHPUnit_Framework_TestCase
 {
     /**
      * @return array
@@ -23,44 +23,46 @@ class GreaterThanOrEqualTest extends \PHPUnit_Framework_TestCase
     public function dataProvider()
     {
         return [
-            [4, 5],
-            [-7, -3],
-            [0, 0.2],
+            [['a'], 1],
+            [[], 0],
+            [[1, 2, 3], 3],
+            [new \ArrayObject([true, false, 'ok']), 3],
         ];
     }
 
     /**
-     * @param int|float $expected
-     * @param int|float $actual
+     * @param array|\Countable|\Traversable $actual
+     * @param int $expected
      *
      * @dataProvider dataProvider
      */
-    public function testGoodWay($expected, $actual)
+    public function testGoodWay($actual, $expected)
     {
-        $class = new GreaterThanOrEqual($expected);
+        $class = new Count($expected);
         $class->match($actual);
     }
 
     /**
-     * @param int|float $actual
-     * @param int|float $expected
+     * @param array|\Countable|\Traversable $actual
+     * @param int $expected
      *
      * @dataProvider dataProvider
      * @expectedException \Unteist\Exception\TestFailException
      */
     public function testBadWay($actual, $expected)
     {
-        $class = new GreaterThanOrEqual($expected);
+        $expected++;
+        $class = new Count($expected);
         $class->match($actual);
     }
 
     /**
      * @expectedException \Unteist\Exception\TestFailException
-     * @expectedExceptionMessage Failed asserting that 0 is greater than or equal 1
+     * @expectedExceptionMessage Failed asserting that actual size 0 matches expected size 1
      */
     public function testBadWayException()
     {
-        $class = new GreaterThanOrEqual(1);
-        $class->match(0);
+        $class = new Count(1);
+        $class->match([]);
     }
 }

@@ -20,7 +20,7 @@ class LessThanTest extends \PHPUnit_Framework_TestCase
     /**
      * @return array
      */
-    public function dpGoodWay()
+    public function dataProvider()
     {
         return [
             [4, 5],
@@ -33,7 +33,7 @@ class LessThanTest extends \PHPUnit_Framework_TestCase
      * @param int|float $actual
      * @param int|float $expected
      *
-     * @dataProvider dpGoodWay
+     * @dataProvider dataProvider
      */
     public function testGoodWay($actual, $expected)
     {
@@ -45,7 +45,7 @@ class LessThanTest extends \PHPUnit_Framework_TestCase
      * @param int|float $expected
      * @param int|float $actual
      *
-     * @dataProvider dpGoodWay
+     * @dataProvider dataProvider
      * @expectedException \Unteist\Exception\TestFailException
      */
     public function testBadWay($expected, $actual)
