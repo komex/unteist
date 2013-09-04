@@ -19,7 +19,7 @@ services:
         class: \Unteist\Strategy\TestFailStrategy
     strategy.incomplete:
         class: \Unteist\Strategy\IncompleteTestStrategy
-    strategy.ignore:
+    strategy.continue:
         class: \Unteist\Strategy\DoNothingStrategy
     filter.class.base:
         class: \Unteist\Filter\ClassFilter

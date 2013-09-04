@@ -7,7 +7,6 @@
 
 namespace Unteist\Filter;
 
-
 /**
  * Class MethodsFilterInterface
  *
