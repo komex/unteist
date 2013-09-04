@@ -7,15 +7,15 @@
 
 namespace Tests\Unteist\Assert\Matcher;
 
-use Unteist\Assert\Matcher\LessThan;
+use Unteist\Assert\Matcher\LessThanOrEqual;
 
 /**
- * Class LessThanTest
+ * Class LessThanOrEqualTest
  *
  * @package Tests\Unteist\Assert\Matcher
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class LessThanTest extends \PHPUnit_Framework_TestCase
+class LessThanOrEqualTest extends \PHPUnit_Framework_TestCase
 {
     /**
      * @return array
@@ -37,7 +37,7 @@ class LessThanTest extends \PHPUnit_Framework_TestCase
      */
     public function testGoodWay($actual, $expected)
     {
-        $class = new LessThan($expected);
+        $class = new LessThanOrEqual($expected);
         $class->match($actual);
     }
 
@@ -50,17 +50,17 @@ class LessThanTest extends \PHPUnit_Framework_TestCase
      */
     public function testBadWay($expected, $actual)
     {
-        $class = new LessThan($expected);
+        $class = new LessThanOrEqual($expected);
         $class->match($actual);
     }
 
     /**
      * @expectedException \Unteist\Exception\TestFailException
-     * @expectedExceptionMessage Failed asserting that 0 is less than 0
+     * @expectedExceptionMessage Failed asserting that 1 is less than or equal 0
      */
     public function testBadWayException()
     {
-        $class = new LessThan(0);
-        $class->match(0);
+        $class = new LessThanOrEqual(0);
+        $class->match(1);
     }
 }

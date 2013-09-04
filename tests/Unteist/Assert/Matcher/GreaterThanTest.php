@@ -30,8 +30,8 @@ class GreaterThanTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @param int|float $actual
      * @param int|float $expected
+     * @param int|float $actual
      *
      * @dataProvider dpGoodWay
      */

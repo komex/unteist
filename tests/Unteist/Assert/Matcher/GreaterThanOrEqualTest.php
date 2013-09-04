@@ -7,15 +7,15 @@
 
 namespace Tests\Unteist\Assert\Matcher;
 
-use Unteist\Assert\Matcher\LessThan;
+use Unteist\Assert\Matcher\GreaterThanOrEqual;
 
 /**
- * Class LessThanTest
+ * Class GreaterThanOrEqualTest
  *
  * @package Tests\Unteist\Assert\Matcher
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class LessThanTest extends \PHPUnit_Framework_TestCase
+class GreaterThanOrEqualTest extends \PHPUnit_Framework_TestCase
 {
     /**
      * @return array
@@ -30,37 +30,37 @@ class LessThanTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @param int|float $actual
-     * @param int|float $expected
-     *
-     * @dataProvider dpGoodWay
-     */
-    public function testGoodWay($actual, $expected)
-    {
-        $class = new LessThan($expected);
-        $class->match($actual);
-    }
-
-    /**
      * @param int|float $expected
      * @param int|float $actual
      *
      * @dataProvider dpGoodWay
+     */
+    public function testGoodWay($expected, $actual)
+    {
+        $class = new GreaterThanOrEqual($expected);
+        $class->match($actual);
+    }
+
+    /**
+     * @param int|float $actual
+     * @param int|float $expected
+     *
+     * @dataProvider dpGoodWay
      * @expectedException \Unteist\Exception\TestFailException
      */
-    public function testBadWay($expected, $actual)
+    public function testBadWay($actual, $expected)
     {
-        $class = new LessThan($expected);
+        $class = new GreaterThanOrEqual($expected);
         $class->match($actual);
     }
 
     /**
      * @expectedException \Unteist\Exception\TestFailException
-     * @expectedExceptionMessage Failed asserting that 0 is less than 0
+     * @expectedExceptionMessage Failed asserting that 0 is greater than or equal 1
      */
     public function testBadWayException()
     {
-        $class = new LessThan(0);
+        $class = new GreaterThanOrEqual(1);
         $class->match(0);
     }
 }
