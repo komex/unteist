@@ -19,13 +19,26 @@ use Unteist\Assert\Matcher\TypeOf;
 class AllValuesTest extends \PHPUnit_Framework_TestCase
 {
     /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Actual variable must be an array or instance of Traversable
+     * @return array
      */
-    public function testInvalidArgument()
+    public function dpInvalidArgument()
+    {
+        return [
+            [[]],
+            [new \ArrayObject()],
+            ['not array'],
+        ];
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Actual variable must be a not empty array or instance of Traversable
+     * @dataProvider dpInvalidArgument
+     */
+    public function testInvalidArgument($actual)
     {
         $class = new AllValues(new TypeOf('integer'));
-        $class->match('not array');
+        $class->match($actual);
     }
 
     public function testGoodWay()
@@ -43,8 +56,7 @@ class AllValuesTest extends \PHPUnit_Framework_TestCase
     {
         return [
             [[1, 's', true]],
-            [new \ArrayObject()],
-            [[]],
+            [new \ArrayObject([1, 's', true])],
         ];
     }
 
@@ -53,7 +65,7 @@ class AllValuesTest extends \PHPUnit_Framework_TestCase
      *
      * @dataProvider dpBadWay
      * @expectedException \Unteist\Exception\TestFailException
-     * @expectedExceptionMessage It was expected the successful completion of condition at least one of
+     * @expectedExceptionMessage is type of integer on element #2
      */
     public function testBadWay($actual)
     {
