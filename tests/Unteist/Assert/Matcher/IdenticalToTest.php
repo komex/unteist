@@ -7,15 +7,15 @@
 
 namespace Tests\Unteist\Assert\Matcher;
 
-use Unteist\Assert\Matcher\EqualTo;
+use Unteist\Assert\Matcher\IdenticalTo;
 
 /**
- * Class EqualToTest
+ * Class IdenticalToTest
  *
  * @package Tests\Unteist\Assert\Matcher
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class EqualToTest extends \PHPUnit_Framework_TestCase
+class IdenticalToTest extends \PHPUnit_Framework_TestCase
 {
     /**
      * @return array
@@ -27,11 +27,8 @@ class EqualToTest extends \PHPUnit_Framework_TestCase
             [true, true],
             [false, false],
             ['str', 'str'],
-            [['a' => 'b', 'c' => 'd'], ['c' => 'd', 'a' => 'b']],
-            [0, 'string'],
-            [4.2, '4.2 str'],
-            [null, ''],
-            [new \ArrayObject(), new \ArrayObject()],
+            [['a' => 'b', 'c' => 'd'], ['a' => 'b', 'c' => 'd']],
+            [null, null],
         ];
     }
 
@@ -46,6 +43,11 @@ class EqualToTest extends \PHPUnit_Framework_TestCase
             ['str1', 'str2'],
             [['a' => 'b', 'c' => 'd'], ['d' => 'c', 'b' => 'a']],
             [null, 'f'],
+            [['a' => 'b', 'c' => 'd'], ['c' => 'd', 'a' => 'b']],
+            [0, 'string'],
+            [4.2, '4.2 str'],
+            [null, ''],
+            [new \ArrayObject(), new \ArrayObject()],
         ];
     }
 
@@ -57,7 +59,7 @@ class EqualToTest extends \PHPUnit_Framework_TestCase
      */
     public function testGoodWay($actual, $expected)
     {
-        $class = new EqualTo($expected);
+        $class = new IdenticalTo($expected);
         $class->match($actual);
     }
 
@@ -67,11 +69,11 @@ class EqualToTest extends \PHPUnit_Framework_TestCase
      *
      * @dataProvider dpBadWay
      * @expectedException \Unteist\Exception\TestFailException
-     * @expectedExceptionMessage Failed asserting that variables are equals:
+     * @expectedExceptionMessage Failed asserting that variables are identical:
      */
     public function testBadWay($actual, $expected)
     {
-        $class = new EqualTo($expected);
+        $class = new IdenticalTo($expected);
         $class->match($actual);
     }
 }
