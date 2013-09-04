@@ -7,16 +7,16 @@
 
 namespace Tests\Unteist\Assert\Matcher;
 
-use Unteist\Assert\Matcher\AnyValue;
-use Unteist\Assert\Matcher\IdenticalTo;
+use Unteist\Assert\Matcher\AllValues;
+use Unteist\Assert\Matcher\TypeOf;
 
 /**
- * Class AnyValueTest
+ * Class AllValuesTest
  *
  * @package Tests\Unteist\Assert\Matcher
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class AnyValueTest extends \PHPUnit_Framework_TestCase
+class AllValuesTest extends \PHPUnit_Framework_TestCase
 {
     /**
      * @expectedException \InvalidArgumentException
@@ -24,13 +24,13 @@ class AnyValueTest extends \PHPUnit_Framework_TestCase
      */
     public function testInvalidArgument()
     {
-        $class = new AnyValue(new IdenticalTo(5));
+        $class = new AllValues(new TypeOf('integer'));
         $class->match('not array');
     }
 
     public function testGoodWay()
     {
-        $class = new AnyValue(new IdenticalTo(5));
+        $class = new AllValues(new TypeOf('integer'));
         $class->match([1, 3, 5, 6]);
         $class->match(new \ArrayObject([5, 0, -1]));
         $class->match([5, 5]);
@@ -57,7 +57,7 @@ class AnyValueTest extends \PHPUnit_Framework_TestCase
      */
     public function testBadWay($actual)
     {
-        $class = new AnyValue(new IdenticalTo(5));
+        $class = new AllValues(new TypeOf('integer'));
         $class->match($actual);
     }
 }
