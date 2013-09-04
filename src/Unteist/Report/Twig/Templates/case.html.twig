@@ -1,0 +1,77 @@
+{% extends "layout.html.twig" %}
+
+{% import "macros.html.twig" as macros %}
+
+{% block title %}{{ class }} &minus; {{ parent() }}{% endblock %}
+
+{% block javascript %}
+    <script type="text/javascript">
+        <!--
+        $(document).ready(function () {
+            $('tr.additional-info').hide();
+            $('a.test-method').click(function () {
+                $(this).parents('tr').next('tr.additional-info:first').toggle();
+                return false;
+            });
+            $('a.depends').click(function () {
+                return false;
+            });
+        });
+        -->
+    </script>
+{% endblock %}
+
+{% block content %}
+    <ul class="breadcrumb">
+        <li><a href="{{ levelUp(class) }}index.html">Report</a> <span class="divider">/</span></li>
+        {{ macros.breadcrumb(class) }}
+    </ul>
+    {{ macros.total(case) }}
+    {{ macros.progress(case) }}
+    <table class="table table-bordered">
+        <thead>
+        <tr>
+            <th>#</th>
+            <th>Test method</th>
+            <th>Asserts</th>
+            <th>Time</th>
+            <th>Depends</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for test in case %}
+            <tr class="{{ macros.test_style(test) }}">
+                <td>{{ loop.index }}</td>
+                <td>
+                    {% if test.isSuccess() %}
+                        {{ test.method }}
+                    {% else %}
+                        <a href="#" class="test-method">{{ test.method }}</a>
+                    {% endif %}
+                    {% if test.getDataSet() > 0 %}
+                        with data set #{{ test.getDataSet() }}
+                    {% endif %}
+                </td>
+                <td>{{ test.asserts }}</td>
+                <td>{{ test.time|number_format(4) }} sec.</td>
+                <td>{{ macros.depends(test.depends) }}</td>
+            </tr>
+            {% if not test.isSuccess() %}
+                <tr class="additional-info {{ macros.test_style(test) }}">
+                    <td colspan="5"><i>{{ test.getExceptionMessage()|nl2br }}</i></td>
+                </tr>
+            {% endif %}
+        {% endfor %}
+        <tr>
+            <td colspan="5">&nbsp;</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td><b>Total</b></td>
+            <td>{{ case.asserts }}</td>
+            <td>{{ case.time|number_format(4) }} sec.</td>
+            <td></td>
+        </tr>
+        </tbody>
+    </table>
+{% endblock %}

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}Unteist{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="{{ levelUp(class) }}css/bootstrap.min.css" rel="stylesheet" media="screen">
+</head>
+<body>
+<div class="container">
+    <div class="navbar">
+        <div class="navbar-inner">
+            <a class="brand" href="#">Unteist</a>
+        </div>
+    </div>
+    {% block content %}{% endblock %}
+</div>
+<p class="text-center">Generated at {{ "now"|date("H:i:s m.d.Y") }}</p>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+{% block javascript %}{% endblock %}
+</body>
+</html>

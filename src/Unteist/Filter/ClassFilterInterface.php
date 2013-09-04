@@ -1,0 +1,42 @@
+<?php
+/**
+ * This file is a part of Unteist project.
+ *
+ * (c) Andrey Kolchenko <andrey@kolchenko.me>
+ */
+
+namespace Unteist\Filter;
+
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+
+/**
+ * Class ClassFilterInterface
+ *
+ * @package Unteist\Filter
+ * @author Andrey Kolchenko <andrey@kolchenko.me>
+ */
+interface ClassFilterInterface
+{
+    /**
+     * Filter classes.
+     *
+     * @param \ReflectionClass $class Class to filter.
+     *
+     * @return bool Can we use this class?
+     */
+    public function filter(\ReflectionClass $class);
+
+    /**
+     * Get name of this class filter.
+     *
+     * @return string
+     */
+    public function getName();
+
+    /**
+     * Get tests parameters.
+     *
+     * @param array $config
+     */
+    public function setParams(array $config);
+}

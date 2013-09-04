@@ -1,0 +1,45 @@
+{% extends "layout.html.twig" %}
+
+{% block title %}Report &minus; {{ parent() }}{% endblock %}
+
+{% import "macros.html.twig" as macros %}
+
+{% block content %}
+    <ul class="breadcrumb">
+        <li class="active">Report</li>
+    </ul>
+    {{ macros.total(statistics) }}
+    {{ macros.progress(statistics) }}
+    <table class="table table-bordered">
+        <thead>
+        <tr>
+            <th>#</th>
+            <th>TestCase</th>
+            <th>Tests</th>
+            <th>Asserts</th>
+            <th>Time</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for class, case in storage %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td><a href="{{ class|getPathByNamespace }}/index.html">{{ class }}</a></td>
+                <td>{{ macros.progress(case) }}</td>
+                <td>{{ case.asserts }}</td>
+                <td>{{ case.time|number_format(4) }} sec.</td>
+            </tr>
+        {% endfor %}
+        <tr>
+            <td colspan="5">&nbsp;</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td><b>Total</b></td>
+            <td>{{ statistics|length }}</td>
+            <td>{{ statistics.asserts }}</td>
+            <td>{{ statistics.time|number_format(4) }} sec.</td>
+        </tr>
+        </tbody>
+    </table>
+{% endblock %}

@@ -1,0 +1,50 @@
+{
+    "name": "komex/unteist",
+    "description": "Unit test framework",
+    "keywords": [
+        "testing", "test", "unit test", "phpunit", "framework"
+    ],
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Andrey Kolchenko",
+            "email": "andrey@kolchenko.me",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "email": "andrey@kolchenko.me",
+        "source": "https://github.com/komex/unteist",
+        "issues": "https://github.com/komex/unteist/issues"
+    },
+    "require": {
+        "php": ">=5.4.0",
+        "ext-SPL": "*",
+        "ext-Reflection": "*",
+        "symfony/yaml": "2.3.*",
+        "symfony/finder": "2.3.*",
+        "symfony/config": "2.3.*",
+        "symfony/console": "2.3.*",
+        "symfony/filesystem": "2.3.*",
+        "symfony/event-dispatcher": "2.3.*",
+        "symfony/dependency-injection": "2.3.*",
+        "monolog/monolog": "1.6.*",
+        "sebastian/diff": "1.0.*",
+        "twig/twig": "1.13.*",
+        "twitter/bootstrap": "2.3.2",
+        "leafo/lessphp": "~0.3.9"
+    },
+    "suggest": {
+        "ext-pcntl": "Required for run in separate processes.",
+        "komex/delusion": "Allows you to stub and mock any classes in your PHP code."
+    },
+    "autoload": {
+        "psr-0": {
+            "Unteist": "src"
+        }
+    },
+    "bin": [
+        "bin/unteist"
+    ]
+}
