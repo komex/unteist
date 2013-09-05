@@ -18,14 +18,19 @@ class AnyMatcher extends AbstractMatcher
     /**
      * @var AbstractMatcher[]
      */
-    protected $expected;
+    protected $matchers;
 
     /**
-     * @param AbstractMatcher[] $expected
+     * @param AbstractMatcher[] $matchers
+     *
+     * @throws \InvalidArgumentException If the set of matchers is empty
      */
-    public function __construct(array $expected)
+    public function __construct(array $matchers)
     {
-        $this->expected = $expected;
+        if (empty($matchers)) {
+            throw new \InvalidArgumentException('The set of matchers can\'t be empty.');
+        }
+        $this->matchers = $matchers;
     }
 
     /**
@@ -38,8 +43,7 @@ class AnyMatcher extends AbstractMatcher
      */
     protected function condition($actual)
     {
-        /** @var AbstractMatcher $expected */
-        foreach ($this->expected as $expected) {
+        foreach ($this->matchers as $expected) {
             if (!($expected instanceof AbstractMatcher)) {
                 throw new \InvalidArgumentException('Expects only AbstractMatcher objects.');
             }
@@ -60,9 +64,6 @@ class AnyMatcher extends AbstractMatcher
      */
     protected function getFailDescription($actual)
     {
-        return sprintf(
-            'at least one condition of %d was successful',
-            count($this->expected)
-        );
+        return sprintf('at least one condition of %d was successful', count($this->matchers));
     }
 }
