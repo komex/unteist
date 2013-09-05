@@ -7,8 +7,6 @@
 
 namespace Unteist\Assert\Matcher;
 
-use Unteist\Assert\Assert;
-
 /**
  * Class AllMatchers
  *
@@ -28,9 +26,14 @@ class AllMatchers extends AbstractMatcher
 
     /**
      * @param AbstractMatcher[] $matchers
+     *
+     * @throws \InvalidArgumentException If the set of matchers is empty
      */
     public function __construct(array $matchers)
     {
+        if (empty($matchers)) {
+            throw new \InvalidArgumentException('The set of matchers can\'t be empty.');
+        }
         $this->matchers = $matchers;
     }
 

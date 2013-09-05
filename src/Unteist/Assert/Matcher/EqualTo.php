@@ -53,11 +53,9 @@ class EqualTo extends AbstractMatcher
             return sprintf('expected %s type, but given %s', $expected_type, $actual_type);
         }
         $diff = new Diff('--- Expected' . PHP_EOL . '+++ Actual' . PHP_EOL);
-        if (is_array($actual) || is_string($actual)) {
-            return trim($diff->diff($this->expected, $actual));
-        } else {
-            return trim($diff->diff(var_export($this->expected, true), var_export($actual, true)));
-        }
+
+        // @todo Remove Diff class, make normal diff instrument.
+        return trim($diff->diff(var_export($this->expected, true), var_export($actual, true)));
     }
 
     /**

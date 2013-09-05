@@ -1,0 +1,16 @@
+language: php
+
+php:
+  - "5.5"
+  - "5.4"
+
+before_script:
+  - curl -sS https://getcomposer.org/installer | php
+  - php composer.phar install --no-dev
+  - pear install pear/PHP_CodeSniffer
+  - phpenv rehash
+
+script:
+  - find -type d -name vendor -prune -o -type f -name '*.php' -print0 | xargs -0 -n 1 php -l
+  - phpcs -p --standard=PSR2 --extensions=php src
+  - phpunit
