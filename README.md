@@ -82,4 +82,3 @@ class StackTest extends \Unteist\TestCase
 ## Credits
 
 (c) Andrey Kolchenko ([andrey@kolchenko.me](mailto:andrey@kolchenko.me))
-Project page: http://komex.github.io/delusion
