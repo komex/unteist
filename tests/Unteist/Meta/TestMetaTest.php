@@ -85,6 +85,34 @@ class TestMetaTest extends \PHPUnit_Framework_TestCase
     public function testExpectedException(array $modifiers, $expected = null)
     {
         $meta = new TestMeta('class', 'method', $modifiers, self::$logger);
-        $this->assertEquals($expected, $meta->getExpectedException());
+        $this->assertSame($expected, $meta->getExpectedException());
+    }
+
+    public function testExpectedExceptionMessage()
+    {
+        $meta = new TestMeta('class', 'method', ['expectedExceptionMessage' => 'Message'], self::$logger);
+        $this->assertEmpty($meta->getExpectedExceptionMessage(), 'Message must be empty if exception does not set');
+
+        $modifiers = ['expectedException' => 'Exception', 'expectedExceptionMessage' => true];
+        $meta = new TestMeta('class', 'method', $modifiers, self::$logger);
+        $this->assertEmpty($meta->getExpectedExceptionMessage(), 'Message may be only type of string');
+
+        $modifiers = ['expectedException' => 'Exception', 'expectedExceptionMessage' => 'Message'];
+        $meta = new TestMeta('class', 'method', $modifiers, self::$logger);
+        $this->assertSame('Message', $meta->getExpectedExceptionMessage());
+    }
+
+    public function testExpectedExceptionCode()
+    {
+        $meta = new TestMeta('class', 'method', ['expectedExceptionCode' => 5], self::$logger);
+        $this->assertNull($meta->getExpectedExceptionCode(), 'Code must be NULL if exception does not set');
+
+        $modifiers = ['expectedException' => 'Exception', 'expectedExceptionCode' => true];
+        $meta = new TestMeta('class', 'method', $modifiers, self::$logger);
+        $this->assertNull($meta->getExpectedExceptionCode(), 'Code must be set');
+
+        $modifiers = ['expectedException' => 'Exception', 'expectedExceptionCode' => 5];
+        $meta = new TestMeta('class', 'method', $modifiers, self::$logger);
+        $this->assertSame(5, $meta->getExpectedExceptionCode());
     }
 }

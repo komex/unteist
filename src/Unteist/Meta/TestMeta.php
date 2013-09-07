@@ -118,7 +118,7 @@ class TestMeta
         if (!empty($modifiers['expectedException']) && is_string($modifiers['expectedException'])) {
             $this->expected_exception = $modifiers['expectedException'];
             // Exception message
-            if (!empty($modifiers['expectedExceptionMessage']) && $modifiers['expectedExceptionMessage'] !== true) {
+            if (!empty($modifiers['expectedExceptionMessage']) && is_string($modifiers['expectedExceptionMessage'])) {
                 $this->expected_exception_message = $modifiers['expectedExceptionMessage'];
             }
             // Exception code
