@@ -108,11 +108,14 @@ class TestMeta
             $this->dependencies = $depends;
         }
         // DataProvider
-        if (!empty($modifiers['dataProvider']) && !in_array($modifiers['dataProvider'], [$method, true], true)) {
+        if (!empty($modifiers['dataProvider']) &&
+            is_string($modifiers['dataProvider']) &&
+            $modifiers['dataProvider'] != $method
+        ) {
             $this->dataProvider = $modifiers['dataProvider'];
         }
         // Exceptions
-        if (!empty($modifiers['expectedException']) && $modifiers['expectedException'] !== true) {
+        if (!empty($modifiers['expectedException']) && is_string($modifiers['expectedException'])) {
             $this->expected_exception = $modifiers['expectedException'];
             // Exception message
             if (!empty($modifiers['expectedExceptionMessage']) && $modifiers['expectedExceptionMessage'] !== true) {

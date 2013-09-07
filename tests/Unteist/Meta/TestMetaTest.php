@@ -42,6 +42,7 @@ class TestMetaTest extends \PHPUnit_Framework_TestCase
             [['dataProvider' => 'dp'], 'dp'],
             [['dataProvider' => 'method']],
             [['dataProvider' => true]],
+            [['dataProvider' => []]],
             [['dataProvider' => '']],
             [['Dataprovider' => 'dp']],
             [[]],
@@ -58,5 +59,32 @@ class TestMetaTest extends \PHPUnit_Framework_TestCase
     {
         $meta = new TestMeta('class', 'method', $modifiers, self::$logger);
         $this->assertEquals($expected, $meta->getDataProvider());
+    }
+
+    /**
+     * @return array
+     */
+    public function dpExpectedException()
+    {
+        return [
+            [['expectedException' => 'Exception'], 'Exception'],
+            [['expectedException' => true]],
+            [['expectedException' => []]],
+            [['expectedException' => '']],
+            [['ExpectedException' => 'dp']],
+            [[]],
+        ];
+    }
+
+    /**
+     * @param array $modifiers
+     * @param string $expected
+     *
+     * @dataProvider dpExpectedException
+     */
+    public function testExpectedException(array $modifiers, $expected = null)
+    {
+        $meta = new TestMeta('class', 'method', $modifiers, self::$logger);
+        $this->assertEquals($expected, $meta->getExpectedException());
     }
 }
