@@ -94,18 +94,20 @@ class TestMeta
             ['pid' => getmypid(), 'method' => $method, 'modifiers' => $modifiers]
         );
         // Depends
-        if (!empty($modifiers['depends']) && $modifiers['depends'] !== true) {
-            $depends = preg_replace('{[^\w,]}i', '', $modifiers['depends']);
-            $depends = array_unique(explode(',', $depends));
-            $position = array_search($method, $depends);
-            if ($position !== false) {
-                array_splice($depends, $position, 1);
+        if (!empty($modifiers['depends']) && is_string($modifiers['depends'])) {
+            $depends = trim(preg_replace('{[^\w,]}i', '', $modifiers['depends']));
+            if (!empty($depends)) {
+                $depends = array_unique(explode(',', $depends));
+                $position = array_search($method, $depends);
+                if ($position !== false) {
+                    array_splice($depends, $position, 1);
+                }
+                $this->logger->debug(
+                    'The test has dependencies.',
+                    ['pid' => getmypid(), 'test' => $method, 'depends' => $depends]
+                );
+                $this->dependencies = $depends;
             }
-            $this->logger->debug(
-                'The test has dependencies.',
-                ['pid' => getmypid(), 'test' => $method, 'depends' => $depends]
-            );
-            $this->dependencies = $depends;
         }
         // DataProvider
         if (!empty($modifiers['dataProvider']) &&

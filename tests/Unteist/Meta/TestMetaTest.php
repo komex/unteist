@@ -115,4 +115,37 @@ class TestMetaTest extends \PHPUnit_Framework_TestCase
         $meta = new TestMeta('class', 'method', $modifiers, self::$logger);
         $this->assertSame(5, $meta->getExpectedExceptionCode());
     }
+
+    public function testDependsDefault()
+    {
+        $meta = new TestMeta('class', 'method', [], self::$logger);
+        $this->assertEmpty($meta->getDependencies());
+        $this->assertInternalType('array', $meta->getDependencies());
+    }
+
+    /**
+     * @return array
+     */
+    public function dpDepends()
+    {
+        return [
+            [true, []],
+            ['!@*>', []],
+            ['test1, test2, test1', ['test1', 'test2']],
+            ['test1,method, test2#$, test1', ['test1', 'test2']],
+            ['method, method', []],
+        ];
+    }
+
+    /**
+     * @param string $depends
+     * @param array $expected
+     *
+     * @dataProvider dpDepends
+     */
+    public function testDepends($depends, array $expected)
+    {
+        $meta = new TestMeta('class', 'method', ['depends' => $depends], self::$logger);
+        $this->assertEquals($expected, $meta->getDependencies());
+    }
 }
