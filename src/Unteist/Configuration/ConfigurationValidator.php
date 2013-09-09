@@ -150,7 +150,8 @@ class ConfigurationValidator implements ConfigurationInterface
         $definition->values(['strategy.fail', 'strategy.incomplete', 'strategy.continue']);
         $definition->cannotBeEmpty()->defaultValue('strategy.incomplete');
 
-        $definition = $section->children()->arrayNode('associations')->requiresAtLeastOneElement();
+        $definition = $section->children()->arrayNode('associations');
+        $definition->requiresAtLeastOneElement()->useAttributeAsKey('name');
         /** @var EnumNodeDefinition $associations */
         $associations = $definition->prototype('enum');
         $associations->values(['strategy.fail', 'strategy.incomplete', 'strategy.continue']);
