@@ -7,6 +7,7 @@
 
 namespace Unteist\Console;
 
+use Symfony\Component\Config\Exception\FileLoaderLoadException;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Config\FileLocatorInterface;
 use Symfony\Component\Config\Loader\DelegatingLoader;
@@ -183,7 +184,7 @@ class Launcher extends Command
             $loaderResolver = new LoaderResolver($loaders);
             $loader = new DelegatingLoader($loaderResolver);
             $loader->load($filename);
-        } catch (\InvalidArgumentException $e) {
+        } catch (FileLoaderLoadException $e) {
         }
     }
 
