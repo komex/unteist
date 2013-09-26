@@ -10,7 +10,6 @@ namespace Unteist\Processor;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use Symfony\Component\Finder\Finder;
 use Unteist\Event\Connector;
 use Unteist\Event\EventStorage;
 use Unteist\Event\StorageEvent;
