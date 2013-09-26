@@ -22,7 +22,6 @@
         "php": ">=5.4.0",
         "ext-SPL": "*",
         "ext-Reflection": "*",
-        "symfony/yaml": "2.3.*",
         "symfony/finder": "2.3.*",
         "symfony/config": "2.3.*",
         "symfony/console": "2.3.*",
@@ -40,7 +39,7 @@
     },
     "suggest": {
         "ext-pcntl": "Required for run in separate processes.",
-        "komex/delusion": "Allows you to stub and mock any classes in your PHP code."
+        "komex/delusion": "Allows you to stub and mock any not build-in classes in your PHP code."
     },
     "autoload": {
         "psr-0": {

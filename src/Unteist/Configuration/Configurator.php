@@ -77,8 +77,9 @@ class Configurator
         $this->input = $input;
         $this->formatter = $formatter;
 
-        $locator = new FileLocator(join(DIRECTORY_SEPARATOR, [__DIR__, '..', '..', '..']));
-        $loader = new YamlFileLoader($this->container, $locator);
+        $this->container->registerExtension(new Extension());
+        $directory = realpath(join(DIRECTORY_SEPARATOR, [__DIR__, '..', '..', '..']));
+        $loader = new YamlFileLoader($this->container, new FileLocator($directory));
         $loader->load('services.yml');
     }
 

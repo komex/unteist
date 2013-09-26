@@ -7,7 +7,6 @@
 
 namespace Unteist\Console;
 
-use Symfony\Component\Config\Exception\FileLoaderLoadException;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Config\FileLocatorInterface;
 use Symfony\Component\Config\Loader\DelegatingLoader;
@@ -25,7 +24,6 @@ use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use Symfony\Component\Yaml\Yaml;
 use Unteist\Configuration\Configurator;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
@@ -160,9 +158,11 @@ class Launcher extends Command
      */
     protected function loadConfig(Configurator $configurator)
     {
-        $config = Yaml::parse('./unteist.yml');
-        $configurator->addConfig(is_array($config) ? $config : []);
-        $this->loadServicesDefinition($this->container, new FileLocator(realpath('.')), 'unteist.services.yml');
+        $this->loadServicesDefinition($this->container, new FileLocator(realpath('.')), 'unteist.yml');
+        $configs = $this->container->getExtensionConfig('unteist');
+        foreach ($configs as $config) {
+            $configurator->addConfig($config);
+        }
     }
 
     /**
@@ -184,7 +184,7 @@ class Launcher extends Command
             $loaderResolver = new LoaderResolver($loaders);
             $loader = new DelegatingLoader($loaderResolver);
             $loader->load($filename);
-        } catch (FileLoaderLoadException $e) {
+        } catch (\InvalidArgumentException $e) {
         }
     }
 
