@@ -104,6 +104,7 @@ class Configurator
         }
         $processor = new Processor($this->dispatcher, $this->container, $this->getLogger(), $this->getContext());
         $processor->setProcesses($this->config['processes']);
+        $processor->setErrorTypes($this->config['context']['levels']);
         if ($this->config['processes'] > 1) {
             $processor->setConnector($this->getConnector());
         }

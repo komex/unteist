@@ -156,6 +156,14 @@ class ConfigurationValidator implements ConfigurationInterface
         $associations = $definition->prototype('enum');
         $associations->values(['strategy.fail', 'strategy.incomplete', 'strategy.continue']);
 
+        $definition = $section->children()->arrayNode('levels')->requiresAtLeastOneElement();
+        $definition->defaultValue(['E_ALL']);
+        /** @var EnumNodeDefinition $associations */
+        $associations = $definition->prototype('enum');
+        $associations->values(
+            ['E_ERROR', 'E_WARNING', 'E_PARSE', 'E_NOTICE', 'E_USER_ERROR', 'E_USER_WARNING', 'E_USER_NOTICE', 'E_ALL']
+        );
+
         return $section;
     }
 

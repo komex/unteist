@@ -10,7 +10,6 @@ namespace Unteist\Processor;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use Symfony\Component\Finder\Finder;
 use Unteist\Event\Connector;
 use Unteist\Event\EventStorage;
 use Unteist\Event\StorageEvent;
@@ -83,6 +82,10 @@ class Processor
      * @var Context
      */
     protected $context;
+    /**
+     * @var int
+     */
+    private $error_types;
 
     /**
      * Create general processor.
@@ -103,6 +106,21 @@ class Processor
         $this->container = $container;
         $this->global_storage = new \ArrayObject();
         $this->context = $context;
+    }
+
+    /**
+     * Set error types to handle.
+     *
+     * @param array $error_types
+     */
+    public function setErrorTypes(array $error_types)
+    {
+        $type = 0;
+        foreach ($error_types as $error) {
+            $type |= constant($error);
+        }
+
+        $this->error_types = $type;
     }
 
     /**
@@ -238,7 +256,8 @@ class Processor
      */
     public function run()
     {
-        set_error_handler([$this, 'errorHandler']);
+        var_dump($this->error_types);
+        set_error_handler([$this, 'errorHandler'], $this->error_types);
         $this->dispatcher->dispatch(EventStorage::EV_APP_STARTED);
         if ($this->processes == 1) {
             $this->logger->info('Run TestCases in single process.', ['pid' => getmypid()]);
