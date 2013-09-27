@@ -195,7 +195,7 @@ class Launcher extends Command
      *
      * @param InputInterface $input
      */
-    private function overwriteParams(InputInterface $input)
+    protected function overwriteParams(InputInterface $input)
     {
         $parameters = $input->getOption('parameter');
         if (!empty($parameters)) {
