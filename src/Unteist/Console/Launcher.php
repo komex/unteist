@@ -25,6 +25,7 @@ use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Configuration\Configurator;
+use Unteist\Configuration\Extension;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
 use Unteist\Report\Statistics\StatisticsProcessor;
@@ -158,6 +159,7 @@ class Launcher extends Command
      */
     protected function loadConfig(Configurator $configurator)
     {
+        $this->container->registerExtension(new Extension());
         $this->loadServicesDefinition($this->container, new FileLocator(realpath('.')), 'unteist.yml');
         $configs = $this->container->getExtensionConfig('unteist');
         foreach ($configs as $config) {
