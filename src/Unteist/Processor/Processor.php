@@ -256,7 +256,6 @@ class Processor
      */
     public function run()
     {
-        var_dump($this->error_types);
         set_error_handler([$this, 'errorHandler'], $this->error_types);
         $this->dispatcher->dispatch(EventStorage::EV_APP_STARTED);
         if ($this->processes == 1) {

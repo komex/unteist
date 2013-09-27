@@ -77,8 +77,8 @@ class Configurator
         $this->input = $input;
         $this->formatter = $formatter;
 
-        $locator = new FileLocator(join(DIRECTORY_SEPARATOR, [__DIR__, '..', '..', '..']));
-        $loader = new YamlFileLoader($this->container, $locator);
+        $directory = realpath(join(DIRECTORY_SEPARATOR, [__DIR__, '..', '..', '..']));
+        $loader = new YamlFileLoader($this->container, new FileLocator($directory));
         $loader->load('services.yml');
     }
 
@@ -136,12 +136,7 @@ class Configurator
      */
     public function loadBootstrap()
     {
-        if ($this->container->hasParameter('bootstrap')) {
-            $file = $this->container->getParameter('bootstrap');
-            if (file_exists($file)) {
-                include($file);
-            }
-        }
+        $this->includeFile('bootstrap');
     }
 
     /**
@@ -149,8 +144,18 @@ class Configurator
      */
     public function loadCleanUp()
     {
-        if ($this->container->hasParameter('cleanup')) {
-            $file = $this->container->getParameter('cleanup');
+        $this->includeFile('cleanup');
+    }
+
+    /**
+     * Include file by path in config file.
+     *
+     * @param string $name Parameter name
+     */
+    private function includeFile($name)
+    {
+        if ($this->container->hasParameter($name)) {
+            $file = $this->container->getParameter($name);
             if (file_exists($file)) {
                 include($file);
             }
