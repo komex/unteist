@@ -129,7 +129,7 @@ class Launcher extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $output->writeln($this->getApplication()->getLongVersion());
+        $output->writeln(sprintf('<info>%s</info>', $this->getApplication()->getName()));
         /** @var ProgressHelper $progress */
         $progress = $this->getHelperSet()->get('progress');
         // Formatter
