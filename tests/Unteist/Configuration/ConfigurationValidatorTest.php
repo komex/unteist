@@ -142,6 +142,32 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * @return array
+     */
+    public function dpProcesses()
+    {
+        return [
+            [1],
+            [2],
+            [8],
+            [9],
+        ];
+    }
+
+    /**
+     * @param int $num
+     *
+     * @dataProvider dpProcesses
+     */
+    public function testProcesses($num)
+    {
+        $node = self::$validator->getConfigTreeBuilder()->buildTree();
+        /** @var array $defaults */
+        $defaults = $node->finalize(['processes' => $num]);
+        $this->assertEquals($num, $defaults['processes']);
+    }
+
+    /**
      * Get node definition from method.
      *
      * @param string $method Method name
