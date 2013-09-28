@@ -37,6 +37,9 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
         self::$validator = new ConfigurationValidator();
     }
 
+    /**
+     * Test default context configuration.
+     */
     public function testContextSection()
     {
         $method = new \ReflectionMethod(self::$validator, 'getContextSection');
@@ -47,6 +50,18 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('context', $node->getName());
         $this->assertFalse($node->hasDefaultValue());
         $this->assertFalse($node->isRequired());
-        var_dump($node->finalize([]));
+        /** @var array $context */
+        $context = $node->finalize([]);
+        $this->assertArrayHasKey('error', $context);
+        $this->assertArrayHasKey('failure', $context);
+        $this->assertArrayHasKey('incomplete', $context);
+        $this->assertArrayHasKey('associations', $context);
+        $this->assertArrayHasKey('levels', $context);
+        $this->assertEquals('strategy.fail', $context['error']);
+        $this->assertEquals('strategy.fail', $context['failure']);
+        $this->assertEquals('strategy.incomplete', $context['incomplete']);
+        $this->assertSame(['E_ALL'], $context['levels']);
+        $this->assertInternalType('array', $context['associations']);
+        $this->assertEmpty($context['associations']);
     }
 }
