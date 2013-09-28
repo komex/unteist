@@ -91,8 +91,8 @@ class ConfigurationValidator implements ConfigurationInterface
         $builder = new TreeBuilder;
         $section = $builder->root('logger')->canBeEnabled();
         $definition = $section->children()->arrayNode('handlers');
-        $definition->requiresAtLeastOneElement()->cannotBeEmpty()->defaultValue(['logger.handler.stream']);
-        $definition->prototype('scalar');
+        $definition->requiresAtLeastOneElement()->defaultValue(['logger.handler.stream']);
+        $definition->prototype('scalar')->cannotBeEmpty();
 
         return $section;
     }

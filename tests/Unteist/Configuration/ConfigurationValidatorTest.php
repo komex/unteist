@@ -88,4 +88,26 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
         $this->assertInternalType('array', $defaults['methods']);
         $this->assertEmpty($defaults['methods']);
     }
+
+    /**
+     * Test default logger configuration.
+     */
+    public function testLoggerSection()
+    {
+        $method = new \ReflectionMethod(self::$validator, 'getLoggerSection');
+        $method->setAccessible(true);
+        /** @var ArrayNodeDefinition $section */
+        $section = $method->invoke(self::$validator);
+        $node = $section->getNode(true);
+        $this->assertEquals('logger', $node->getName());
+        $this->assertTrue($node->hasDefaultValue());
+        $this->assertFalse($node->isRequired());
+        /** @var array $defaults */
+        $defaults = $node->getDefaultValue();
+        $this->assertCount(2, $defaults);
+        $this->assertArrayHasKey('enabled', $defaults);
+        $this->assertArrayHasKey('handlers', $defaults);
+        $this->assertFalse($defaults['enabled']);
+        $this->assertSame(['logger.handler.stream'], $defaults['handlers']);
+    }
 }
