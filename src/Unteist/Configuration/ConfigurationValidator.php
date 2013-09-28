@@ -100,25 +100,20 @@ class ConfigurationValidator implements ConfigurationInterface
     /**
      * Get section for filters.
      *
-     * @param bool $defaults Use defaults if sections is not set.
-     *
      * @return ArrayNodeDefinition
      */
-    private function getFiltersSection($defaults = true)
+    private function getFiltersSection()
     {
         $builder = new TreeBuilder;
         $section = $builder->root('filters');
-        if ($defaults) {
-            $section->addDefaultsIfNotSet();
-        }
+        $section->addDefaultsIfNotSet();
 
         $definition = $section->children()->arrayNode('class');
-        $definition->requiresAtLeastOneElement()->cannotBeEmpty()->defaultValue(['filter.class.base']);
-        $definition->prototype('scalar');
+        $definition->requiresAtLeastOneElement()->defaultValue(['filter.class.base']);
+        $definition->prototype('scalar')->cannotBeEmpty();
 
         $definition = $section->children()->arrayNode('methods');
-        $definition->requiresAtLeastOneElement()->cannotBeEmpty()->defaultValue([]);
-        $definition->prototype('scalar');
+        $definition->prototype('scalar')->cannotBeEmpty();
 
         return $section;
     }
@@ -126,17 +121,13 @@ class ConfigurationValidator implements ConfigurationInterface
     /**
      * Get section for context.
      *
-     * @param bool $defaults Use defaults if sections is not set.
-     *
      * @return ArrayNodeDefinition
      */
-    private function getContextSection($defaults = true)
+    private function getContextSection()
     {
         $builder = new TreeBuilder;
         $section = $builder->root('context');
-        if ($defaults) {
-            $section->addDefaultsIfNotSet();
-        }
+        $section->addDefaultsIfNotSet();
 
         $definition = $section->children()->enumNode('error');
         $definition->values(['strategy.fail', 'strategy.continue']);
@@ -204,8 +195,8 @@ class ConfigurationValidator implements ConfigurationInterface
         $prototype = $section->prototype('array');
         $this->configReportDirSection($prototype);
         $this->configGroupSection($prototype);
-        $prototype->append($this->getContextSection(false));
-        $prototype->append($this->getFiltersSection(false));
+        $prototype->append($this->getContextSection());
+        $prototype->append($this->getFiltersSection());
         $prototype->append($this->getSourceSection());
 
         return $section;

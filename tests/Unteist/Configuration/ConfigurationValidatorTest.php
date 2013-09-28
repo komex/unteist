@@ -45,23 +45,47 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
         $method = new \ReflectionMethod(self::$validator, 'getContextSection');
         $method->setAccessible(true);
         /** @var ArrayNodeDefinition $section */
-        $section = $method->invoke(self::$validator, false);
+        $section = $method->invoke(self::$validator, true);
         $node = $section->getNode(true);
         $this->assertEquals('context', $node->getName());
-        $this->assertFalse($node->hasDefaultValue());
+        $this->assertTrue($node->hasDefaultValue());
         $this->assertFalse($node->isRequired());
-        /** @var array $context */
-        $context = $node->finalize([]);
-        $this->assertArrayHasKey('error', $context);
-        $this->assertArrayHasKey('failure', $context);
-        $this->assertArrayHasKey('incomplete', $context);
-        $this->assertArrayHasKey('associations', $context);
-        $this->assertArrayHasKey('levels', $context);
-        $this->assertEquals('strategy.fail', $context['error']);
-        $this->assertEquals('strategy.fail', $context['failure']);
-        $this->assertEquals('strategy.incomplete', $context['incomplete']);
-        $this->assertSame(['E_ALL'], $context['levels']);
-        $this->assertInternalType('array', $context['associations']);
-        $this->assertEmpty($context['associations']);
+        /** @var array $defaults */
+        $defaults = $node->getDefaultValue();
+        $this->assertCount(5, $defaults);
+        $this->assertArrayHasKey('error', $defaults);
+        $this->assertArrayHasKey('failure', $defaults);
+        $this->assertArrayHasKey('incomplete', $defaults);
+        $this->assertArrayHasKey('associations', $defaults);
+        $this->assertArrayHasKey('levels', $defaults);
+        $this->assertEquals('strategy.fail', $defaults['error']);
+        $this->assertEquals('strategy.fail', $defaults['failure']);
+        $this->assertEquals('strategy.incomplete', $defaults['incomplete']);
+        $this->assertSame(['E_ALL'], $defaults['levels']);
+        $this->assertInternalType('array', $defaults['associations']);
+        $this->assertEmpty($defaults['associations']);
+    }
+
+    /**
+     * Test default filter configuration.
+     */
+    public function testFilterSection()
+    {
+        $method = new \ReflectionMethod(self::$validator, 'getFiltersSection');
+        $method->setAccessible(true);
+        /** @var ArrayNodeDefinition $section */
+        $section = $method->invoke(self::$validator);
+        $node = $section->getNode(true);
+        $this->assertEquals('filters', $node->getName());
+        $this->assertTrue($node->hasDefaultValue());
+        $this->assertFalse($node->isRequired());
+        /** @var array $defaults */
+        $defaults = $node->getDefaultValue();
+        $this->assertCount(2, $defaults);
+        $this->assertArrayHasKey('class', $defaults);
+        $this->assertArrayHasKey('methods', $defaults);
+        $this->assertSame(['filter.class.base'], $defaults['class']);
+        $this->assertInternalType('array', $defaults['methods']);
+        $this->assertEmpty($defaults['methods']);
     }
 }
