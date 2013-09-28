@@ -91,6 +91,31 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * Test default source configuration.
+     */
+    public function testSourceSection()
+    {
+        $node = $this->getNode('getSourceSection', 'source');
+        $sources = $node->finalize([[]]);
+        $this->assertInternalType('array', $sources);
+        $this->assertCount(1, $sources);
+        $this->assertEquals(['in' => '.', 'name' => '*Test.php', 'exclude' => []], $sources[0]);
+    }
+
+    /**
+     * Test setup empty source configuration.
+     *
+     * @expectedException \Symfony\Component\Config\Definition\Exception\InvalidConfigurationException
+     * @expectedExceptionMessage The path "source" should have at least 1 element(s) defined.
+     */
+    public function testEmptySourceSection()
+    {
+        $node = $this->getNode('getSourceSection', 'source');
+        $this->assertSame([], $node->getDefaultValue(), 'By default source sections does not set.');
+        $node->finalize([]);
+    }
+
+    /**
      * Get node definition from method.
      *
      * @param string $method Method name
