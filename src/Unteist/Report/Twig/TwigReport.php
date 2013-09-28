@@ -62,42 +62,8 @@ class TwigReport implements EventSubscriberInterface
             $this->fs->mkdir($report_dir);
         }
         $this->output_dir = realpath($report_dir);
-        $this->prepareReport();
         $this->statistics = new StatisticsProcessor();
         $this->storage = new \ArrayObject();
-    }
-
-    /**
-     * Compile Bootstrap for reports.
-     */
-    private function prepareReport()
-    {
-        $css_dir = $this->getPath([$this->output_dir, 'css']);
-        $vendor_dir = realpath('./vendor');
-        $bootstrap_dir = $this->getPath([$vendor_dir, 'twitter', 'bootstrap']);
-        $this->fs->mkdir($css_dir);
-        $less = new \lessc();
-        $less->setFormatter('compressed');
-        $less->setImportDir($bootstrap_dir . DIRECTORY_SEPARATOR . 'less');
-        $less->compileFile(
-            __DIR__ . DIRECTORY_SEPARATOR . 'bootstrap.less',
-            $css_dir . DIRECTORY_SEPARATOR . 'bootstrap.min.css'
-        );
-    }
-
-    /**
-     * @param array $parts
-     *
-     * @return string
-     */
-    private function getPath(array $parts)
-    {
-        $path = join(DIRECTORY_SEPARATOR, $parts);
-        if (file_exists($path)) {
-            return realpath($path);
-        } else {
-            return $path;
-        }
     }
 
     /**
