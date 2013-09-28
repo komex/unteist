@@ -42,14 +42,7 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
      */
     public function testContextSection()
     {
-        $method = new \ReflectionMethod(self::$validator, 'getContextSection');
-        $method->setAccessible(true);
-        /** @var ArrayNodeDefinition $section */
-        $section = $method->invoke(self::$validator, true);
-        $node = $section->getNode(true);
-        $this->assertEquals('context', $node->getName());
-        $this->assertTrue($node->hasDefaultValue());
-        $this->assertFalse($node->isRequired());
+        $node = $this->getNode('getContextSection', 'context');
         /** @var array $defaults */
         $defaults = $node->getDefaultValue();
         $this->assertCount(5, $defaults);
@@ -71,14 +64,7 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
      */
     public function testFilterSection()
     {
-        $method = new \ReflectionMethod(self::$validator, 'getFiltersSection');
-        $method->setAccessible(true);
-        /** @var ArrayNodeDefinition $section */
-        $section = $method->invoke(self::$validator);
-        $node = $section->getNode(true);
-        $this->assertEquals('filters', $node->getName());
-        $this->assertTrue($node->hasDefaultValue());
-        $this->assertFalse($node->isRequired());
+        $node = $this->getNode('getFiltersSection', 'filters');
         /** @var array $defaults */
         $defaults = $node->getDefaultValue();
         $this->assertCount(2, $defaults);
@@ -94,14 +80,7 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
      */
     public function testLoggerSection()
     {
-        $method = new \ReflectionMethod(self::$validator, 'getLoggerSection');
-        $method->setAccessible(true);
-        /** @var ArrayNodeDefinition $section */
-        $section = $method->invoke(self::$validator);
-        $node = $section->getNode(true);
-        $this->assertEquals('logger', $node->getName());
-        $this->assertTrue($node->hasDefaultValue());
-        $this->assertFalse($node->isRequired());
+        $node = $this->getNode('getLoggerSection', 'logger');
         /** @var array $defaults */
         $defaults = $node->getDefaultValue();
         $this->assertCount(2, $defaults);
@@ -109,5 +88,27 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
         $this->assertArrayHasKey('handlers', $defaults);
         $this->assertFalse($defaults['enabled']);
         $this->assertSame(['logger.handler.stream'], $defaults['handlers']);
+    }
+
+    /**
+     * Get node definition from method.
+     *
+     * @param string $method Method name
+     * @param string $name Root section name
+     *
+     * @return \Symfony\Component\Config\Definition\NodeInterface
+     */
+    private function getNode($method, $name)
+    {
+        $method = new \ReflectionMethod(self::$validator, $method);
+        $method->setAccessible(true);
+        /** @var ArrayNodeDefinition $section */
+        $section = $method->invoke(self::$validator);
+        $node = $section->getNode(true);
+        $this->assertEquals($name, $node->getName());
+        $this->assertTrue($node->hasDefaultValue());
+        $this->assertFalse($node->isRequired());
+
+        return $node;
     }
 }
