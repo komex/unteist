@@ -69,7 +69,8 @@ class ConfigurationValidator implements ConfigurationInterface
      */
     private function configListenerSection(ArrayNodeDefinition $rootNode)
     {
-        $rootNode->children()->arrayNode('listeners')->requiresAtLeastOneElement()->prototype('scalar')->isRequired();
+        $rootNode->children()->arrayNode('listeners')
+            ->requiresAtLeastOneElement()->prototype('scalar')->cannotBeEmpty();
     }
 
     /**
@@ -79,7 +80,8 @@ class ConfigurationValidator implements ConfigurationInterface
      */
     private function configGroupSection(ArrayNodeDefinition $rootNode)
     {
-        $rootNode->children()->arrayNode('groups')->prototype('scalar')->cannotBeEmpty();
+        $rootNode->children()->arrayNode('groups')
+            ->requiresAtLeastOneElement()->prototype('scalar')->cannotBeEmpty();
     }
 
     /**

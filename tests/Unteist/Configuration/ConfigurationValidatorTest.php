@@ -149,8 +149,8 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
         return [
             [1],
             [2],
-            [8],
             [9],
+            [10],
         ];
     }
 
@@ -165,6 +165,93 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
         /** @var array $defaults */
         $defaults = $node->finalize(['processes' => $num]);
         $this->assertEquals($num, $defaults['processes']);
+    }
+
+    /**
+     * @return array
+     */
+    public function dpIncorrectValues()
+    {
+        return [
+            [
+                ['processes' => 11],
+                'The value 11 is too big for path "unteist.processes". Should be less than or equal to 10'
+            ],
+            [
+                ['processes' => 0],
+                'The value 0 is too small for path "unteist.processes". Should be greater than or equal to 1'
+            ],
+            [
+                ['processes' => 'abc'],
+                'Invalid type for path "unteist.processes". Expected int, but got string.'
+            ],
+            [
+                ['report_dir' => ''],
+                'The path "unteist.report_dir" cannot contain an empty value, but got "".'
+            ],
+            [
+                ['report_dir' => false],
+                'The path "unteist.report_dir" cannot contain an empty value, but got false.'
+            ],
+            [
+                ['report_dir' => []],
+                'Invalid type for path "unteist.report_dir". Expected scalar, but got array.'
+            ],
+            [
+                ['listeners' => []],
+                'The path "unteist.listeners" should have at least 1 element(s) defined.'
+            ],
+            [
+                ['listeners' => ['']],
+                'The path "unteist.listeners.0" cannot contain an empty value, but got "".'
+            ],
+            [
+                ['listeners' => true],
+                'Invalid type for path "unteist.listeners". Expected array, but got boolean'
+            ],
+            [
+                ['groups' => []],
+                'The path "unteist.groups" should have at least 1 element(s) defined.'
+            ],
+            [
+                ['groups' => ['']],
+                'The path "unteist.groups.0" cannot contain an empty value, but got "".'
+            ],
+            [
+                ['groups' => true],
+                'Invalid type for path "unteist.groups". Expected array, but got boolean'
+            ],
+            [
+                ['logger' => ['handlers' => false]],
+                'Invalid type for path "unteist.logger.handlers". Expected array, but got boolean'
+            ],
+            [
+                ['logger' => ['handlers' => []]],
+                'The path "unteist.logger.handlers" should have at least 1 element(s) defined.'
+            ],
+            [
+                ['logger' => ['handlers' => ['']]],
+                'The path "unteist.logger.handlers.0" cannot contain an empty value, but got "".'
+            ],
+        ];
+    }
+
+    /**
+     * Test behavior with incorrect values.
+     *
+     * @param array $value
+     * @param string $message
+     *
+     * @dataProvider dpIncorrectValues
+     */
+    public function testIncorrectValues(array $value, $message)
+    {
+        $node = self::$validator->getConfigTreeBuilder()->buildTree();
+        $this->setExpectedException(
+            '\\Symfony\\Component\\Config\\Definition\\Exception\\InvalidConfigurationException',
+            $message
+        );
+        $node->finalize($value);
     }
 
     /**
