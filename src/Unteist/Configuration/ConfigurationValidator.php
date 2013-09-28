@@ -29,6 +29,7 @@ class ConfigurationValidator implements ConfigurationInterface
     {
         $treeBuilder = new TreeBuilder();
         $rootNode = $treeBuilder->root('unteist');
+        $rootNode->addDefaultsIfNotSet();
         $this->configProcessesSection($rootNode);
         $this->configReportDirSection($rootNode);
         $this->configListenerSection($rootNode);

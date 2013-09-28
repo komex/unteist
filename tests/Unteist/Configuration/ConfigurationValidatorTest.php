@@ -116,6 +116,32 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * Test default config tree definition.
+     */
+    public function testGetConfigTreeBuilder()
+    {
+        $node = self::$validator->getConfigTreeBuilder()->buildTree();
+        $this->assertEquals('unteist', $node->getName());
+        $this->assertTrue($node->hasDefaultValue());
+        $this->assertFalse($node->isRequired());
+        /** @var array $defaults */
+        $defaults = $node->getDefaultValue();
+        $this->assertCount(8, $defaults);
+        $this->assertArrayHasKey('processes', $defaults);
+        $this->assertArrayHasKey('report_dir', $defaults);
+        $this->assertArrayHasKey('listeners', $defaults);
+        $this->assertArrayHasKey('groups', $defaults);
+        $this->assertArrayHasKey('context', $defaults);
+        $this->assertArrayHasKey('filters', $defaults);
+        $this->assertArrayHasKey('logger', $defaults);
+        $this->assertArrayHasKey('suites', $defaults);
+        $this->assertSame(1, $defaults['processes']);
+        $this->assertNull($defaults['report_dir'], 'By default report generation is switched off.');
+        $this->assertSame([], $defaults['listeners'], 'By default additional listeners does not exists.');
+        $this->assertSame([], $defaults['groups'], 'By default group filter is switched off.');
+    }
+
+    /**
      * Get node definition from method.
      *
      * @param string $method Method name
