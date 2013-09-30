@@ -104,14 +104,22 @@ class Configurator
             $this->processConfiguration();
         }
         if ($this->config['processes'] === 1) {
-            $processor = new Processor($this->dispatcher, $this->container, $this->getLogger(), $this->getContext());
+            $processor = new Processor(
+                $this->dispatcher,
+                $this->container,
+                $this->getLogger(),
+                $this->getContext(),
+                $this->getSuite()
+            );
         } else {
             $processor = new MultiProcessor(
                 $this->dispatcher,
                 $this->container,
                 $this->getLogger(),
-                $this->getContext()
+                $this->getContext(),
+                $this->getSuite()
             );
+            $processor->setProcesses($this->config['processes']);
         }
         $processor->setErrorTypes($this->config['context']['levels']);
         if ($this->config['processes'] > 1) {
@@ -134,7 +142,6 @@ class Configurator
             $filter->setParams($this->config);
             $processor->addMethodsFilter($filter);
         }
-        $processor->setSuite($this->getSuite());
 
         return $processor;
     }

@@ -79,18 +79,21 @@ class Processor
      * @param ContainerBuilder $container
      * @param LoggerInterface $logger
      * @param Context $context
+     * @param \ArrayObject $suites
      */
     public function __construct(
         EventDispatcherInterface $dispatcher,
         ContainerBuilder $container,
         LoggerInterface $logger,
-        Context $context
+        Context $context,
+        \ArrayObject $suites
     ) {
         $this->dispatcher = $dispatcher;
         $this->logger = $logger;
         $this->container = $container;
-        $this->global_storage = new \ArrayObject();
         $this->context = $context;
+        $this->suites = $suites;
+        $this->global_storage = new \ArrayObject();
     }
 
     /**
@@ -106,16 +109,6 @@ class Processor
         }
 
         $this->error_types = $type;
-    }
-
-    /**
-     * Set suite with tests.
-     *
-     * @param \ArrayObject|\SplFileInfo[] $suites
-     */
-    public function setSuite(\ArrayObject $suites)
-    {
-        $this->suites = $suites;
     }
 
     /**
