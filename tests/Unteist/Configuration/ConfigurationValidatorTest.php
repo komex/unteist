@@ -142,6 +142,29 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * Test default suites configuration.
+     */
+    public function testSuitesSection()
+    {
+        $node = $this->getNode('getSuitesSection', 'suites');
+        /** @var array $defaults */
+        $defaults = $node->finalize([[]]);
+        $this->assertInternalType('array', $defaults);
+        $this->assertCount(1, $defaults);
+        $defaults = $defaults[0];
+        $this->assertInternalType('array', $defaults);
+        $this->assertCount(5, $defaults);
+        $this->assertArrayHasKey('report_dir', $defaults);
+        $this->assertArrayHasKey('groups', $defaults);
+        $this->assertArrayHasKey('context', $defaults);
+        $this->assertArrayHasKey('filters', $defaults);
+        $this->assertArrayHasKey('source', $defaults);
+        $this->assertNull($defaults['report_dir'], 'By default report generation is switched off.');
+        $this->assertSame([], $defaults['source'], 'By default source does not set.');
+        $this->assertSame([], $defaults['groups'], 'By default group filter is switched off.');
+    }
+
+    /**
      * @return array
      */
     public function dpProcesses()
