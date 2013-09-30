@@ -13,10 +13,12 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Event\Connector;
 use Unteist\Event\EventStorage;
 use Unteist\Event\StorageEvent;
+use Unteist\Exception\FilterException;
 use Unteist\Exception\TestErrorException;
 use Unteist\Filter\ClassFilterInterface;
 use Unteist\Filter\MethodsFilterInterface;
 use Unteist\Strategy\Context;
+use Unteist\TestCase;
 
 /**
  * Class Processor
@@ -346,45 +348,45 @@ class Processor
      *
      * @param \SplFileInfo $case
      *
-     * @return bool
+     * @return int
      */
     protected function executor(\SplFileInfo $case)
     {
         try {
             $this->logger->debug('Trying to load TestCase.', ['pid' => getmypid(), 'file' => $case->getRealPath()]);
             $class = TestCaseLoader::load($case);
-        } catch (\RuntimeException $e) {
-            $this->logger->notice('TestCase class does not found in file', ['pid' => getmypid(), 'exception' => $e]);
+            $this->logger->debug('TestCase was found.', ['pid' => getmypid(), 'class' => get_class($class)]);
+            if (!empty($this->class_filters)) {
+                $reflection_class = new \ReflectionClass($class);
+                foreach ($this->class_filters as $filter) {
+                    $filter->filter($reflection_class);
+                }
+            }
+
+            return $this->runCase($class);
+        } catch (FilterException $e) {
+            $this->logger->notice('File was filtered', ['pid' => getmypid(), 'filter' => $e]);
+            $this->dispatcher->dispatch(EventStorage::EV_CASE_FILTERED);
 
             return 1;
         }
-        $this->logger->debug('TestCase was found.', ['pid' => getmypid(), 'class' => get_class($class)]);
-        if (!empty($this->class_filters)) {
-            $reflection_class = new \ReflectionClass($class);
-            foreach ($this->class_filters as $filter) {
-                if (!$filter->filter($reflection_class)) {
-                    $this->logger->info(
-                        'Class was filtered',
-                        [
-                            'pid' => getmypid(),
-                            'filter' => $filter->getName(),
-                        ]
-                    );
-                    $this->dispatcher->dispatch(EventStorage::EV_CASE_FILTERED);
+    }
 
-                    return 1;
-                }
-            }
-        }
-        $class->setGlobalStorage($this->global_storage);
-        $class->setConfig($this->container);
-        $class->setDispatcher($this->dispatcher);
+    /**
+     * @param TestCase $case
+     *
+     * @return int
+     */
+    protected function runCase(TestCase $case)
+    {
+        $case->setGlobalStorage($this->global_storage);
+        $case->setConfig($this->container);
+        $case->setDispatcher($this->dispatcher);
         $runner = new Runner($this->dispatcher, $this->logger, $this->context);
         $runner->setFilters($this->methods_filters);
-        $runner->precondition($class);
+        $runner->precondition($case);
 
         return $runner->run();
-
     }
 
     /**

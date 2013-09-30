@@ -7,6 +7,7 @@
 
 namespace Unteist\Processor;
 
+use Unteist\Exception\FilterException;
 use Unteist\TestCase;
 
 /**
@@ -24,13 +25,13 @@ class TestCaseLoader
      *
      * @return TestCase
      *
-     * @throws \RuntimeException If cannot open file
-     * @throws \RuntimeException If TestCase class does not exists in this file
+     * @throws FilterException If cannot open file
+     * @throws FilterException If TestCase class does not exists in this file
      */
     public static function load(\SplFileInfo $file)
     {
         if (!$file->isReadable()) {
-            throw new \RuntimeException(sprintf('Cannot open file "%s"', $file->getRealPath()));
+            throw new FilterException(sprintf('Cannot open file "%s"', $file->getRealPath()));
         }
         $loaded_classes = get_declared_classes();
         include_once $file;
@@ -48,6 +49,6 @@ class TestCaseLoader
                 }
             }
         }
-        throw new \RuntimeException(sprintf('TestCase class does not found in file "%s"', $file->getRealPath()));
+        throw new FilterException(sprintf('TestCase class does not found in file "%s"', $file->getRealPath()));
     }
 }

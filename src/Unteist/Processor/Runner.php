@@ -217,7 +217,7 @@ class Runner
         }
         $this->precondition->dispatch(EventStorage::EV_AFTER_CASE);
         $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, $this->test_case_event);
-        $this->desubscribe();
+        $this->unsubscribe();
 
         return $return_code;
     }
@@ -394,8 +394,8 @@ class Runner
      */
     private function beforeCaseBehavior()
     {
+        $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
         try {
-            $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
             $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
         } catch (\Exception $e) {
             foreach ($this->tests as $test) {
@@ -569,7 +569,7 @@ class Runner
     /**
      * Unsubscribe this TestCase from global dispatcher.
      */
-    private function desubscribe()
+    private function unsubscribe()
     {
         foreach ($this->listeners as $event => $listener) {
             $this->dispatcher->removeListener($event, $listener);

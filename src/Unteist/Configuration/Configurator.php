@@ -117,7 +117,6 @@ class Configurator
         foreach ($this->config['filters']['class'] as $filter_id) {
             /** @var ClassFilterInterface $filter */
             $filter = $this->container->get($filter_id);
-            $filter->setParams($this->config);
             $processor->addClassFilter($filter);
         }
         foreach ($this->config['filters']['methods'] as $filter_id) {
