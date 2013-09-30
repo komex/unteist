@@ -103,13 +103,17 @@ class ConfigurationValidator implements ConfigurationInterface
     /**
      * Get section for filters.
      *
+     * @param bool $defaults Use defaults if sections is not set.
+     *
      * @return ArrayNodeDefinition
      */
-    private function getFiltersSection()
+    private function getFiltersSection($defaults = true)
     {
         $builder = new TreeBuilder;
         $section = $builder->root('filters');
-        $section->addDefaultsIfNotSet();
+        if ($defaults) {
+            $section->addDefaultsIfNotSet();
+        }
 
         $definition = $section->children()->arrayNode('class');
         $definition->requiresAtLeastOneElement()->defaultValue(['filter.class.base']);
@@ -124,13 +128,17 @@ class ConfigurationValidator implements ConfigurationInterface
     /**
      * Get section for context.
      *
+     * @param bool $defaults Use defaults if sections is not set.
+     *
      * @return ArrayNodeDefinition
      */
-    private function getContextSection()
+    private function getContextSection($defaults = true)
     {
         $builder = new TreeBuilder;
         $section = $builder->root('context');
-        $section->addDefaultsIfNotSet();
+        if ($defaults) {
+            $section->addDefaultsIfNotSet();
+        }
 
         $definition = $section->children()->enumNode('error');
         $definition->values(['strategy.fail', 'strategy.continue']);
@@ -198,8 +206,8 @@ class ConfigurationValidator implements ConfigurationInterface
         $prototype = $section->prototype('array');
         $this->configReportDirSection($prototype);
         $this->configGroupSection($prototype);
-        $prototype->append($this->getContextSection());
-        $prototype->append($this->getFiltersSection());
+        $prototype->append($this->getContextSection(false));
+        $prototype->append($this->getFiltersSection(false));
         $prototype->append($this->getSourceSection());
 
         return $section;

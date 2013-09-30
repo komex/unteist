@@ -153,11 +153,9 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
         $this->assertCount(1, $defaults);
         $defaults = $defaults[0];
         $this->assertInternalType('array', $defaults);
-        $this->assertCount(5, $defaults);
+        $this->assertCount(3, $defaults);
         $this->assertArrayHasKey('report_dir', $defaults);
         $this->assertArrayHasKey('groups', $defaults);
-        $this->assertArrayHasKey('context', $defaults);
-        $this->assertArrayHasKey('filters', $defaults);
         $this->assertArrayHasKey('source', $defaults);
         $this->assertNull($defaults['report_dir'], 'By default report generation is switched off.');
         $this->assertSame([], $defaults['source'], 'By default source does not set.');
