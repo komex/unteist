@@ -79,6 +79,8 @@ class StackTest extends \Unteist\TestCase
 * A lot of new kind of class and methods filters (like namespace filter, mask filter);
 * Code Coverage Analysis.
 
-## Credits
+## License
 
-(c) Andrey Kolchenko ([andrey@kolchenko.me](mailto:andrey@kolchenko.me))
+[![Creative Commons License](http://i.creativecommons.org/l/by-sa/3.0/88x31.png)](http://creativecommons.org/licenses/by-sa/3.0/)
+Unteist by [Andrey Kolchenko](https://github.com/komex) is licensed under a [Creative Commons Attribution-ShareAlike 3.0 Unported License](http://creativecommons.org/licenses/by-sa/3.0/).
+Based on a work at [https://github.com/komex/unteist](https://github.com/komex/unteist).
