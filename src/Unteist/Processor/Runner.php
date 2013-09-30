@@ -182,8 +182,7 @@ class Runner
             return 1;
         }
         $this->test_case_event = new TestCaseEvent($this->name);
-        $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
-        $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
+        $this->beforeCaseBehavior();
         $return_code = 0;
         foreach ($this->tests as $test) {
             $method = new \ReflectionMethod($this->test_case, $test->getMethod());
@@ -387,6 +386,25 @@ class Runner
         if ($send_event) {
             $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
             $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
+        }
+    }
+
+    /**
+     * Control behavior on before case.
+     */
+    private function beforeCaseBehavior()
+    {
+        try {
+            $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
+            $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
+        } catch (\Exception $e) {
+            foreach ($this->tests as $test) {
+                if ($test->getStatus() === TestMeta::TEST_NEW || $test->getStatus() === TestMeta::TEST_MARKED) {
+                    $event = new TestEvent($test->getMethod(), $this->test_case_event);
+                    $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e);
+                }
+            }
+
         }
     }
 
