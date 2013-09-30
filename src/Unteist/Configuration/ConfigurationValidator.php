@@ -29,6 +29,7 @@ class ConfigurationValidator implements ConfigurationInterface
     {
         $treeBuilder = new TreeBuilder();
         $rootNode = $treeBuilder->root('unteist');
+        $rootNode->addDefaultsIfNotSet();
         $this->configProcessesSection($rootNode);
         $this->configReportDirSection($rootNode);
         $this->configListenerSection($rootNode);
@@ -68,7 +69,8 @@ class ConfigurationValidator implements ConfigurationInterface
      */
     private function configListenerSection(ArrayNodeDefinition $rootNode)
     {
-        $rootNode->children()->arrayNode('listeners')->requiresAtLeastOneElement()->prototype('scalar')->isRequired();
+        $rootNode->children()->arrayNode('listeners')
+            ->requiresAtLeastOneElement()->prototype('scalar')->cannotBeEmpty();
     }
 
     /**
@@ -78,7 +80,8 @@ class ConfigurationValidator implements ConfigurationInterface
      */
     private function configGroupSection(ArrayNodeDefinition $rootNode)
     {
-        $rootNode->children()->arrayNode('groups')->prototype('scalar')->cannotBeEmpty();
+        $rootNode->children()->arrayNode('groups')
+            ->requiresAtLeastOneElement()->prototype('scalar')->cannotBeEmpty();
     }
 
     /**
@@ -91,8 +94,8 @@ class ConfigurationValidator implements ConfigurationInterface
         $builder = new TreeBuilder;
         $section = $builder->root('logger')->canBeEnabled();
         $definition = $section->children()->arrayNode('handlers');
-        $definition->requiresAtLeastOneElement()->cannotBeEmpty()->defaultValue(['logger.handler.stream']);
-        $definition->prototype('scalar');
+        $definition->requiresAtLeastOneElement()->defaultValue(['logger.handler.stream']);
+        $definition->prototype('scalar')->cannotBeEmpty();
 
         return $section;
     }
@@ -100,25 +103,20 @@ class ConfigurationValidator implements ConfigurationInterface
     /**
      * Get section for filters.
      *
-     * @param bool $defaults Use defaults if sections is not set.
-     *
      * @return ArrayNodeDefinition
      */
-    private function getFiltersSection($defaults = true)
+    private function getFiltersSection()
     {
         $builder = new TreeBuilder;
         $section = $builder->root('filters');
-        if ($defaults) {
-            $section->addDefaultsIfNotSet();
-        }
+        $section->addDefaultsIfNotSet();
 
         $definition = $section->children()->arrayNode('class');
-        $definition->requiresAtLeastOneElement()->cannotBeEmpty()->defaultValue(['filter.class.base']);
-        $definition->prototype('scalar');
+        $definition->requiresAtLeastOneElement()->defaultValue(['filter.class.base']);
+        $definition->prototype('scalar')->cannotBeEmpty();
 
         $definition = $section->children()->arrayNode('methods');
-        $definition->requiresAtLeastOneElement()->cannotBeEmpty()->defaultValue([]);
-        $definition->prototype('scalar');
+        $definition->prototype('scalar')->cannotBeEmpty();
 
         return $section;
     }
@@ -126,17 +124,13 @@ class ConfigurationValidator implements ConfigurationInterface
     /**
      * Get section for context.
      *
-     * @param bool $defaults Use defaults if sections is not set.
-     *
      * @return ArrayNodeDefinition
      */
-    private function getContextSection($defaults = true)
+    private function getContextSection()
     {
         $builder = new TreeBuilder;
         $section = $builder->root('context');
-        if ($defaults) {
-            $section->addDefaultsIfNotSet();
-        }
+        $section->addDefaultsIfNotSet();
 
         $definition = $section->children()->enumNode('error');
         $definition->values(['strategy.fail', 'strategy.continue']);
@@ -204,8 +198,8 @@ class ConfigurationValidator implements ConfigurationInterface
         $prototype = $section->prototype('array');
         $this->configReportDirSection($prototype);
         $this->configGroupSection($prototype);
-        $prototype->append($this->getContextSection(false));
-        $prototype->append($this->getFiltersSection(false));
+        $prototype->append($this->getContextSection());
+        $prototype->append($this->getFiltersSection());
         $prototype->append($this->getSourceSection());
 
         return $section;
