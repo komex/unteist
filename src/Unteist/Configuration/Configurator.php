@@ -21,6 +21,7 @@ use Unteist\Console\Formatter;
 use Unteist\Event\Connector;
 use Unteist\Filter\ClassFilterInterface;
 use Unteist\Filter\MethodsFilterInterface;
+use Unteist\Processor\MultiProcessor;
 use Unteist\Processor\Processor;
 use Unteist\Strategy\Context;
 use Unteist\Strategy\StrategyInterface;
@@ -102,8 +103,16 @@ class Configurator
         if (empty($this->config)) {
             $this->processConfiguration();
         }
-        $processor = new Processor($this->dispatcher, $this->container, $this->getLogger(), $this->getContext());
-        $processor->setProcesses($this->config['processes']);
+        if ($this->config['processes'] === 1) {
+            $processor = new Processor($this->dispatcher, $this->container, $this->getLogger(), $this->getContext());
+        } else {
+            $processor = new MultiProcessor(
+                $this->dispatcher,
+                $this->container,
+                $this->getLogger(),
+                $this->getContext()
+            );
+        }
         $processor->setErrorTypes($this->config['context']['levels']);
         if ($this->config['processes'] > 1) {
             $processor->setConnector($this->getConnector());
