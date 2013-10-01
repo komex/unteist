@@ -21,6 +21,7 @@ use Unteist\Console\Formatter;
 use Unteist\Event\Connector;
 use Unteist\Filter\ClassFilterInterface;
 use Unteist\Filter\MethodsFilterInterface;
+use Unteist\Processor\MultiProcessor;
 use Unteist\Processor\Processor;
 use Unteist\Strategy\Context;
 use Unteist\Strategy\StrategyInterface;
@@ -102,8 +103,24 @@ class Configurator
         if (empty($this->config)) {
             $this->processConfiguration();
         }
-        $processor = new Processor($this->dispatcher, $this->container, $this->getLogger(), $this->getContext());
-        $processor->setProcesses($this->config['processes']);
+        if ($this->config['processes'] === 1) {
+            $processor = new Processor(
+                $this->dispatcher,
+                $this->container,
+                $this->getLogger(),
+                $this->getContext(),
+                $this->getSuite()
+            );
+        } else {
+            $processor = new MultiProcessor(
+                $this->dispatcher,
+                $this->container,
+                $this->getLogger(),
+                $this->getContext(),
+                $this->getSuite()
+            );
+            $processor->setProcesses($this->config['processes']);
+        }
         $processor->setErrorTypes($this->config['context']['levels']);
         if ($this->config['processes'] > 1) {
             $processor->setConnector($this->getConnector());
@@ -117,7 +134,6 @@ class Configurator
         foreach ($this->config['filters']['class'] as $filter_id) {
             /** @var ClassFilterInterface $filter */
             $filter = $this->container->get($filter_id);
-            $filter->setParams($this->config);
             $processor->addClassFilter($filter);
         }
         foreach ($this->config['filters']['methods'] as $filter_id) {
@@ -126,7 +142,6 @@ class Configurator
             $filter->setParams($this->config);
             $processor->addMethodsFilter($filter);
         }
-        $processor->setSuite($this->getSuite());
 
         return $processor;
     }

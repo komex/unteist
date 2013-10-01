@@ -7,6 +7,8 @@
 
 namespace Unteist\Filter;
 
+use Unteist\Exception\FilterException;
+
 /**
  * Class ClassFilter
  *
@@ -20,13 +22,14 @@ class ClassFilter implements ClassFilterInterface
      *
      * @param \ReflectionClass $class Class to filter.
      *
-     * @return bool Can we use this class?
+     * @throws FilterException
      */
     public function filter(\ReflectionClass $class)
     {
         $name = $class->getShortName();
-
-        return (!$class->isAbstract() && !$class->isInterface() && strlen($name) > 4 && substr($name, -4) === 'Test');
+        if ($class->isAbstract() || $class->isInterface() || !(strlen($name) > 4 && substr($name, -4) === 'Test')) {
+            throw new FilterException(sprintf('TestCase was filtered by "%s" filter.', $this->getName()));
+        }
     }
 
     /**
@@ -37,15 +40,5 @@ class ClassFilter implements ClassFilterInterface
     public function getName()
     {
         return 'named';
-    }
-
-    /**
-     * Get tests parameters.
-     *
-     * @param array $config
-     */
-    public function setParams(array $config)
-    {
-
     }
 }

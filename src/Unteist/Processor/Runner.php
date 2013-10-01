@@ -182,8 +182,7 @@ class Runner
             return 1;
         }
         $this->test_case_event = new TestCaseEvent($this->name);
-        $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
-        $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
+        $this->beforeCaseBehavior();
         $return_code = 0;
         foreach ($this->tests as $test) {
             $method = new \ReflectionMethod($this->test_case, $test->getMethod());
@@ -218,7 +217,7 @@ class Runner
         }
         $this->precondition->dispatch(EventStorage::EV_AFTER_CASE);
         $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, $this->test_case_event);
-        $this->desubscribe();
+        $this->unsubscribe();
 
         return $return_code;
     }
@@ -391,6 +390,25 @@ class Runner
     }
 
     /**
+     * Control behavior on before case.
+     */
+    private function beforeCaseBehavior()
+    {
+        $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
+        try {
+            $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
+        } catch (\Exception $e) {
+            foreach ($this->tests as $test) {
+                if ($test->getStatus() === TestMeta::TEST_NEW || $test->getStatus() === TestMeta::TEST_MARKED) {
+                    $event = new TestEvent($test->getMethod(), $this->test_case_event);
+                    $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e);
+                }
+            }
+
+        }
+    }
+
+    /**
      * Register method as an event listener.
      *
      * @param string $event Event name
@@ -551,7 +569,7 @@ class Runner
     /**
      * Unsubscribe this TestCase from global dispatcher.
      */
-    private function desubscribe()
+    private function unsubscribe()
     {
         foreach ($this->listeners as $event => $listener) {
             $this->dispatcher->removeListener($event, $listener);
