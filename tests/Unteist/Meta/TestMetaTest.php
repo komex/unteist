@@ -23,6 +23,10 @@ class TestMetaTest extends \PHPUnit_Framework_TestCase
      * @var Logger
      */
     protected static $logger;
+    /**
+     * @var TestMeta
+     */
+    protected $meta;
 
     /**
      * Prepare case.
@@ -31,6 +35,14 @@ class TestMetaTest extends \PHPUnit_Framework_TestCase
     {
         self::$logger = new Logger('test');
         self::$logger->pushHandler(new NullHandler());
+    }
+
+    /**
+     * Reset meta before each test.
+     */
+    public function setUp()
+    {
+        $this->meta = new TestMeta('class', 'method', [], self::$logger);
     }
 
     /**
@@ -57,8 +69,10 @@ class TestMetaTest extends \PHPUnit_Framework_TestCase
      */
     public function testDataProvider(array $modifiers, $expected = null)
     {
-        $meta = new TestMeta('class', 'method', $modifiers, self::$logger);
-        $this->assertEquals($expected, $meta->getDataProvider());
+        $method = new \ReflectionMethod($this->meta, 'setDataProvider');
+        $method->setAccessible(true);
+        $method->invoke($this->meta, $modifiers);
+        $this->assertEquals($expected, $this->meta->getDataProvider());
     }
 
     /**
@@ -84,43 +98,52 @@ class TestMetaTest extends \PHPUnit_Framework_TestCase
      */
     public function testExpectedException(array $modifiers, $expected = null)
     {
-        $meta = new TestMeta('class', 'method', $modifiers, self::$logger);
-        $this->assertSame($expected, $meta->getExpectedException());
+        $method = new \ReflectionMethod($this->meta, 'setExpectedException');
+        $method->setAccessible(true);
+        $method->invoke($this->meta, $modifiers);
+        $this->assertSame($expected, $this->meta->getExpectedException());
     }
 
     public function testExpectedExceptionMessage()
     {
-        $meta = new TestMeta('class', 'method', ['expectedExceptionMessage' => 'Message'], self::$logger);
-        $this->assertEmpty($meta->getExpectedExceptionMessage(), 'Message must be empty if exception does not set');
+        $method = new \ReflectionMethod($this->meta, 'setExpectedException');
+        $method->setAccessible(true);
 
-        $modifiers = ['expectedException' => 'Exception', 'expectedExceptionMessage' => true];
-        $meta = new TestMeta('class', 'method', $modifiers, self::$logger);
-        $this->assertEmpty($meta->getExpectedExceptionMessage(), 'Message may be only type of string');
+        $method->invoke($this->meta, ['expectedExceptionMessage' => 'Message']);
+        $this->assertEmpty(
+            $this->meta->getExpectedExceptionMessage(),
+            'Message must be empty if exception does not set'
+        );
 
-        $modifiers = ['expectedException' => 'Exception', 'expectedExceptionMessage' => 'Message'];
-        $meta = new TestMeta('class', 'method', $modifiers, self::$logger);
-        $this->assertSame('Message', $meta->getExpectedExceptionMessage());
+        $method->invoke($this->meta, ['expectedException' => 'Exception', 'expectedExceptionMessage' => true]);
+        $this->assertEmpty($this->meta->getExpectedExceptionMessage(), 'Message may be only type of string');
+
+        $method->invoke($this->meta, ['expectedException' => 'Exception', 'expectedExceptionMessage' => 'Message']);
+        $this->assertSame('Message', $this->meta->getExpectedExceptionMessage());
     }
 
     public function testExpectedExceptionCode()
     {
-        $meta = new TestMeta('class', 'method', ['expectedExceptionCode' => 5], self::$logger);
-        $this->assertNull($meta->getExpectedExceptionCode(), 'Code must be NULL if exception does not set');
+        $method = new \ReflectionMethod($this->meta, 'setExpectedException');
+        $method->setAccessible(true);
 
-        $modifiers = ['expectedException' => 'Exception', 'expectedExceptionCode' => true];
-        $meta = new TestMeta('class', 'method', $modifiers, self::$logger);
-        $this->assertNull($meta->getExpectedExceptionCode(), 'Code must be set');
+        $method->invoke($this->meta, ['expectedExceptionCode' => 5]);
+        $this->assertNull($this->meta->getExpectedExceptionCode(), 'Code must be NULL if exception does not set');
 
-        $modifiers = ['expectedException' => 'Exception', 'expectedExceptionCode' => 5];
-        $meta = new TestMeta('class', 'method', $modifiers, self::$logger);
-        $this->assertSame(5, $meta->getExpectedExceptionCode());
+        $method->invoke($this->meta, ['expectedException' => 'Exception', 'expectedExceptionCode' => true]);
+        $this->assertNull($this->meta->getExpectedExceptionCode(), 'Code must be set');
+
+        $method->invoke($this->meta, ['expectedException' => 'Exception', 'expectedExceptionCode' => 5]);
+        $this->assertSame(5, $this->meta->getExpectedExceptionCode());
     }
 
     public function testDependsDefault()
     {
-        $meta = new TestMeta('class', 'method', [], self::$logger);
-        $this->assertEmpty($meta->getDependencies());
-        $this->assertInternalType('array', $meta->getDependencies());
+        $method = new \ReflectionMethod($this->meta, 'setDataProvider');
+        $method->setAccessible(true);
+        $method->invoke($this->meta, []);
+        $this->assertEmpty($this->meta->getDependencies());
+        $this->assertInternalType('array', $this->meta->getDependencies());
     }
 
     /**
@@ -145,7 +168,9 @@ class TestMetaTest extends \PHPUnit_Framework_TestCase
      */
     public function testDepends($depends, array $expected)
     {
-        $meta = new TestMeta('class', 'method', ['depends' => $depends], self::$logger);
-        $this->assertEquals($expected, $meta->getDependencies());
+        $method = new \ReflectionMethod($this->meta, 'setDependencies');
+        $method->setAccessible(true);
+        $method->invoke($this->meta, ['depends' => $depends]);
+        $this->assertEquals($expected, $this->meta->getDependencies());
     }
 }

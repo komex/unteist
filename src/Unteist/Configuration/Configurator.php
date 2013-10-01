@@ -120,11 +120,9 @@ class Configurator
                 $this->getSuite()
             );
             $processor->setProcesses($this->config['processes']);
-        }
-        $processor->setErrorTypes($this->config['context']['levels']);
-        if ($this->config['processes'] > 1) {
             $processor->setConnector($this->getConnector());
         }
+        $processor->setErrorTypes($this->config['context']['levels']);
         $this->registerReporter();
         $this->registerListeners();
 
@@ -211,40 +209,72 @@ class Configurator
     private function getSuiteConfig(array $config)
     {
         if (isset($config['suites'][$this->input->getArgument('suite')])) {
-            $suite = $config['suites'][$this->input->getArgument('suite')];
-            if (!empty($suite['report_dir'])) {
-                $config['report_dir'] = $suite['report_dir'];
-            }
-            if (isset($suite['context'])) {
-                $config['context'] = $suite['context'];
-            }
-            if (isset($suite['filters'])) {
-                $config['filters'] = $suite['filters'];
-            }
-            if (isset($suite['groups'])) {
-                $config['groups'] = $suite['groups'];
-            }
-            $config['source'] = $suite['source'];
+            $config = $this->overwriteConfigFromSuite($config);
         } else {
             $config['source'] = [];
-            $suite = new \SplFileInfo($this->input->getArgument('suite'));
-            if ($suite->isFile() && $suite->isReadable()) {
-                $config['source'][] = [
-                    'in' => ($suite->getPath() ? : '.'),
-                    'name' => $suite->getFilename(),
-                    'notName' => '',
-                    'exclude' => []
-                ];
-            } elseif ($suite->isDir()) {
-                $config['source'][] = [
-                    'in' => $suite->getRealPath(),
-                    'name' => '*Test.php',
-                    'notName' => '',
-                    'exclude' => []
-                ];
-            }
+            array_push($config['source'], $this->getTestsSource(new \SplFileInfo($this->input->getArgument('suite'))));
         }
         unset($config['suites']);
+
+        return $config;
+    }
+
+    /**
+     * Get tests source config.
+     *
+     * @param \SplFileInfo $suite
+     *
+     * @throws \InvalidArgumentException If file or directory was not found.
+     * @return array
+     */
+    private function getTestsSource(\SplFileInfo $suite)
+    {
+        if ($suite->isFile() && $suite->isReadable()) {
+            $source = [
+                'in' => ($suite->getPath() ? : '.'),
+                'name' => $suite->getFilename(),
+                'notName' => '',
+                'exclude' => []
+            ];
+        } elseif ($suite->isDir()) {
+            $source = [
+                'in' => $suite->getRealPath(),
+                'name' => '*Test.php',
+                'notName' => '',
+                'exclude' => []
+            ];
+        } else {
+            throw new \InvalidArgumentException(
+                sprintf('File or directory was not found (looking for "%s")', $suite->getFilename())
+            );
+        }
+
+        return $source;
+    }
+
+    /**
+     * Overwrite parameters in config by parameters in selected suite.
+     *
+     * @param array $config Original config
+     *
+     * @return array
+     */
+    private function overwriteConfigFromSuite(array $config)
+    {
+        $suite = $config['suites'][$this->input->getArgument('suite')];
+        if (!empty($suite['report_dir'])) {
+            $config['report_dir'] = $suite['report_dir'];
+        }
+        if (isset($suite['context'])) {
+            $config['context'] = $suite['context'];
+        }
+        if (isset($suite['filters'])) {
+            $config['filters'] = $suite['filters'];
+        }
+        if (isset($suite['groups'])) {
+            $config['groups'] = $suite['groups'];
+        }
+        $config['source'] = $suite['source'];
 
         return $config;
     }

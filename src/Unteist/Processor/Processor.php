@@ -11,7 +11,6 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Event\EventStorage;
-use Unteist\Event\StorageEvent;
 use Unteist\Exception\FilterException;
 use Unteist\Exception\TestErrorException;
 use Unteist\Filter\ClassFilterInterface;
@@ -112,26 +111,6 @@ class Processor
     }
 
     /**
-     * Get a list of currently setup class filters.
-     *
-     * @return ClassFilterInterface[]
-     */
-    public function getClassFilters()
-    {
-        return $this->class_filters;
-    }
-
-    /**
-     * Get a list of currently setup test methods filters.
-     *
-     * @return MethodsFilterInterface[]
-     */
-    public function getMethodsFilters()
-    {
-        return $this->methods_filters;
-    }
-
-    /**
      * Add new class filter or replace if its already exists.
      *
      * @param ClassFilterInterface $filter
@@ -165,16 +144,6 @@ class Processor
     public function clearMethodsFilters()
     {
         $this->methods_filters = [];
-    }
-
-    /**
-     * Update global storage from event data.
-     *
-     * @param StorageEvent $event
-     */
-    public function updateStorage(StorageEvent $event)
-    {
-        $this->global_storage->unserialize($event->getData());
     }
 
     /**
@@ -254,9 +223,8 @@ class Processor
         $case->setDispatcher($this->dispatcher);
         $runner = new Runner($this->dispatcher, $this->logger, $this->context);
         $runner->setFilters($this->methods_filters);
-        $runner->precondition($case);
 
-        return $runner->run();
+        return $runner->run($case);
     }
 
     /**

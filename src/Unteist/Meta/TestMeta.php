@@ -94,40 +94,11 @@ class TestMeta
             ['pid' => getmypid(), 'method' => $method, 'modifiers' => $modifiers]
         );
         // Depends
-        if (!empty($modifiers['depends']) && is_string($modifiers['depends'])) {
-            $depends = trim(preg_replace('{[^\w,]}i', '', $modifiers['depends']));
-            if (!empty($depends)) {
-                $depends = array_unique(explode(',', $depends));
-                $position = array_search($method, $depends);
-                if ($position !== false) {
-                    array_splice($depends, $position, 1);
-                }
-                $this->logger->debug(
-                    'The test has dependencies.',
-                    ['pid' => getmypid(), 'test' => $method, 'depends' => $depends]
-                );
-                $this->dependencies = $depends;
-            }
-        }
+        $this->setDependencies($modifiers);
         // DataProvider
-        if (!empty($modifiers['dataProvider']) &&
-            is_string($modifiers['dataProvider']) &&
-            $modifiers['dataProvider'] != $method
-        ) {
-            $this->dataProvider = $modifiers['dataProvider'];
-        }
+        $this->setDataProvider($modifiers);
         // Exceptions
-        if (!empty($modifiers['expectedException']) && is_string($modifiers['expectedException'])) {
-            $this->expected_exception = $modifiers['expectedException'];
-            // Exception message
-            if (!empty($modifiers['expectedExceptionMessage']) && is_string($modifiers['expectedExceptionMessage'])) {
-                $this->expected_exception_message = $modifiers['expectedExceptionMessage'];
-            }
-            // Exception code
-            if (!empty($modifiers['expectedExceptionCode']) && $modifiers['expectedExceptionCode'] !== true) {
-                $this->expected_exception_code = intval($modifiers['expectedExceptionCode'], 10);
-            }
-        }
+        $this->setExpectedException($modifiers);
     }
 
     /**
@@ -226,5 +197,64 @@ class TestMeta
     public function __toString()
     {
         return $this->class . '::' . $this->method;
+    }
+
+    /**
+     * Set meta information about expected exception.
+     *
+     * @param array $modifiers
+     */
+    private function setExpectedException(array $modifiers)
+    {
+        if (!empty($modifiers['expectedException']) && is_string($modifiers['expectedException'])) {
+            $this->expected_exception = $modifiers['expectedException'];
+            // Exception message
+            if (!empty($modifiers['expectedExceptionMessage']) && is_string($modifiers['expectedExceptionMessage'])) {
+                $this->expected_exception_message = $modifiers['expectedExceptionMessage'];
+            }
+            // Exception code
+            if (!empty($modifiers['expectedExceptionCode']) && $modifiers['expectedExceptionCode'] !== true) {
+                $this->expected_exception_code = intval($modifiers['expectedExceptionCode'], 10);
+            }
+        }
+    }
+
+    /**
+     * Set meta information about data provider for test.
+     *
+     * @param array $modifiers
+     */
+    private function setDataProvider(array $modifiers)
+    {
+        if (!empty($modifiers['dataProvider'])) {
+            if (is_string($modifiers['dataProvider']) && $modifiers['dataProvider'] != $this->method) {
+                $this->dataProvider = $modifiers['dataProvider'];
+            }
+        }
+    }
+
+    /**
+     * Set meta information about test dependencies.
+     *
+     * @param array $modifiers
+     */
+    private function setDependencies(array $modifiers)
+    {
+        if (!empty($modifiers['depends']) && is_string($modifiers['depends'])) {
+            $depends = trim(preg_replace('{[^\w,]}i', '', $modifiers['depends']));
+            if (!empty($depends)) {
+                $depends = array_unique(explode(',', $depends));
+                /** @var int $position */
+                $position = array_search($this->method, $depends);
+                if ($position !== false) {
+                    array_splice($depends, $position, 1);
+                }
+                $this->logger->debug(
+                    'The test has dependencies.',
+                    ['pid' => getmypid(), 'test' => $this->method, 'depends' => $depends]
+                );
+                $this->dependencies = $depends;
+            }
+        }
     }
 }
