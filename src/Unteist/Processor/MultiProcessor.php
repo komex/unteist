@@ -47,16 +47,6 @@ class MultiProcessor extends Processor
     }
 
     /**
-     * Get number of maximum processes.
-     *
-     * @return int
-     */
-    public function getProcesses()
-    {
-        return $this->processes;
-    }
-
-    /**
      * Set number of maximum processes.
      *
      * @param int $processes Number of using processes.
@@ -115,6 +105,16 @@ class MultiProcessor extends Processor
     }
 
     /**
+     * Update global storage from event data.
+     *
+     * @param StorageEvent $event
+     */
+    public function updateStorage(StorageEvent $event)
+    {
+        $this->global_storage->unserialize($event->getData());
+    }
+
+    /**
      * Run all TestCases.
      *
      * @return int Exit code
@@ -161,7 +161,7 @@ class MultiProcessor extends Processor
      *
      * @return bool
      */
-    protected function launchJob(\SplFileInfo $case)
+    private function launchJob(\SplFileInfo $case)
     {
         $this->connector->add();
         $pid = pcntl_fork();

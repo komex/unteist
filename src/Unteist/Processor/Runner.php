@@ -126,40 +126,6 @@ class Runner
     }
 
     /**
-     * Setup TestCase.
-     *
-     * @param TestCase $test_case
-     */
-    public function precondition(TestCase $test_case)
-    {
-        $this->test_case = $test_case;
-        if ($test_case instanceof EventSubscriberInterface) {
-            $this->listeners = $test_case->getSubscribedEvents();
-            $this->dispatcher->addSubscriber($test_case);
-            $this->precondition->addSubscriber($test_case);
-        }
-        $class = new \ReflectionClass($this->test_case);
-        $this->name = $class->getName();
-        $filter = new MethodsFilter();
-        foreach ($class->getMethods() as $method) {
-            $modifiers = $this->getModifiers($method);
-            $filter->setModifiers($modifiers);
-            if ($filter->condition($method)) {
-                $this->tests[$method->getName()] = new TestMeta(
-                    $this->name,
-                    $method->getName(),
-                    $modifiers,
-                    $this->logger
-                );
-            } else {
-                foreach (array_keys($modifiers) as $event) {
-                    $this->registerEventListener($event, $method->getName());
-                }
-            }
-        }
-    }
-
-    /**
      * Set test method filters.
      *
      * @param \Unteist\Filter\MethodsFilterInterface[] $filters
@@ -172,10 +138,13 @@ class Runner
     /**
      * Run TestCase.
      *
+     * @param TestCase $test_case
+     *
      * @return int Status code
      */
-    public function run()
+    public function run(TestCase $test_case)
     {
+        $this->precondition($test_case);
         if (empty($this->tests)) {
             $this->logger->notice('Tests not found in TestCase', ['pid' => getmypid()]);
 
@@ -249,16 +218,25 @@ class Runner
     /**
      * Check specified depends and run test if necessary.
      *
-     * @param array $depends
+     * @param TestMeta $test
      *
      * @throws \LogicException If found infinitive depends loop.
-     * @throws \Unteist\Exception\SkipTestException
+     * @throws SkipTestException
      * @throws \InvalidArgumentException If depends methods not found.
      */
-    protected function resolveDependencies(array $depends)
+    protected function resolveDependencies(TestMeta $test)
     {
+        $depends = $test->getDependencies();
+        if (empty($depend)) {
+            return;
+        }
+        $test->setStatus(TestMeta::TEST_MARKED);
         foreach ($depends as $depend) {
-            if (!empty($this->tests[$depend])) {
+            if (empty($this->tests[$depend])) {
+                throw new \InvalidArgumentException(
+                    sprintf('The depends method "%s::%s()" does not exists or is not a test', $this->name, $depend)
+                );
+            } else {
                 $test = $this->tests[$depend];
                 switch ($test->getStatus()) {
                     case TestMeta::TEST_NEW:
@@ -285,10 +263,6 @@ class Runner
                             sprintf('Test method "%s::%s()" was failed', $this->name, $depend)
                         );
                 }
-            } else {
-                throw new \InvalidArgumentException(
-                    sprintf('The depends method "%s::%s()" does not exists or is not a test', $this->name, $depend)
-                );
             }
         }
     }
@@ -387,6 +361,40 @@ class Runner
     }
 
     /**
+     * Setup TestCase.
+     *
+     * @param TestCase $test_case
+     */
+    private function precondition(TestCase $test_case)
+    {
+        $this->test_case = $test_case;
+        if ($test_case instanceof EventSubscriberInterface) {
+            $this->listeners = $test_case->getSubscribedEvents();
+            $this->dispatcher->addSubscriber($test_case);
+            $this->precondition->addSubscriber($test_case);
+        }
+        $class = new \ReflectionClass($this->test_case);
+        $this->name = $class->getName();
+        $filter = new MethodsFilter();
+        foreach ($class->getMethods() as $method) {
+            $modifiers = $this->getModifiers($method);
+            $filter->setModifiers($modifiers);
+            if ($filter->condition($method)) {
+                $this->tests[$method->getName()] = new TestMeta(
+                    $this->name,
+                    $method->getName(),
+                    $modifiers,
+                    $this->logger
+                );
+            } else {
+                foreach (array_keys($modifiers) as $event) {
+                    $this->registerEventListener($event, $method->getName());
+                }
+            }
+        }
+    }
+
+    /**
      * Control behavior on after case.
      */
     private function afterCaseBehavior()
@@ -472,65 +480,60 @@ class Runner
      */
     private function runTest(TestMeta $test)
     {
-        $status_code = 0;
-        $depends = $test->getDependencies();
-        if (!empty($depends)) {
-            $test->setStatus(TestMeta::TEST_MARKED);
-            $this->resolveDependencies($depends);
+        $this->resolveDependencies($test);
+        if ($test->getStatus() !== TestMeta::TEST_NEW && $test->getStatus() != TestMeta::TEST_MARKED) {
+            return 0;
         }
-
-        if ($test->getStatus() == TestMeta::TEST_NEW || $test->getStatus() == TestMeta::TEST_MARKED) {
-            $dataProvider = $this->getDataSet($test->getDataProvider());
-            foreach ($dataProvider as $dp_number => $data_set) {
-
-                $event = new TestEvent($test->getMethod(), $this->test_case_event);
-                if (count($dataProvider) > 1) {
-                    $event->setDataSet($dp_number + 1);
-                }
-                $event->setDepends($test->getDependencies());
+        $status_code = 0;
+        $dataProvider = $this->getDataSet($test->getDataProvider());
+        foreach ($dataProvider as $dp_number => $data_set) {
+            $event = new TestEvent($test->getMethod(), $this->test_case_event);
+            if (count($dataProvider) > 1) {
+                $event->setDataSet($dp_number + 1);
+            }
+            $event->setDepends($test->getDependencies());
+            try {
                 try {
-                    try {
-                        $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $event);
-                        $this->started = microtime(true);
-                        $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $event);
-                        $this->asserts = Assert::getAssertsCount();
+                    $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $event);
+                    $this->started = microtime(true);
+                    $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $event);
+                    $this->asserts = Assert::getAssertsCount();
 
-                        call_user_func_array([$this->test_case, $test->getMethod()], $data_set);
-                        if ($test->getExpectedException()) {
-                            throw new TestFailException('Expected exception ' . $test->getExpectedException());
-                        }
-                    } catch (TestFailException $e) {
-                        $status_code = $this->context->onFailure($e);
-                        $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
-                        continue;
-                    } catch (TestErrorException $e) {
-                        $status_code = $this->context->onError($e);
-                        $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
-                        continue;
-                    } catch (IncompleteTestException $e) {
-                        $status_code = $this->context->onIncomplete($e);
-                        $this->finish($test, $event, TestMeta::TEST_INCOMPLETE, $e);
-                        continue;
-                    } catch (\Exception $e) {
-                        $status = $this->exceptionControl($test, $e);
-                        if ($status > 0) {
-                            $status_code = $status;
-                        }
+                    call_user_func_array([$this->test_case, $test->getMethod()], $data_set);
+                    if ($test->getExpectedException()) {
+                        throw new TestFailException('Expected exception ' . $test->getExpectedException());
                     }
-                } catch (SkipTestException $e) {
-                    $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e);
-                    continue;
                 } catch (TestFailException $e) {
-                    $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
                     $status_code = $this->context->onFailure($e);
+                    $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
+                    continue;
+                } catch (TestErrorException $e) {
+                    $status_code = $this->context->onError($e);
+                    $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
                     continue;
                 } catch (IncompleteTestException $e) {
-                    $this->finish($test, $event, TestMeta::TEST_INCOMPLETE, $e);
                     $status_code = $this->context->onIncomplete($e);
+                    $this->finish($test, $event, TestMeta::TEST_INCOMPLETE, $e);
                     continue;
+                } catch (\Exception $e) {
+                    $status = $this->exceptionControl($test, $e);
+                    if ($status > 0) {
+                        $status_code = $status;
+                    }
                 }
-                $this->finish($test, $event, TestMeta::TEST_DONE);
+            } catch (SkipTestException $e) {
+                $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e);
+                continue;
+            } catch (TestFailException $e) {
+                $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
+                $status_code = $this->context->onFailure($e);
+                continue;
+            } catch (IncompleteTestException $e) {
+                $this->finish($test, $event, TestMeta::TEST_INCOMPLETE, $e);
+                $status_code = $this->context->onIncomplete($e);
+                continue;
             }
+            $this->finish($test, $event, TestMeta::TEST_DONE);
         }
 
         return $status_code;

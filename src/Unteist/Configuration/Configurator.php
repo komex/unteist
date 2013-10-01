@@ -120,11 +120,9 @@ class Configurator
                 $this->getSuite()
             );
             $processor->setProcesses($this->config['processes']);
-        }
-        $processor->setErrorTypes($this->config['context']['levels']);
-        if ($this->config['processes'] > 1) {
             $processor->setConnector($this->getConnector());
         }
+        $processor->setErrorTypes($this->config['context']['levels']);
         $this->registerReporter();
         $this->registerListeners();
 
