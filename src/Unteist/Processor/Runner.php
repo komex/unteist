@@ -474,9 +474,6 @@ class Runner
      *
      * @return int Status code
      * @throws \Exception If catch unexpected exception.
-     * @throws SkipTestException If this test was skipped.
-     * @throws TestFailException If assert was fail.
-     * @throws IncompleteTestException If assert was marked as incomplete.
      */
     private function runTest(TestMeta $test)
     {
@@ -492,48 +489,62 @@ class Runner
                 $event->setDataSet($dp_number + 1);
             }
             $event->setDepends($test->getDependencies());
-            try {
-                try {
-                    $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $event);
-                    $this->started = microtime(true);
-                    $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $event);
-                    $this->asserts = Assert::getAssertsCount();
-
-                    call_user_func_array([$this->test_case, $test->getMethod()], $data_set);
-                    if ($test->getExpectedException()) {
-                        throw new TestFailException('Expected exception ' . $test->getExpectedException());
-                    }
-                } catch (TestFailException $e) {
-                    $status_code = $this->context->onFailure($e);
-                    $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
-                    continue;
-                } catch (TestErrorException $e) {
-                    $status_code = $this->context->onError($e);
-                    $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
-                    continue;
-                } catch (IncompleteTestException $e) {
-                    $status_code = $this->context->onIncomplete($e);
-                    $this->finish($test, $event, TestMeta::TEST_INCOMPLETE, $e);
-                    continue;
-                } catch (\Exception $e) {
-                    $status = $this->exceptionControl($test, $e);
-                    if ($status > 0) {
-                        $status_code = $status;
-                    }
-                }
-            } catch (SkipTestException $e) {
-                $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e);
-                continue;
-            } catch (TestFailException $e) {
-                $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
-                $status_code = $this->context->onFailure($e);
-                continue;
-            } catch (IncompleteTestException $e) {
-                $this->finish($test, $event, TestMeta::TEST_INCOMPLETE, $e);
-                $status_code = $this->context->onIncomplete($e);
-                continue;
+            $code = $this->processTest($test, $event, $data_set);
+            if ($code === 0) {
+                $this->finish($test, $event, TestMeta::TEST_DONE);
+            } else {
+                $status_code = $code;
             }
-            $this->finish($test, $event, TestMeta::TEST_DONE);
+        }
+
+        return $status_code;
+    }
+
+    /**
+     * @param TestMeta $test
+     * @param TestEvent $event
+     * @param array $data_set
+     *
+     * @return int Status code
+     * @throws SkipTestException If this test was skipped.
+     * @throws TestFailException If assert was fail.
+     * @throws IncompleteTestException If assert was marked as incomplete.
+     */
+    private function processTest(TestMeta $test, TestEvent $event, array $data_set)
+    {
+        $status_code = 0;
+        try {
+            try {
+                $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $event);
+                $this->started = microtime(true);
+                $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $event);
+                $this->asserts = Assert::getAssertsCount();
+
+                call_user_func_array([$this->test_case, $test->getMethod()], $data_set);
+                if ($test->getExpectedException()) {
+                    throw new TestFailException('Expected exception ' . $test->getExpectedException());
+                }
+            } catch (TestFailException $e) {
+                $status_code = $this->context->onFailure($e);
+                $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
+            } catch (TestErrorException $e) {
+                $status_code = $this->context->onError($e);
+                $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
+            } catch (IncompleteTestException $e) {
+                $status_code = $this->context->onIncomplete($e);
+                $this->finish($test, $event, TestMeta::TEST_INCOMPLETE, $e);
+            } catch (\Exception $e) {
+                $status_code = $this->exceptionControl($test, $e);
+            }
+        } catch (SkipTestException $e) {
+            $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e);
+            $status_code = 1;
+        } catch (TestFailException $e) {
+            $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
+            $status_code = $this->context->onFailure($e);
+        } catch (IncompleteTestException $e) {
+            $this->finish($test, $event, TestMeta::TEST_INCOMPLETE, $e);
+            $status_code = $this->context->onIncomplete($e);
         }
 
         return $status_code;
