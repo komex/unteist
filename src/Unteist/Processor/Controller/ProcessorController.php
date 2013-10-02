@@ -24,7 +24,7 @@ abstract class ProcessorController
     /**
      * @var Context
      */
-    private $context;
+    protected $context;
 
     /**
      * @param Context $context
