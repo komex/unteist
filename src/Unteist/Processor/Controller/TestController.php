@@ -7,18 +7,14 @@
 
 namespace Unteist\Processor\Controller;
 
-use Psr\Log\LoggerInterface;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use Unteist\Assert\Assert;
-use Unteist\Event\EventStorage;
 use Unteist\Event\TestEvent;
 use Unteist\Exception\IncompleteTestException;
 use Unteist\Exception\SkipTestException;
 use Unteist\Exception\TestErrorException;
 use Unteist\Exception\TestFailException;
 use Unteist\Meta\TestMeta;
+use Unteist\Processor\Runner;
 use Unteist\Strategy\Context;
-use Unteist\TestCase;
 
 /**
  * Class TestController
@@ -29,25 +25,9 @@ use Unteist\TestCase;
 class TestController extends ProcessorController
 {
     /**
-     * @var EventDispatcherInterface
+     * @var Runner
      */
-    protected $dispatcher;
-    /**
-     * @var LoggerInterface
-     */
-    protected $logger;
-    /**
-     * @var float
-     */
-    protected $started;
-    /**
-     * @var int
-     */
-    protected $asserts;
-    /**
-     * @var TestCase
-     */
-    protected $test_case;
+    protected $runner;
     /**
      * @var TestMeta
      */
@@ -63,26 +43,34 @@ class TestController extends ProcessorController
 
     /**
      * @param Context $context
-     * @param EventDispatcherInterface $dispatcher
-     * @param LoggerInterface $logger
-     * @param TestCase $test_case
+     * @param Runner $runner
+     * @param TestEvent $event
      * @param TestMeta $test
      * @param array $data_set
      */
-    public function __construct(
-        Context $context,
-        EventDispatcherInterface $dispatcher,
-        LoggerInterface $logger,
-        TestCase $test_case,
-        TestMeta $test,
-        array $data_set
-    ) {
-        $this->dispatcher = $dispatcher;
-        $this->logger = $logger;
-        $this->test_case = $test_case;
+    public function __construct(Context $context, Runner $runner, TestEvent $event, TestMeta $test, array $data_set)
+    {
+        $this->setContext($context);
+        $this->setRunner($runner);
+        $this->setEvent($event);
         $this->test = $test;
         $this->data_set = $data_set;
-        parent::__construct($context);
+    }
+
+    /**
+     * @param TestEvent $event
+     */
+    protected function setEvent(TestEvent $event)
+    {
+        $this->event = $event;
+    }
+
+    /**
+     * @param Runner $runner
+     */
+    protected function setRunner(Runner $runner)
+    {
+        $this->runner = $runner;
     }
 
     /**
@@ -93,63 +81,13 @@ class TestController extends ProcessorController
      */
     protected function behavior()
     {
-        $this->started = microtime(true);
-        $this->asserts = Assert::getAssertsCount();
-        call_user_func_array([$this->test_case, $this->test->getMethod()], $this->data_set);
+        call_user_func_array([$this->runner->getTestCase(), $this->test->getMethod()], $this->data_set);
         if ($this->test->getExpectedException()) {
             throw new TestFailException('Expected exception ' . $this->test->getExpectedException());
         }
-        $this->finish($this->test, $this->event, TestMeta::TEST_DONE);
+        $this->runner->finish($this->test, $this->event, TestMeta::TEST_DONE);
 
         return 0;
-    }
-
-    /**
-     * Do all dirty job after test is finish.
-     *
-     * @param TestMeta $test Meta description of test
-     * @param TestEvent $event Test event
-     * @param int $status Test status
-     * @param \Exception $e
-     */
-    protected function finish(TestMeta $test, TestEvent $event, $status, \Exception $e = null)
-    {
-        $test->setStatus($status);
-        $event->setStatus($status);
-        $event->setDepends($test->getDependencies());
-        $event->setTime(floatval(microtime(true) - $this->started));
-        $event->setAsserts(Assert::getAssertsCount() - $this->asserts);
-        if ($status === TestMeta::TEST_DONE) {
-            $context = [];
-        } else {
-            $event->setException($e);
-            $context = [
-                'pid' => getmypid(),
-                'test' => $test->getMethod(),
-                'exception' => get_class($e),
-                'message' => $e->getMessage(),
-            ];
-        }
-        switch ($status) {
-            case TestMeta::TEST_DONE:
-                $this->dispatcher->dispatch(EventStorage::EV_TEST_SUCCESS, $event);
-                break;
-            case TestMeta::TEST_SKIPPED:
-                $this->logger->debug('The test was skipped.', $context);
-                $this->dispatcher->dispatch(EventStorage::EV_TEST_SKIPPED, $event);
-                break;
-            case TestMeta::TEST_FAILED:
-                $this->logger->debug('Assert fail.', $context);
-                $this->dispatcher->dispatch(EventStorage::EV_TEST_FAIL, $event);
-                break;
-            case TestMeta::TEST_INCOMPLETE:
-                $this->logger->debug('Test incomplete.', $context);
-                $this->dispatcher->dispatch(EventStorage::EV_TEST_INCOMPLETE, $event);
-                break;
-            default:
-                $this->logger->critical('Unexpected exception.', $context);
-                $this->dispatcher->dispatch(EventStorage::EV_TEST_ERROR, $event);
-        }
     }
 
     /**
@@ -161,7 +99,7 @@ class TestController extends ProcessorController
      */
     protected function onSkip(SkipTestException $e)
     {
-        $this->finish($this->test, $this->event, TestMeta::TEST_SKIPPED, $e);
+        $this->runner->finish($this->test, $this->event, TestMeta::TEST_SKIPPED, $e);
 
         return 1;
     }
@@ -175,7 +113,7 @@ class TestController extends ProcessorController
      */
     protected function onFailure(TestFailException $e)
     {
-        $this->finish($this->test, $this->event, TestMeta::TEST_FAILED, $e);
+        $this->runner->finish($this->test, $this->event, TestMeta::TEST_FAILED, $e);
     }
 
     /**
@@ -187,7 +125,7 @@ class TestController extends ProcessorController
      */
     protected function onError(TestErrorException $e)
     {
-        $this->finish($this->test, $this->event, TestMeta::TEST_FAILED, $e);
+        $this->runner->finish($this->test, $this->event, TestMeta::TEST_FAILED, $e);
     }
 
     /**
@@ -199,7 +137,7 @@ class TestController extends ProcessorController
      */
     protected function onIncomplete(IncompleteTestException $e)
     {
-        $this->finish($this->test, $this->event, TestMeta::TEST_INCOMPLETE, $e);
+        $this->runner->finish($this->test, $this->event, TestMeta::TEST_INCOMPLETE, $e);
     }
 
     /**

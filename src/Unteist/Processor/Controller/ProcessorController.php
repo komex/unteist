@@ -27,14 +27,6 @@ abstract class ProcessorController
     protected $context;
 
     /**
-     * @param Context $context
-     */
-    public function __construct(Context $context)
-    {
-        $this->context = $context;
-    }
-
-    /**
      * @return int
      */
     public function run()
@@ -52,6 +44,14 @@ abstract class ProcessorController
         }
 
         return $status_code;
+    }
+
+    /**
+     * @param Context $context
+     */
+    protected function setContext(Context $context)
+    {
+        $this->context = $context;
     }
 
     /**
