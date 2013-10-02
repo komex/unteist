@@ -430,7 +430,6 @@ class Runner
                     $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e);
                 }
             }
-
         }
     }
 
@@ -489,6 +488,8 @@ class Runner
                 $event->setDataSet($dp_number + 1);
             }
             $event->setDepends($test->getDependencies());
+            $this->started = microtime(true);
+            $this->asserts = Assert::getAssertsCount();
             $code = $this->processTest($test, $event, $data_set);
             if ($code === 0) {
                 $this->finish($test, $event, TestMeta::TEST_DONE);
@@ -516,9 +517,7 @@ class Runner
         try {
             try {
                 $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $event);
-                $this->started = microtime(true);
                 $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $event);
-                $this->asserts = Assert::getAssertsCount();
 
                 call_user_func_array([$this->test_case, $test->getMethod()], $data_set);
                 if ($test->getExpectedException()) {
