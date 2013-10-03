@@ -42,7 +42,7 @@ class Runner
      */
     protected $test_case_event;
     /**
-     * @var TestMeta[]
+     * @var TestMeta[]|\ArrayObject
      */
     protected $tests;
     /**
@@ -156,13 +156,14 @@ class Runner
     public function run(TestCase $test_case)
     {
         $this->precondition($test_case);
-        if (empty($this->tests)) {
+        if ($this->tests->count() == 0) {
             $this->logger->notice('Tests not found in TestCase', ['pid' => getmypid()]);
             $this->dispatcher->dispatch(EventStorage::EV_CASE_FILTERED);
 
             return 1;
         }
         $return_code = 0;
+        $this->test_case_event = new TestCaseEvent($this->reflection_class->getName());
         $this->beforeCaseBehavior();
         foreach ($this->tests as $test) {
             try {
@@ -284,7 +285,7 @@ class Runner
         }
         $test->setStatus(TestMeta::TEST_MARKED);
         foreach ($depends as $depend) {
-            if (empty($this->tests[$depend])) {
+            if (!$this->tests->offsetExists($depend)) {
                 if ($this->reflection_class->hasMethod($depend)) {
                     $method = $this->reflection_class->getMethod($depend);
                     $modifiers = $this->getModifiers($method);
@@ -294,7 +295,7 @@ class Runner
 
                 }
             }
-            if (empty($this->tests[$depend])) {
+            if (!$this->tests->offsetExists($depend)) {
                 throw new \InvalidArgumentException(
                     sprintf(
                         'The depends method "%s::%s()" does not exists or is not a test',
@@ -438,7 +439,7 @@ class Runner
             $this->precondition->addSubscriber($test_case);
         }
         foreach ($this->reflection_class->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
-            if (isset($this->tests[$method->getName()])) {
+            if ($this->tests->offsetExists($method->getName())) {
                 continue;
             }
             $modifiers = $this->getModifiers($method);
@@ -486,7 +487,6 @@ class Runner
      */
     private function beforeCaseBehavior()
     {
-        $this->test_case_event = new TestCaseEvent($this->reflection_class->getName());
         try {
             $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
             $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
