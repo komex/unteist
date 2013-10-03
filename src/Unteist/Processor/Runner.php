@@ -69,10 +69,6 @@ class Runner
      */
     protected $asserts;
     /**
-     * @var string
-     */
-    private $name;
-    /**
      * @var \ArrayIterator[]
      */
     private $data_sets = [];
@@ -84,6 +80,10 @@ class Runner
      * @var array
      */
     private $listeners = [];
+    /**
+     * @var \ReflectionClass
+     */
+    private $reflection_class;
 
     /**
      * @param EventDispatcherInterface $dispatcher Global event dispatcher
@@ -157,26 +157,13 @@ class Runner
         $this->precondition($test_case);
         if (empty($this->tests)) {
             $this->logger->notice('Tests not found in TestCase', ['pid' => getmypid()]);
+            $this->dispatcher->dispatch(EventStorage::EV_CASE_FILTERED);
 
             return 1;
         }
         $return_code = 0;
+        $this->beforeCaseBehavior();
         foreach ($this->tests as $test) {
-            $method = new \ReflectionMethod($this->test_case, $test->getMethod());
-            foreach ($this->filters as $filter) {
-                if (!$filter->condition($method)) {
-                    $this->logger->debug(
-                        'Test was filtered.',
-                        [
-                            'pid' => getmypid(),
-                            'method' => $test->getMethod(),
-                            'filter' => $filter->getName()
-                        ]
-                    );
-                    continue 2;
-                }
-            }
-            $this->beforeCaseBehavior();
             try {
                 if ($this->runTest($test)) {
                     $return_code = 1;
@@ -297,36 +284,53 @@ class Runner
         $test->setStatus(TestMeta::TEST_MARKED);
         foreach ($depends as $depend) {
             if (empty($this->tests[$depend])) {
-                throw new \InvalidArgumentException(
-                    sprintf('The depends method "%s::%s()" does not exists or is not a test', $this->name, $depend)
-                );
-            } else {
-                $test = $this->tests[$depend];
-                switch ($test->getStatus()) {
-                    case TestMeta::TEST_NEW:
-                        try {
-                            $this->runTest($test);
-                        } catch (\Exception $e) {
-                            throw new SkipTestException(
-                                sprintf('Unresolved dependencies in %s::%s()', $this->name, $depend),
-                                0,
-                                $e
-                            );
-                        }
-                        break;
-                    case TestMeta::TEST_MARKED:
-                        throw new \LogicException(
-                            sprintf('Found infinitive loop in depends for test method "%s::%s()"', $this->name, $depend)
-                        );
-                    case TestMeta::TEST_SKIPPED:
-                        throw new SkipTestException(
-                            sprintf('Test method "%s::%s()" was skipped', $this->name, $depend)
-                        );
-                    case TestMeta::TEST_FAILED:
-                        throw new SkipTestException(
-                            sprintf('Test method "%s::%s()" was failed', $this->name, $depend)
-                        );
+                if ($this->reflection_class->hasMethod($depend)) {
+                    $method = $this->reflection_class->getMethod($depend);
+                    $modifiers = $this->getModifiers($method);
+                    if ($this->isTest($method, $modifiers)) {
+                        $this->addTest($method, $modifiers);
+                    }
+
                 }
+            }
+            if (empty($this->tests[$depend])) {
+                throw new \InvalidArgumentException(
+                    sprintf(
+                        'The depends method "%s::%s()" does not exists or is not a test',
+                        $this->reflection_class->getName(),
+                        $depend
+                    )
+                );
+            }
+            $test = $this->tests[$depend];
+            switch ($test->getStatus()) {
+                case TestMeta::TEST_NEW:
+                    try {
+                        $this->runTest($test);
+                    } catch (\Exception $e) {
+                        throw new SkipTestException(
+                            sprintf('Unresolved dependencies in %s::%s()', $this->reflection_class->getName(), $depend),
+                            0,
+                            $e
+                        );
+                    }
+                    break;
+                case TestMeta::TEST_MARKED:
+                    throw new \LogicException(
+                        sprintf(
+                            'Found infinitive loop in depends for test method "%s::%s()"',
+                            $this->reflection_class->getName(),
+                            $depend
+                        )
+                    );
+                case TestMeta::TEST_SKIPPED:
+                    throw new SkipTestException(
+                        sprintf('Test method "%s::%s()" was skipped', $this->reflection_class->getName(), $depend)
+                    );
+                case TestMeta::TEST_FAILED:
+                    throw new SkipTestException(
+                        sprintf('Test method "%s::%s()" was failed', $this->reflection_class->getName(), $depend)
+                    );
             }
         }
     }
@@ -347,7 +351,7 @@ class Runner
         if (empty($this->data_sets[$method])) {
             if (!method_exists($this->test_case, $method)) {
                 throw new \InvalidArgumentException(
-                    sprintf('DataProvider "%s::%s()" does not exists.', $this->name, $method)
+                    sprintf('DataProvider "%s::%s()" does not exists.', $this->reflection_class->getName(), $method)
                 );
             }
             $data_set_method = new \ReflectionMethod($this->test_case, $method);
@@ -359,7 +363,11 @@ class Runner
                 $this->data_sets[$method] = $data_set;
             } else {
                 throw new \InvalidArgumentException(
-                    sprintf('DataProvider "%s::%s()" must return an array or Iterator object.', $this->name, $method)
+                    sprintf(
+                        'DataProvider "%s::%s()" must return an array or Iterator object.',
+                        $this->reflection_class->getName(),
+                        $method
+                    )
                 );
             }
         } else {
@@ -371,6 +379,50 @@ class Runner
     }
 
     /**
+     * @param \ReflectionMethod $method
+     *
+     * @param array $modifiers
+     *
+     * @return bool
+     */
+    private function isTest(\ReflectionMethod $method, array $modifiers)
+    {
+        $method_filter = new MethodsFilter();
+        $method_filter->setModifiers($modifiers);
+
+        return $method_filter->condition($method);
+    }
+
+    /**
+     * Check if method is filtered.
+     *
+     * @param \ReflectionMethod $method
+     * @param array $modifiers
+     *
+     * @return bool
+     */
+    private function filtered(\ReflectionMethod $method, array $modifiers)
+    {
+        foreach ($this->filters as $filter) {
+            $filter->setParams($modifiers);
+            if (!$filter->condition($method)) {
+                $this->logger->debug(
+                    'Method is not a test.',
+                    [
+                        'pid' => getmypid(),
+                        'method' => $method->getName(),
+                        'filter' => $filter->getName()
+                    ]
+                );
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Setup TestCase.
      *
      * @param TestCase $test_case
@@ -378,24 +430,22 @@ class Runner
     private function precondition(TestCase $test_case)
     {
         $this->test_case = $test_case;
+        $this->reflection_class = new \ReflectionClass($this->test_case);
         if ($test_case instanceof EventSubscriberInterface) {
             $this->listeners = $test_case->getSubscribedEvents();
             $this->dispatcher->addSubscriber($test_case);
             $this->precondition->addSubscriber($test_case);
         }
-        $class = new \ReflectionClass($this->test_case);
-        $this->name = $class->getName();
-        $filter = new MethodsFilter();
-        foreach ($class->getMethods() as $method) {
+        foreach ($this->reflection_class->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
+            if (isset($this->tests[$method->getName()])) {
+                continue;
+            }
             $modifiers = $this->getModifiers($method);
-            $filter->setModifiers($modifiers);
-            if ($filter->condition($method)) {
-                $this->tests[$method->getName()] = new TestMeta(
-                    $this->name,
-                    $method->getName(),
-                    $modifiers,
-                    $this->logger
-                );
+            if ($this->isTest($method, $modifiers)) {
+                if ($this->filtered($method, $modifiers)) {
+                    continue;
+                }
+                $this->addTest($method, $modifiers);
             } else {
                 foreach (array_keys($modifiers) as $event) {
                     $this->registerEventListener($event, $method->getName());
@@ -405,17 +455,26 @@ class Runner
     }
 
     /**
+     * @param \ReflectionMethod $method
+     * @param array $modifiers
+     */
+    private function addTest(\ReflectionMethod $method, array $modifiers)
+    {
+        $this->tests[$method->getName()] = new TestMeta(
+            $this->reflection_class->getName(),
+            $method->getName(),
+            $modifiers,
+            $this->logger
+        );
+    }
+
+    /**
      * Control behavior on after case.
      */
     private function afterCaseBehavior()
     {
-        if ($this->test_case_event === null) {
-            $this->logger->notice('Case has no tests.', ['pid' => getmypid(), 'case' => get_class($this->test_case)]);
-            $this->dispatcher->dispatch(EventStorage::EV_CASE_FILTERED);
-        } else {
-            $this->precondition->dispatch(EventStorage::EV_AFTER_CASE);
-            $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, $this->test_case_event);
-        }
+        $this->precondition->dispatch(EventStorage::EV_AFTER_CASE);
+        $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, $this->test_case_event);
         foreach ($this->listeners as $event => $listener) {
             $this->dispatcher->removeListener($event, $listener);
         }
@@ -426,13 +485,10 @@ class Runner
      */
     private function beforeCaseBehavior()
     {
-        if ($this->test_case_event !== null) {
-            return;
-        }
-        $this->test_case_event = new TestCaseEvent($this->name);
-        $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
+        $this->test_case_event = new TestCaseEvent($this->reflection_class->getName());
         try {
             $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
+            $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
         } catch (\Exception $e) {
             foreach ($this->tests as $test) {
                 if ($test->getStatus() === TestMeta::TEST_NEW || $test->getStatus() === TestMeta::TEST_MARKED) {
