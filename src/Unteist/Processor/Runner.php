@@ -17,10 +17,11 @@ use Unteist\Event\TestCaseEvent;
 use Unteist\Event\TestEvent;
 use Unteist\Exception\IncompleteTestException;
 use Unteist\Exception\SkipTestException;
-use Unteist\Exception\TestErrorException;
 use Unteist\Exception\TestFailException;
 use Unteist\Filter\MethodsFilter;
 use Unteist\Meta\TestMeta;
+use Unteist\Processor\Controller\BeforeTestController;
+use Unteist\Processor\Controller\TestController;
 use Unteist\Strategy\Context;
 use Unteist\TestCase;
 
@@ -554,112 +555,23 @@ class Runner
                 $event->setDataSet($dp_number + 1);
             }
             $event->setDepends($test->getDependencies());
+            $controller = new BeforeTestController(
+                $this->context,
+                $this,
+                $event,
+                $this->dispatcher,
+                $this->precondition
+            );
+            $controller->run();
             $this->started = microtime(true);
             $this->asserts = Assert::getAssertsCount();
-            $code = $this->processTest($test, $event, $data_set);
-            if ($code === 0) {
-                $this->finish($test, $event, TestMeta::TEST_DONE);
-            } else {
+            $controller = new TestController($this->context, $this, $event, $test, $data_set);
+            $code = $controller->run();
+            if ($code > 0) {
                 $status_code = $code;
             }
         }
 
         return $status_code;
-    }
-
-    /**
-     * @param TestMeta $test
-     * @param TestEvent $event
-     * @param array $data_set
-     *
-     * @return int Status code
-     * @throws SkipTestException If this test was skipped.
-     * @throws TestFailException If assert was fail.
-     * @throws IncompleteTestException If assert was marked as incomplete.
-     */
-    private function processTest(TestMeta $test, TestEvent $event, array $data_set)
-    {
-        $status_code = 0;
-        try {
-            try {
-                $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $event);
-                $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $event);
-
-                call_user_func_array([$this->test_case, $test->getMethod()], $data_set);
-                if ($test->getExpectedException()) {
-                    throw new TestFailException('Expected exception ' . $test->getExpectedException());
-                }
-            } catch (TestFailException $e) {
-                $status_code = $this->context->onFailure($e);
-                $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
-            } catch (TestErrorException $e) {
-                $status_code = $this->context->onError($e);
-                $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
-            } catch (IncompleteTestException $e) {
-                $status_code = $this->context->onIncomplete($e);
-                $this->finish($test, $event, TestMeta::TEST_INCOMPLETE, $e);
-            } catch (\Exception $e) {
-                $status_code = $this->exceptionControl($test, $e);
-            }
-        } catch (SkipTestException $e) {
-            $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e);
-            $status_code = 1;
-        } catch (TestFailException $e) {
-            $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
-            $status_code = $this->context->onFailure($e);
-        } catch (IncompleteTestException $e) {
-            $this->finish($test, $event, TestMeta::TEST_INCOMPLETE, $e);
-            $status_code = $this->context->onIncomplete($e);
-        }
-
-        return $status_code;
-    }
-
-    /**
-     * Try to resolve situation with exception.
-     *
-     * @param TestMeta $test
-     * @param \Exception $e
-     *
-     * @return int Status code
-     */
-    private function exceptionControl(TestMeta $test, \Exception $e)
-    {
-        if (is_a($e, $test->getExpectedException())) {
-            $code = $test->getExpectedExceptionCode();
-            if ($code !== null && $code !== $e->getCode()) {
-                $error = new TestFailException(
-                    sprintf(
-                        'Failed asserting that expected exception code %d is equal to %d',
-                        $code,
-                        $e->getCode()
-                    ),
-                    0,
-                    $e
-                );
-
-                return $this->context->onFailure($error);
-            }
-            $message = $test->getExpectedExceptionMessage();
-            if ($message !== null && strpos($e->getMessage(), $message) === false) {
-                $error = new TestFailException(
-                    sprintf(
-                        'Failed asserting that exception message "%s" contains "%s"',
-                        $e->getMessage(),
-                        $message
-                    ),
-                    0,
-                    $e
-                );
-
-                return $this->context->onFailure($error);
-            }
-
-            return 0;
-        } else {
-            $this->context->onUnexpectedException($e);
-
-            return 1;
-        }
     }
 }
