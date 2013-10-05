@@ -11,7 +11,6 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Unteist\Assert\Assert;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
 use Unteist\Event\TestEvent;
@@ -20,7 +19,7 @@ use Unteist\Exception\SkipTestException;
 use Unteist\Exception\TestFailException;
 use Unteist\Filter\MethodsFilter;
 use Unteist\Meta\TestMeta;
-use Unteist\Processor\Controller\BeforeTestController;
+use Unteist\Processor\Controller\BaseController;
 use Unteist\Processor\Controller\TestController;
 use Unteist\Strategy\Context;
 use Unteist\TestCase;
@@ -62,14 +61,6 @@ class Runner
      */
     protected $logger;
     /**
-     * @var float
-     */
-    protected $started;
-    /**
-     * @var int
-     */
-    protected $asserts;
-    /**
      * @var \ArrayIterator[]
      */
     private $data_sets = [];
@@ -85,6 +76,10 @@ class Runner
      * @var \ReflectionClass
      */
     private $reflection_class;
+    /**
+     * @var BaseController
+     */
+    private $controller;
 
     /**
      * @param EventDispatcherInterface $dispatcher Global event dispatcher
@@ -124,6 +119,14 @@ class Runner
         }
 
         return $annotation;
+    }
+
+    /**
+     * @param BaseController $controller
+     */
+    public function setController(BaseController $controller)
+    {
+        $this->controller = $controller;
     }
 
     /**
@@ -167,14 +170,25 @@ class Runner
         $this->beforeCaseBehavior();
         foreach ($this->tests as $test) {
             try {
-                if ($this->runTest($test)) {
+                if ($this->controller->run($test)) {
                     $return_code = 1;
                 }
             } catch (SkipTestException $e) {
-                // Hack for reset execution time of skipped tests.
-                $this->started = microtime(true);
                 $event = new TestEvent($test->getMethod(), $this->test_case_event);
-                $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e, false);
+                $test->setStatus(TestMeta::TEST_SKIPPED);
+                $event->setStatus(TestMeta::TEST_SKIPPED);
+                $event->setDepends($test->getDependencies());
+                $event->setException($e);
+                $context = [
+                    'pid' => getmypid(),
+                    'test' => $test->getMethod(),
+                    'exception' => get_class($e),
+                    'message' => $e->getMessage(),
+                ];
+                $this->logger->debug('The test was skipped.', $context);
+                $this->dispatcher->dispatch(EventStorage::EV_TEST_SKIPPED, $event);
+                $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
+
                 $return_code = 1;
             } catch (TestFailException $e) {
                 $return_code = 1;
@@ -188,87 +202,6 @@ class Runner
     }
 
     /**
-     * Do all dirty job after test is finish.
-     *
-     * @param TestMeta $test Meta description of test
-     * @param TestEvent $event Test event
-     * @param int $status Test status
-     * @param \Exception $e
-     * @param bool $send_event Send After test event.
-     */
-    public function finish(TestMeta $test, TestEvent $event, $status, \Exception $e = null, $send_event = true)
-    {
-        $test->setStatus($status);
-        $event->setStatus($status);
-        $event->setDepends($test->getDependencies());
-        $event->setTime(floatval(microtime(true) - $this->started));
-        $event->setAsserts(Assert::getAssertsCount() - $this->asserts);
-        $this->asserts = Assert::getAssertsCount();
-        if ($status === TestMeta::TEST_DONE) {
-            $context = [];
-        } else {
-            $event->setException($e);
-            $context = [
-                'pid' => getmypid(),
-                'test' => $test->getMethod(),
-                'exception' => get_class($e),
-                'message' => $e->getMessage(),
-            ];
-        }
-        switch ($status) {
-            case TestMeta::TEST_DONE:
-                $this->dispatcher->dispatch(EventStorage::EV_TEST_SUCCESS, $event);
-                break;
-            case TestMeta::TEST_SKIPPED:
-                $this->logger->debug('The test was skipped.', $context);
-                $this->dispatcher->dispatch(EventStorage::EV_TEST_SKIPPED, $event);
-                break;
-            case TestMeta::TEST_FAILED:
-                $this->logger->debug('Assert fail.', $context);
-                $this->dispatcher->dispatch(EventStorage::EV_TEST_FAIL, $event);
-                break;
-            case TestMeta::TEST_INCOMPLETE:
-                $this->logger->debug('Test incomplete.', $context);
-                $this->dispatcher->dispatch(EventStorage::EV_TEST_INCOMPLETE, $event);
-                break;
-            default:
-                $this->logger->critical('Unexpected exception.', $context);
-                $this->dispatcher->dispatch(EventStorage::EV_TEST_ERROR, $event);
-        }
-        if ($send_event) {
-            $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
-            $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
-        }
-    }
-
-    /**
-     * Parse docBlock and gets Modifiers.
-     *
-     * @param \ReflectionMethod $method Parsed method
-     *
-     * @return array
-     */
-    protected function getModifiers(\ReflectionMethod $method)
-    {
-        return self::parseDocBlock(
-            $method->getDocComment(),
-            [
-                'beforeTest',
-                'afterTest',
-                'beforeCase',
-                'afterCase',
-                'group',
-                'depends',
-                'dataProvider',
-                'test',
-                'expectedException',
-                'expectedExceptionMessage',
-                'expectedExceptionCode',
-            ]
-        );
-    }
-
-    /**
      * Check specified depends and run test if necessary.
      *
      * @param TestMeta $test
@@ -277,7 +210,7 @@ class Runner
      * @throws SkipTestException
      * @throws \InvalidArgumentException If depends methods not found.
      */
-    protected function resolveDependencies(TestMeta $test)
+    public function resolveDependencies(TestMeta $test)
     {
         $depends = $test->getDependencies();
         if (empty($depend)) {
@@ -308,7 +241,7 @@ class Runner
             switch ($test->getStatus()) {
                 case TestMeta::TEST_NEW:
                     try {
-                        $this->runTest($test);
+                        $this->controller->run($test);
                     } catch (\Exception $e) {
                         throw new SkipTestException(
                             sprintf('Unresolved dependencies in %s::%s()', $this->reflection_class->getName(), $depend),
@@ -345,7 +278,7 @@ class Runner
      * @return array[]
      * @throws \InvalidArgumentException
      */
-    protected function getDataSet($method)
+    public function getDataSet($method)
     {
         if (empty($method)) {
             return [[]];
@@ -378,6 +311,33 @@ class Runner
 
         return $this->data_sets[$method];
 
+    }
+
+    /**
+     * Parse docBlock and gets Modifiers.
+     *
+     * @param \ReflectionMethod $method Parsed method
+     *
+     * @return array
+     */
+    protected function getModifiers(\ReflectionMethod $method)
+    {
+        return self::parseDocBlock(
+            $method->getDocComment(),
+            [
+                'beforeTest',
+                'afterTest',
+                'beforeCase',
+                'afterCase',
+                'group',
+                'depends',
+                'dataProvider',
+                'test',
+                'expectedException',
+                'expectedExceptionMessage',
+                'expectedExceptionCode',
+            ]
+        );
     }
 
     /**
@@ -488,15 +448,21 @@ class Runner
     private function beforeCaseBehavior()
     {
         try {
-            $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
             $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
+            $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
+            $this->setController(
+                new TestController(
+                    $this,
+                    $this->context,
+                    $this->logger,
+                    $this->precondition,
+                    $this->dispatcher,
+                    $this->test_case_event,
+                    $this->listeners
+                )
+            );
         } catch (\Exception $e) {
-            foreach ($this->tests as $test) {
-                if ($test->getStatus() === TestMeta::TEST_NEW || $test->getStatus() === TestMeta::TEST_MARKED) {
-                    $event = new TestEvent($test->getMethod(), $this->test_case_event);
-                    $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e);
-                }
-            }
+            $this->setController(new BaseController($this->dispatcher, $this->test_case_event, $this->listeners));
         }
     }
 
@@ -531,47 +497,5 @@ class Runner
             );
             $this->precondition->addListener($name, array($this->test_case, $listener));
         }
-    }
-
-    /**
-     * Run test method.
-     *
-     * @param TestMeta $test
-     *
-     * @return int Status code
-     * @throws \Exception If catch unexpected exception.
-     */
-    private function runTest(TestMeta $test)
-    {
-        $this->resolveDependencies($test);
-        if ($test->getStatus() !== TestMeta::TEST_NEW && $test->getStatus() != TestMeta::TEST_MARKED) {
-            return 0;
-        }
-        $status_code = 0;
-        $dataProvider = $this->getDataSet($test->getDataProvider());
-        foreach ($dataProvider as $dp_number => $data_set) {
-            $event = new TestEvent($test->getMethod(), $this->test_case_event);
-            if (count($dataProvider) > 1) {
-                $event->setDataSet($dp_number + 1);
-            }
-            $event->setDepends($test->getDependencies());
-            $controller = new BeforeTestController(
-                $this->context,
-                $this,
-                $event,
-                $this->dispatcher,
-                $this->precondition
-            );
-            $controller->run();
-            $this->started = microtime(true);
-            $this->asserts = Assert::getAssertsCount();
-            $controller = new TestController($this->context, $this, $event, $test, $data_set);
-            $code = $controller->run();
-            if ($code > 0) {
-                $status_code = $code;
-            }
-        }
-
-        return $status_code;
     }
 }
