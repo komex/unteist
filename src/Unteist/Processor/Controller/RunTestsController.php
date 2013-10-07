@@ -22,12 +22,12 @@ use Unteist\Processor\Runner;
 use Unteist\Strategy\Context;
 
 /**
- * Class TestController
+ * Class RunTestsController
  *
  * @package Unteist\Processor\Controller
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class TestController extends BaseController
+class RunTestsController extends SkipTestsController
 {
     /**
      * @var EventDispatcherInterface
@@ -191,7 +191,7 @@ class TestController extends BaseController
             $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
         } catch (\Exception $e) {
             $this->runner->setController(
-                new BaseController($this->dispatcher, $this->test_case_event, $this->listeners)
+                new SkipTestsController($this->dispatcher, $this->test_case_event, $this->listeners)
             );
         }
     }

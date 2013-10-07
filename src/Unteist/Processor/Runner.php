@@ -19,8 +19,8 @@ use Unteist\Exception\SkipTestException;
 use Unteist\Exception\TestFailException;
 use Unteist\Filter\MethodsFilter;
 use Unteist\Meta\TestMeta;
-use Unteist\Processor\Controller\BaseController;
-use Unteist\Processor\Controller\TestController;
+use Unteist\Processor\Controller\SkipTestsController;
+use Unteist\Processor\Controller\RunTestsController;
 use Unteist\Strategy\Context;
 use Unteist\TestCase;
 
@@ -77,7 +77,7 @@ class Runner
      */
     private $reflection_class;
     /**
-     * @var BaseController
+     * @var SkipTestsController
      */
     private $controller;
 
@@ -122,9 +122,9 @@ class Runner
     }
 
     /**
-     * @param BaseController $controller
+     * @param SkipTestsController $controller
      */
-    public function setController(BaseController $controller)
+    public function setController(SkipTestsController $controller)
     {
         $this->controller = $controller;
     }
@@ -439,7 +439,7 @@ class Runner
             $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
             $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
             $this->setController(
-                new TestController(
+                new RunTestsController(
                     $this,
                     $this->context,
                     $this->logger,
@@ -450,7 +450,7 @@ class Runner
                 )
             );
         } catch (\Exception $e) {
-            $this->setController(new BaseController($this->dispatcher, $this->test_case_event, $this->listeners));
+            $this->setController(new SkipTestsController($this->dispatcher, $this->test_case_event, $this->listeners));
         }
     }
 
