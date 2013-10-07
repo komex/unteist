@@ -19,7 +19,7 @@ use Unteist\Exception\SkipTestException;
 use Unteist\Exception\TestFailException;
 use Unteist\Filter\MethodsFilter;
 use Unteist\Meta\TestMeta;
-use Unteist\Processor\Controller\SkipTestsController;
+use Unteist\Processor\Controller\AbstractController;
 use Unteist\Processor\Controller\RunTestsController;
 use Unteist\Strategy\Context;
 use Unteist\TestCase;
@@ -77,7 +77,7 @@ class Runner
      */
     private $reflection_class;
     /**
-     * @var SkipTestsController
+     * @var AbstractController
      */
     private $controller;
 
@@ -122,10 +122,17 @@ class Runner
     }
 
     /**
-     * @param SkipTestsController $controller
+     * @param AbstractController $controller
      */
-    public function setController(SkipTestsController $controller)
+    public function setController(AbstractController $controller)
     {
+        $controller->setContext($this->context);
+        $controller->setDispatcher($this->dispatcher);
+        $controller->setListeners($this->listeners);
+        $controller->setLogger($this->logger);
+        $controller->setPrecondition($this->precondition);
+        $controller->setRunner($this);
+        $controller->setTestCaseEvent($this->test_case_event);
         $this->controller = $controller;
     }
 
@@ -166,11 +173,10 @@ class Runner
             return 1;
         }
         $return_code = 0;
-        $this->test_case_event = new TestCaseEvent($this->reflection_class->getName());
-        $this->beforeCaseBehavior();
+        $this->controller->beforeCase();
         foreach ($this->tests as $test) {
             try {
-                if ($this->controller->run($test)) {
+                if ($this->controller->test($test)) {
                     $return_code = 1;
                 }
             } catch (SkipTestException $e) {
@@ -241,7 +247,7 @@ class Runner
             switch ($test->getStatus()) {
                 case TestMeta::TEST_NEW:
                     try {
-                        $this->controller->run($test);
+                        $this->controller->test($test);
                     } catch (\Exception $e) {
                         throw new SkipTestException(
                             sprintf('Unresolved dependencies in %s::%s()', $this->reflection_class->getName(), $depend),
@@ -393,6 +399,8 @@ class Runner
     {
         $this->test_case = $test_case;
         $this->reflection_class = new \ReflectionClass($this->test_case);
+        $this->test_case_event = new TestCaseEvent($this->reflection_class->getName());
+        $this->setController(new RunTestsController());
         if ($test_case instanceof EventSubscriberInterface) {
             $this->listeners = $test_case->getSubscribedEvents();
             $this->dispatcher->addSubscriber($test_case);
@@ -428,32 +436,6 @@ class Runner
             $modifiers,
             $this->logger
         );
-    }
-
-    /**
-     * Control behavior on before case.
-     */
-    private function beforeCaseBehavior()
-    {
-        try {
-            $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
-            $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
-            $this->setController(
-                new RunTestsController(
-                    $this,
-                    $this->context,
-                    $this->logger,
-                    $this->precondition,
-                    $this->dispatcher,
-                    $this->test_case_event,
-                    $this->listeners
-                )
-            );
-        } catch (\Exception $e) {
-            $controller = new SkipTestsController($this->dispatcher, $this->test_case_event, $this->listeners);
-            $controller->setException($e);
-            $this->setController($controller);
-        }
     }
 
     /**

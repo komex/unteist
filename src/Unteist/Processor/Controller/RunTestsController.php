@@ -7,19 +7,14 @@
 
 namespace Unteist\Processor\Controller;
 
-use Psr\Log\LoggerInterface;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Assert\Assert;
 use Unteist\Event\EventStorage;
-use Unteist\Event\TestCaseEvent;
 use Unteist\Event\TestEvent;
 use Unteist\Exception\IncompleteTestException;
 use Unteist\Exception\SkipTestException;
 use Unteist\Exception\TestErrorException;
 use Unteist\Exception\TestFailException;
 use Unteist\Meta\TestMeta;
-use Unteist\Processor\Runner;
-use Unteist\Strategy\Context;
 
 /**
  * Class RunTestsController
@@ -27,16 +22,8 @@ use Unteist\Strategy\Context;
  * @package Unteist\Processor\Controller
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class RunTestsController extends SkipTestsController
+class RunTestsController extends AbstractController
 {
-    /**
-     * @var EventDispatcherInterface
-     */
-    protected $precondition;
-    /**
-     * @var Runner
-     */
-    protected $runner;
     /**
      * @var float
      */
@@ -45,39 +32,6 @@ class RunTestsController extends SkipTestsController
      * @var int
      */
     protected $asserts;
-    /**
-     * @var LoggerInterface
-     */
-    protected $logger;
-    /**
-     * @var Context
-     */
-    private $context;
-
-    /**
-     * @param Runner $runner
-     * @param Context $context
-     * @param LoggerInterface $logger
-     * @param EventDispatcherInterface $precondition
-     * @param EventDispatcherInterface $dispatcher
-     * @param TestCaseEvent $test_case_event
-     * @param array $listeners
-     */
-    public function __construct(
-        Runner $runner,
-        Context $context,
-        LoggerInterface $logger,
-        EventDispatcherInterface $precondition,
-        EventDispatcherInterface $dispatcher,
-        TestCaseEvent $test_case_event,
-        array $listeners
-    ) {
-        $this->context = $context;
-        $this->logger = $logger;
-        $this->precondition = $precondition;
-        $this->runner = $runner;
-        parent::__construct($dispatcher, $test_case_event, $listeners);
-    }
 
     /**
      * Run test.
@@ -86,7 +40,7 @@ class RunTestsController extends SkipTestsController
      *
      * @return int
      */
-    public function run(TestMeta $test)
+    public function test(TestMeta $test)
     {
         if ($test->getStatus() !== TestMeta::TEST_NEW && $test->getStatus() !== TestMeta::TEST_MARKED) {
             return 0;
@@ -101,8 +55,7 @@ class RunTestsController extends SkipTestsController
                 $event->setDataSet($dp_number + 1);
             }
             try {
-                $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $event);
-                $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $event);
+                $this->beforeTest($event);
             } catch (\Exception $e) {
                 $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e, false);
                 continue;
@@ -123,6 +76,28 @@ class RunTestsController extends SkipTestsController
     {
         $this->precondition->dispatch(EventStorage::EV_AFTER_CASE);
         parent::afterCase();
+    }
+
+    protected function beforeTest(TestEvent $event)
+    {
+        parent::beforeTest($event);
+        $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $event);
+    }
+
+    /**
+     * Test done. Generate EV_AFTER_TEST event.
+     *
+     * @param TestEvent $event
+     */
+    protected function afterTest(TestEvent $event)
+    {
+        try {
+            $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
+        } catch (\Exception $e) {
+            $controller = new SkipTestsController();
+            $controller->setException($e);
+            $this->runner->setController($controller);
+        }
     }
 
     /**
@@ -173,27 +148,10 @@ class RunTestsController extends SkipTestsController
                 $this->logger->critical('Unexpected exception.', $context);
                 $this->dispatcher->dispatch(EventStorage::EV_TEST_ERROR, $event);
         }
-        $this->afterTest($event, $send_event);
-    }
-
-    /**
-     * Test done. Generate EV_AFTER_TEST event.
-     *
-     * @param TestEvent $event
-     * @param bool $send_event
-     */
-    private function afterTest(TestEvent $event, $send_event)
-    {
-        try {
-            if ($send_event) {
-                $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
-            }
-            $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
-        } catch (\Exception $e) {
-            $controller = new SkipTestsController($this->dispatcher, $this->test_case_event, $this->listeners);
-            $controller->setException($e);
-            $this->runner->setController($controller);
+        if ($send_event) {
+            $this->afterTest($event);
         }
+        parent::afterTest($event);
     }
 
     /**
