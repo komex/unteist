@@ -208,6 +208,36 @@ class Runner
     }
 
     /**
+     * Get test method by name.
+     * If test does not exits in list, method tries to add it.
+     *
+     * @param string $method Method name
+     *
+     * @return TestMeta
+     * @throws \InvalidArgumentException If test method does not exists
+     */
+    public function getTestMethod($method)
+    {
+        if ($this->tests->offsetExists($method)) {
+            return $this->tests->offsetGet($method);
+        }
+        if ($this->reflection_class->hasMethod($method)) {
+            $reflection_method = $this->reflection_class->getMethod($method);
+            $modifiers = $this->getModifiers($reflection_method);
+            if ($this->isTest($reflection_method, $modifiers)) {
+                return $this->addTest($reflection_method, $modifiers);
+            }
+        }
+        throw new \InvalidArgumentException(
+            sprintf(
+                'The depends method "%s::%s()" does not exists or is not a test',
+                $this->reflection_class->getName(),
+                $method
+            )
+        );
+    }
+
+    /**
      * Check specified depends and run test if necessary.
      *
      * @param TestMeta $test
@@ -224,26 +254,7 @@ class Runner
         }
         $test->setStatus(TestMeta::TEST_MARKED);
         foreach ($depends as $depend) {
-            if (!$this->tests->offsetExists($depend)) {
-                if ($this->reflection_class->hasMethod($depend)) {
-                    $method = $this->reflection_class->getMethod($depend);
-                    $modifiers = $this->getModifiers($method);
-                    if ($this->isTest($method, $modifiers)) {
-                        $this->addTest($method, $modifiers);
-                    }
-
-                }
-            }
-            if (!$this->tests->offsetExists($depend)) {
-                throw new \InvalidArgumentException(
-                    sprintf(
-                        'The depends method "%s::%s()" does not exists or is not a test',
-                        $this->reflection_class->getName(),
-                        $depend
-                    )
-                );
-            }
-            $test = $this->tests[$depend];
+            $test = $this->getTestMethod($depend);
             switch ($test->getStatus()) {
                 case TestMeta::TEST_NEW:
                     try {
@@ -427,6 +438,8 @@ class Runner
     /**
      * @param \ReflectionMethod $method
      * @param array $modifiers
+     *
+     * @return TestMeta
      */
     private function addTest(\ReflectionMethod $method, array $modifiers)
     {
@@ -436,6 +449,8 @@ class Runner
             $modifiers,
             $this->logger
         );
+
+        return $this->tests[$method->getName()];
     }
 
     /**
