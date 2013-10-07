@@ -190,9 +190,9 @@ class RunTestsController extends SkipTestsController
             }
             $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
         } catch (\Exception $e) {
-            $this->runner->setController(
-                new SkipTestsController($this->dispatcher, $this->test_case_event, $this->listeners)
-            );
+            $controller = new SkipTestsController($this->dispatcher, $this->test_case_event, $this->listeners);
+            $controller->setException($e);
+            $this->runner->setController($controller);
         }
     }
 

@@ -33,6 +33,10 @@ class SkipTestsController
      * @var array
      */
     protected $listeners = [];
+    /**
+     * @var \Exception
+     */
+    private $exception;
 
     /**
      * @param EventDispatcherInterface $dispatcher
@@ -71,6 +75,14 @@ class SkipTestsController
     }
 
     /**
+     * @param \Exception $exception
+     */
+    public function setException(\Exception $exception)
+    {
+        $this->exception = $exception;
+    }
+
+    /**
      * Run test.
      *
      * @param TestMeta $test
@@ -81,6 +93,7 @@ class SkipTestsController
     {
         $test->setStatus(TestMeta::TEST_SKIPPED);
         $event = new TestEvent($test->getMethod(), $this->test_case_event);
+        $event->setException($this->exception);
         $event->setStatus(TestMeta::TEST_SKIPPED);
         $event->setDepends($test->getDependencies());
         $this->dispatcher->dispatch(EventStorage::EV_TEST_SKIPPED, $event);

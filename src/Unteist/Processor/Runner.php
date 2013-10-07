@@ -450,7 +450,9 @@ class Runner
                 )
             );
         } catch (\Exception $e) {
-            $this->setController(new SkipTestsController($this->dispatcher, $this->test_case_event, $this->listeners));
+            $controller = new SkipTestsController($this->dispatcher, $this->test_case_event, $this->listeners);
+            $controller->setException($e);
+            $this->setController($controller);
         }
     }
 
