@@ -196,7 +196,7 @@ class Runner
                 $return_code = 1;
             }
         }
-        $this->afterCaseBehavior();
+        $this->controller->afterCase();
 
         return $return_code;
     }
@@ -428,18 +428,6 @@ class Runner
             $modifiers,
             $this->logger
         );
-    }
-
-    /**
-     * Control behavior on after case.
-     */
-    private function afterCaseBehavior()
-    {
-        $this->precondition->dispatch(EventStorage::EV_AFTER_CASE);
-        $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, $this->test_case_event);
-        foreach ($this->listeners as $event => $listener) {
-            $this->dispatcher->removeListener($event, $listener);
-        }
     }
 
     /**

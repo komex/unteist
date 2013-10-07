@@ -173,10 +173,27 @@ class TestController extends BaseController
                 $this->logger->critical('Unexpected exception.', $context);
                 $this->dispatcher->dispatch(EventStorage::EV_TEST_ERROR, $event);
         }
-        if ($send_event) {
-            $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
+        $this->afterTest($event, $send_event);
+    }
+
+    /**
+     * Test done. Generate EV_AFTER_TEST event.
+     *
+     * @param TestEvent $event
+     * @param bool $send_event
+     */
+    private function afterTest(TestEvent $event, $send_event)
+    {
+        try {
+            if ($send_event) {
+                $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
+            }
+            $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
+        } catch (\Exception $e) {
+            $this->runner->setController(
+                new BaseController($this->dispatcher, $this->test_case_event, $this->listeners)
+            );
         }
-        $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
     }
 
     /**

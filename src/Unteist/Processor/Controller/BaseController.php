@@ -32,7 +32,7 @@ class BaseController
     /**
      * @var array
      */
-    private $listeners = [];
+    protected $listeners = [];
 
     /**
      * @param EventDispatcherInterface $dispatcher
