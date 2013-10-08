@@ -69,10 +69,6 @@ class Runner
      */
     private $data_sets = [];
     /**
-     * @var array
-     */
-    private $listeners = [];
-    /**
      * @var \ReflectionClass
      */
     private $reflection_class;
@@ -125,7 +121,6 @@ class Runner
      */
     public function setController(AbstractController $controller)
     {
-        $controller->setListeners($this->listeners);
         $controller->setPrecondition($this->precondition);
         $controller->setRunner($this);
         $controller->setTestCaseEvent($this->test_case_event);
@@ -407,8 +402,6 @@ class Runner
         $this->test_case_event = new TestCaseEvent($this->reflection_class->getName());
         $this->setController(new RunTestsController($this->container));
         if ($test_case instanceof EventSubscriberInterface) {
-            $this->listeners = $test_case->getSubscribedEvents();
-            $this->dispatcher->addSubscriber($test_case);
             $this->precondition->addSubscriber($test_case);
         }
         foreach ($this->reflection_class->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {

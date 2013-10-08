@@ -42,10 +42,6 @@ abstract class AbstractController
      * @var TestCaseEvent
      */
     protected $test_case_event;
-    /**
-     * @var array
-     */
-    protected $listeners = [];
 
     /**
      * @param ContainerBuilder $container
@@ -54,14 +50,6 @@ abstract class AbstractController
     {
         $this->container = $container;
         $this->dispatcher = $container->get('dispatcher');
-    }
-
-    /**
-     * @param array $listeners
-     */
-    public function setListeners(array $listeners)
-    {
-        $this->listeners = $listeners;
     }
 
     /**
@@ -118,9 +106,6 @@ abstract class AbstractController
     public function afterCase()
     {
         $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, $this->test_case_event);
-        foreach ($this->listeners as $event => $listener) {
-            $this->dispatcher->removeListener($event, $listener);
-        }
     }
 
     /**
