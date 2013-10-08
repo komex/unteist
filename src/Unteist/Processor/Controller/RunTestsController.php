@@ -7,6 +7,7 @@
 
 namespace Unteist\Processor\Controller;
 
+use Psr\Log\LoggerInterface;
 use Unteist\Assert\Assert;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestEvent;
@@ -15,6 +16,7 @@ use Unteist\Exception\SkipTestException;
 use Unteist\Exception\TestErrorException;
 use Unteist\Exception\TestFailException;
 use Unteist\Meta\TestMeta;
+use Unteist\Strategy\Context;
 
 /**
  * Class RunTestsController
@@ -24,6 +26,10 @@ use Unteist\Meta\TestMeta;
  */
 class RunTestsController extends AbstractController
 {
+    /**
+     * @var Context
+     */
+    protected $context;
     /**
      * @var float
      */
@@ -48,6 +54,7 @@ class RunTestsController extends AbstractController
         $this->runner->resolveDependencies($test);
         $dataProvider = $this->runner->getDataSet($test->getDataProvider());
         $status_code = 0;
+        $this->context = $this->container->get('context');
         foreach ($dataProvider as $dp_number => $data_set) {
             $event = new TestEvent($test->getMethod(), $this->test_case_event);
             $event->setDepends($test->getDependencies());
@@ -94,7 +101,7 @@ class RunTestsController extends AbstractController
         try {
             $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
         } catch (\Exception $e) {
-            $controller = new SkipTestsController();
+            $controller = new SkipTestsController($this->container);
             $controller->setException($e);
             $this->runner->setController($controller);
         }
@@ -128,24 +135,26 @@ class RunTestsController extends AbstractController
                 'message' => $e->getMessage(),
             ];
         }
+        /** @var LoggerInterface $logger */
+        $logger = $this->container->get('logger');
         switch ($status) {
             case TestMeta::TEST_DONE:
                 $this->dispatcher->dispatch(EventStorage::EV_TEST_SUCCESS, $event);
                 break;
             case TestMeta::TEST_SKIPPED:
-                $this->logger->debug('The test was skipped.', $context);
+                $logger->debug('The test was skipped.', $context);
                 $this->dispatcher->dispatch(EventStorage::EV_TEST_SKIPPED, $event);
                 break;
             case TestMeta::TEST_FAILED:
-                $this->logger->debug('Assert fail.', $context);
+                $logger->debug('Assert fail.', $context);
                 $this->dispatcher->dispatch(EventStorage::EV_TEST_FAIL, $event);
                 break;
             case TestMeta::TEST_INCOMPLETE:
-                $this->logger->debug('Test incomplete.', $context);
+                $logger->debug('Test incomplete.', $context);
                 $this->dispatcher->dispatch(EventStorage::EV_TEST_INCOMPLETE, $event);
                 break;
             default:
-                $this->logger->critical('Unexpected exception.', $context);
+                $logger->critical('Unexpected exception.', $context);
                 $this->dispatcher->dispatch(EventStorage::EV_TEST_ERROR, $event);
         }
         if ($send_event) {

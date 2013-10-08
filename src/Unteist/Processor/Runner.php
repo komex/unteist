@@ -22,7 +22,6 @@ use Unteist\Filter\MethodsFilter;
 use Unteist\Meta\TestMeta;
 use Unteist\Processor\Controller\AbstractController;
 use Unteist\Processor\Controller\RunTestsController;
-use Unteist\Strategy\Context;
 use Unteist\TestCase;
 
 /**
@@ -126,12 +125,7 @@ class Runner
      */
     public function setController(AbstractController $controller)
     {
-        /** @var Context $context */
-        $context = $this->container->get('context');
-        $controller->setContext($context);
-        $controller->setDispatcher($this->dispatcher);
         $controller->setListeners($this->listeners);
-        $controller->setLogger($this->logger);
         $controller->setPrecondition($this->precondition);
         $controller->setRunner($this);
         $controller->setTestCaseEvent($this->test_case_event);
@@ -411,7 +405,7 @@ class Runner
         $this->test_case = $test_case;
         $this->reflection_class = new \ReflectionClass($this->test_case);
         $this->test_case_event = new TestCaseEvent($this->reflection_class->getName());
-        $this->setController(new RunTestsController());
+        $this->setController(new RunTestsController($this->container));
         if ($test_case instanceof EventSubscriberInterface) {
             $this->listeners = $test_case->getSubscribedEvents();
             $this->dispatcher->addSubscriber($test_case);

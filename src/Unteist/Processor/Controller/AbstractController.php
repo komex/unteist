@@ -7,14 +7,13 @@
 
 namespace Unteist\Processor\Controller;
 
-use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
 use Unteist\Event\TestEvent;
 use Unteist\Meta\TestMeta;
 use Unteist\Processor\Runner;
-use Unteist\Strategy\Context;
 
 /**
  * Class AbstractController
@@ -28,6 +27,10 @@ abstract class AbstractController
      */
     protected $runner;
     /**
+     * @var ContainerBuilder
+     */
+    protected $container;
+    /**
      * @var EventDispatcherInterface
      */
     protected $dispatcher;
@@ -40,32 +43,17 @@ abstract class AbstractController
      */
     protected $test_case_event;
     /**
-     * @var Context
-     */
-    protected $context;
-    /**
-     * @var LoggerInterface
-     */
-    protected $logger;
-    /**
      * @var array
      */
     protected $listeners = [];
 
     /**
-     * @param Context $context
+     * @param ContainerBuilder $container
      */
-    public function setContext(Context $context)
+    public function __construct(ContainerBuilder $container)
     {
-        $this->context = $context;
-    }
-
-    /**
-     * @param EventDispatcherInterface $dispatcher
-     */
-    public function setDispatcher(EventDispatcherInterface $dispatcher)
-    {
-        $this->dispatcher = $dispatcher;
+        $this->container = $container;
+        $this->dispatcher = $container->get('dispatcher');
     }
 
     /**
@@ -74,14 +62,6 @@ abstract class AbstractController
     public function setListeners(array $listeners)
     {
         $this->listeners = $listeners;
-    }
-
-    /**
-     * @param LoggerInterface $logger
-     */
-    public function setLogger(LoggerInterface $logger)
-    {
-        $this->logger = $logger;
     }
 
     /**
@@ -117,7 +97,7 @@ abstract class AbstractController
             $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
             $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
         } catch (\Exception $e) {
-            $controller = new SkipTestsController();
+            $controller = new SkipTestsController($this->container);
             $controller->setException($e);
             $this->runner->setController($controller);
         }
