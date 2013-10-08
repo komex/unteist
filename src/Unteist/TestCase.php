@@ -8,6 +8,7 @@
 namespace Unteist;
 
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Exception\IncompleteTestException;
 use Unteist\Exception\SkipTestException;
 use Unteist\Exception\TestFailException;
@@ -28,6 +29,10 @@ class TestCase
      * @var ContainerBuilder
      */
     private $config;
+    /**
+     * @var EventDispatcherInterface
+     */
+    private $dispatcher;
     /**
      * @var \ArrayObject
      */
@@ -105,6 +110,7 @@ class TestCase
     public function setConfig(ContainerBuilder $config)
     {
         $this->config = $config;
+        $this->dispatcher = $config->get('dispatcher');
     }
 
     /**
