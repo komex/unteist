@@ -35,8 +35,13 @@ class GroupMethodsFilter implements MethodsFilterInterface
             return true;
         } else {
             $annotation = Runner::parseDocBlock($method->getDocComment(), ['group']);
+            if (empty($annotation['group'])) {
+                return false;
+            } else {
+                $annotation['group'] = preg_split('/[\s,]+/', $annotation['group'], -1, PREG_SPLIT_NO_EMPTY);
 
-            return (!empty($annotation['group']) && in_array($annotation['group'], $this->groups));
+                return count(array_intersect($annotation['group'], $this->groups)) > 0;
+            }
         }
     }
 

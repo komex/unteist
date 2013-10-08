@@ -110,7 +110,7 @@ class Runner
         if (empty($doc)) {
             $annotation = [];
         } else {
-            $pattern = sprintf('{\*\s*@(%s)\b(?:\s+([\w\s\\\\]+))?[\r\n]*(?!\*)}', join('|', $keywords));
+            $pattern = sprintf('{\*\s*@(%s)\b(?:\s+([\w\s\\\\,]+))?[\r\n]*(?!\*)}', join('|', $keywords));
             preg_match_all($pattern, $doc, $matches, PREG_SET_ORDER);
             $annotation = [];
             foreach ($matches as $match) {
