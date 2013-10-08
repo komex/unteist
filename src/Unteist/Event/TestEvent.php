@@ -8,7 +8,6 @@
 namespace Unteist\Event;
 
 use Symfony\Component\EventDispatcher\Event;
-use Unteist\Assert\Assert;
 use Unteist\Meta\TestMeta;
 
 /**
@@ -42,11 +41,11 @@ class TestEvent extends Event
     /**
      * @var int
      */
-    protected $asserts;
+    protected $asserts = 0;
     /**
      * @var double
      */
-    protected $time;
+    protected $time = 0;
     /**
      * @var string
      */
