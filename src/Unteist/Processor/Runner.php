@@ -301,13 +301,12 @@ class Runner
             return [[]];
         }
         if (empty($this->data_sets[$method])) {
-            if (!method_exists($this->test_case, $method)) {
+            if (!$this->reflection_class->hasMethod($method)) {
                 throw new \InvalidArgumentException(
                     sprintf('DataProvider "%s::%s()" does not exists.', $this->reflection_class->getName(), $method)
                 );
             }
-            $data_set_method = new \ReflectionMethod($this->test_case, $method);
-            $data_set = $data_set_method->invoke($this->test_case);
+            $data_set = $this->reflection_class->getMethod($method)->invoke($this->test_case);
             //@todo: Обработка пустых data_set
             if (is_array($data_set)) {
                 $this->data_sets[$method] = new \ArrayIterator($data_set);
@@ -322,9 +321,8 @@ class Runner
                     )
                 );
             }
-        } else {
-            $this->data_sets[$method]->rewind();
         }
+        $this->data_sets[$method]->rewind();
 
         return $this->data_sets[$method];
 
@@ -443,14 +441,15 @@ class Runner
      */
     private function addTest(\ReflectionMethod $method, array $modifiers)
     {
-        $this->tests[$method->getName()] = new TestMeta(
+        $method_name = $method->getName();
+        $this->tests[$method_name] = new TestMeta(
             $this->reflection_class->getName(),
-            $method->getName(),
+            $method_name,
             $modifiers,
             $this->logger
         );
 
-        return $this->tests[$method->getName()];
+        return $this->tests[$method_name];
     }
 
     /**
