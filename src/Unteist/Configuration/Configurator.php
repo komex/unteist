@@ -7,13 +7,13 @@
 
 namespace Unteist\Configuration;
 
-use Monolog\Handler\HandlerInterface;
-use Monolog\Logger;
 use Symfony\Component\Config\Definition\Processor as DefinitionProcessor;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
+use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Finder\Finder;
@@ -23,8 +23,6 @@ use Unteist\Filter\ClassFilterInterface;
 use Unteist\Filter\MethodsFilterInterface;
 use Unteist\Processor\MultiProcessor;
 use Unteist\Processor\Processor;
-use Unteist\Strategy\Context;
-use Unteist\Strategy\StrategyInterface;
 
 /**
  * Class Configurator
@@ -103,20 +101,18 @@ class Configurator
         if (empty($this->config)) {
             $this->processConfiguration();
         }
+        $this->configureLogger();
+        $this->configureContext();
         if ($this->config['processes'] === 1) {
             $processor = new Processor(
                 $this->dispatcher,
                 $this->container,
-                $this->getLogger(),
-                $this->getContext(),
                 $this->getSuite()
             );
         } else {
             $processor = new MultiProcessor(
                 $this->dispatcher,
                 $this->container,
-                $this->getLogger(),
-                $this->getContext(),
                 $this->getSuite()
             );
             $processor->setProcesses($this->config['processes']);
@@ -282,48 +278,47 @@ class Configurator
     /**
      * Get configured logger.
      *
-     * @return Logger
+     * @return Definition
      */
-    private function getLogger()
+    private function configureLogger()
     {
-        /** @var Logger $logger */
-        $logger = $this->container->get('logger');
+        $definition = $this->container->getDefinition('logger');
         if ($this->config['logger']['enabled']) {
+            $handlers = [];
             foreach ($this->config['logger']['handlers'] as $service) {
-                /** @var HandlerInterface $handler */
-                $handler = $this->container->get($service);
-                $logger->pushHandler($handler);
+                array_push($handlers, $service);
             }
         } else {
-            /** @var HandlerInterface $handler */
-            $handler = $this->container->get('logger.handler.null');
-            $logger->pushHandler($handler);
+            $handlers = ['logger.handler.null'];
         }
 
-        return $logger;
+        foreach ($handlers as $handler) {
+            $definition->addMethodCall('pushHandler', [new Reference($handler)]);
+        }
+
+        return $definition;
     }
 
     /**
      * Get configured context.
      *
-     * @return Context
+     * @return Definition
      */
-    private function getContext()
+    private function configureContext()
     {
-        /** @var StrategyInterface $error */
-        $error = $this->container->get($this->config['context']['error']);
-        /** @var StrategyInterface $failure */
-        $failure = $this->container->get($this->config['context']['failure']);
-        /** @var StrategyInterface $incomplete */
-        $incomplete = $this->container->get($this->config['context']['incomplete']);
-        $context = new Context($error, $failure, $incomplete);
+        $definition = $this->container->getDefinition('context');
+        $definition->setArguments(
+            [
+                new Reference($this->config['context']['error']),
+                new Reference($this->config['context']['failure']),
+                new Reference($this->config['context']['incomplete'])
+            ]
+        );
         foreach ($this->config['context']['associations'] as $class => $strategy_id) {
-            /** @var StrategyInterface $strategy */
-            $strategy = $this->container->get($strategy_id);
-            $context->associateException($class, $strategy);
+            $definition->addMethodCall('associateException', [$class, new Reference($strategy_id)]);
         }
 
-        return $context;
+        return $definition;
     }
 
     /**

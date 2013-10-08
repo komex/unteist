@@ -8,6 +8,7 @@
 namespace Unteist\Processor;
 
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -61,13 +62,13 @@ class Runner
      */
     protected $logger;
     /**
+     * @var ContainerBuilder
+     */
+    protected $container;
+    /**
      * @var \ArrayIterator[]
      */
     private $data_sets = [];
-    /**
-     * @var Context
-     */
-    private $context;
     /**
      * @var array
      */
@@ -83,17 +84,18 @@ class Runner
 
     /**
      * @param EventDispatcherInterface $dispatcher Global event dispatcher
-     * @param LoggerInterface $logger
-     * @param Context $context
+     * @param ContainerBuilder $container
      *
      * @return Runner
      */
-    public function __construct(EventDispatcherInterface $dispatcher, LoggerInterface $logger, Context $context)
-    {
+    public function __construct(
+        EventDispatcherInterface $dispatcher,
+        ContainerBuilder $container
+    ) {
+        $this->container = $container;
         $this->dispatcher = $dispatcher;
-        $this->logger = $logger;
+        $this->logger = $this->container->get('logger');
         $this->precondition = new EventDispatcher();
-        $this->context = $context;
         $this->tests = new \ArrayObject();
     }
 
@@ -126,7 +128,9 @@ class Runner
      */
     public function setController(AbstractController $controller)
     {
-        $controller->setContext($this->context);
+        /** @var Context $context */
+        $context = $this->container->get('context');
+        $controller->setContext($context);
         $controller->setDispatcher($this->dispatcher);
         $controller->setListeners($this->listeners);
         $controller->setLogger($this->logger);

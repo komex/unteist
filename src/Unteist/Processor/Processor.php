@@ -15,7 +15,6 @@ use Unteist\Exception\FilterException;
 use Unteist\Exception\TestErrorException;
 use Unteist\Filter\ClassFilterInterface;
 use Unteist\Filter\MethodsFilterInterface;
-use Unteist\Strategy\Context;
 use Unteist\TestCase;
 
 /**
@@ -63,10 +62,6 @@ class Processor
      */
     protected $globals = [];
     /**
-     * @var Context
-     */
-    protected $context;
-    /**
      * @var int
      */
     protected $error_types;
@@ -76,21 +71,16 @@ class Processor
      *
      * @param EventDispatcherInterface $dispatcher
      * @param ContainerBuilder $container
-     * @param LoggerInterface $logger
-     * @param Context $context
      * @param \ArrayObject $suites
      */
     public function __construct(
         EventDispatcherInterface $dispatcher,
         ContainerBuilder $container,
-        LoggerInterface $logger,
-        Context $context,
         \ArrayObject $suites
     ) {
-        $this->dispatcher = $dispatcher;
-        $this->logger = $logger;
         $this->container = $container;
-        $this->context = $context;
+        $this->dispatcher = $dispatcher;
+        $this->logger = $this->container->get('logger');
         $this->suites = $suites;
         $this->global_storage = new \ArrayObject();
     }
@@ -221,7 +211,7 @@ class Processor
         $case->setGlobalStorage($this->global_storage);
         $case->setConfig($this->container);
         $case->setDispatcher($this->dispatcher);
-        $runner = new Runner($this->dispatcher, $this->logger, $this->context);
+        $runner = new Runner($this->dispatcher, $this->container);
         $runner->setFilters($this->methods_filters);
 
         return $runner->run($case);
