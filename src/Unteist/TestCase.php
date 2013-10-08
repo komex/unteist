@@ -26,13 +26,13 @@ class TestCase
      */
     protected $local_storage;
     /**
+     * @var EventDispatcherInterface
+     */
+    protected $dispatcher;
+    /**
      * @var ContainerBuilder
      */
     private $config;
-    /**
-     * @var EventDispatcherInterface
-     */
-    private $dispatcher;
     /**
      * @var \ArrayObject
      */
