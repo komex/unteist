@@ -15,7 +15,6 @@ use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Finder\Finder;
 use Unteist\Console\Formatter;
 use Unteist\Event\Connector;
@@ -49,10 +48,6 @@ class Configurator
      */
     private $config = [];
     /**
-     * @var EventDispatcherInterface
-     */
-    private $dispatcher;
-    /**
      * @var array
      */
     private $configs = [];
@@ -61,18 +56,15 @@ class Configurator
      * Prepare configuration loader.
      *
      * @param ContainerBuilder $container
-     * @param EventDispatcherInterface $dispatcher
      * @param InputInterface $input
      * @param Formatter $formatter
      */
     public function __construct(
         ContainerBuilder $container,
-        EventDispatcherInterface $dispatcher,
         InputInterface $input,
         Formatter $formatter
     ) {
         $this->container = $container;
-        $this->dispatcher = $dispatcher;
         $this->input = $input;
         $this->formatter = $formatter;
 
@@ -101,17 +93,17 @@ class Configurator
         if (empty($this->config)) {
             $this->processConfiguration();
         }
+        $this->registerReporter();
+        $this->registerListeners($this->config['listeners']);
         $this->configureLogger();
         $this->configureContext();
         if ($this->config['processes'] === 1) {
             $processor = new Processor(
-                $this->dispatcher,
                 $this->container,
                 $this->getSuite()
             );
         } else {
             $processor = new MultiProcessor(
-                $this->dispatcher,
                 $this->container,
                 $this->getSuite()
             );
@@ -119,8 +111,6 @@ class Configurator
             $processor->setConnector($this->getConnector());
         }
         $processor->setErrorTypes($this->config['context']['levels']);
-        $this->registerReporter();
-        $this->registerListeners();
 
         if (!empty($this->config['groups'])) {
             array_unshift($this->config['filters']['methods'], 'filter.methods.group');
@@ -333,8 +323,10 @@ class Configurator
         } else {
             $proxy_events = [];
         }
+        /** @var EventDispatcherInterface $dispatcher */
+        $dispatcher = $this->container->get('dispatcher');
 
-        return new Connector($this->dispatcher, $proxy_events);
+        return new Connector($dispatcher, $proxy_events);
     }
 
     /**
@@ -344,21 +336,20 @@ class Configurator
     {
         if ($this->config['report_dir'] !== null) {
             $this->container->setParameter('report.dir', $this->config['report_dir']);
-            /** @var EventSubscriberInterface $listener */
-            $listener = $this->container->get('reporter');
-            $this->dispatcher->addSubscriber($listener);
+            $this->registerListeners(['reporter']);
         }
     }
 
     /**
      * Register custom event listeners.
+     *
+     * @param array $listeners
      */
-    private function registerListeners()
+    private function registerListeners(array $listeners)
     {
-        foreach ($this->config['listeners'] as $service) {
-            /** @var EventSubscriberInterface $listener */
-            $listener = $this->container->get($service);
-            $this->dispatcher->addSubscriber($listener);
+        $definition = $this->container->getDefinition('dispatcher');
+        foreach ($listeners as $service) {
+            $definition->addMethodCall('addSubscriber', [new Reference($service)]);
         }
     }
 

@@ -29,3 +29,5 @@ services:
         class: \Unteist\Filter\GroupMethodsFilter
     context:
         class: \Unteist\Strategy\Context
+    dispatcher:
+        class: \Symfony\Component\EventDispatcher\EventDispatcher

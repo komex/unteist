@@ -69,17 +69,15 @@ class Processor
     /**
      * Create general processor.
      *
-     * @param EventDispatcherInterface $dispatcher
      * @param ContainerBuilder $container
      * @param \ArrayObject $suites
      */
     public function __construct(
-        EventDispatcherInterface $dispatcher,
         ContainerBuilder $container,
         \ArrayObject $suites
     ) {
         $this->container = $container;
-        $this->dispatcher = $dispatcher;
+        $this->dispatcher = $this->container->get('dispatcher');
         $this->logger = $this->container->get('logger');
         $this->suites = $suites;
         $this->global_storage = new \ArrayObject();
@@ -157,7 +155,9 @@ class Processor
     public function run()
     {
         set_error_handler([$this, 'errorHandler'], $this->error_types);
-        $this->dispatcher->dispatch(EventStorage::EV_APP_STARTED);
+        /** @var EventDispatcherInterface $dispatcher */
+        $dispatcher = $this->container->get('dispatcher');
+        $dispatcher->dispatch(EventStorage::EV_APP_STARTED);
         $this->logger->info('Run TestCases in single process.', ['pid' => getmypid()]);
         $this->backupGlobals();
         foreach ($this->suites as $suite) {
@@ -167,7 +167,7 @@ class Processor
             $this->restoreGlobals();
         }
         $this->logger->info('All tests done.', ['pid' => getmypid(), 'exit_code' => $this->exit_code]);
-        $this->dispatcher->dispatch(EventStorage::EV_APP_FINISHED);
+        $dispatcher->dispatch(EventStorage::EV_APP_FINISHED);
 
         return $this->exit_code;
     }
@@ -195,7 +195,9 @@ class Processor
             return $this->runCase($class);
         } catch (FilterException $e) {
             $this->logger->notice('File was filtered', ['pid' => getmypid(), 'filter' => $e]);
-            $this->dispatcher->dispatch(EventStorage::EV_CASE_FILTERED);
+            /** @var EventDispatcherInterface $dispatcher */
+            $dispatcher = $this->container->get('dispatcher');
+            $dispatcher->dispatch(EventStorage::EV_CASE_FILTERED);
 
             return 1;
         }
@@ -210,8 +212,7 @@ class Processor
     {
         $case->setGlobalStorage($this->global_storage);
         $case->setConfig($this->container);
-        $case->setDispatcher($this->dispatcher);
-        $runner = new Runner($this->dispatcher, $this->container);
+        $runner = new Runner($this->container);
         $runner->setFilters($this->methods_filters);
 
         return $runner->run($case);

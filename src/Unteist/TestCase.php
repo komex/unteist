@@ -8,7 +8,6 @@
 namespace Unteist;
 
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Exception\IncompleteTestException;
 use Unteist\Exception\SkipTestException;
 use Unteist\Exception\TestFailException;
@@ -25,10 +24,6 @@ class TestCase
      * @var \ArrayObject
      */
     protected $local_storage;
-    /**
-     * @var EventDispatcherInterface
-     */
-    protected $dispatcher;
     /**
      * @var ContainerBuilder
      */
@@ -80,14 +75,6 @@ class TestCase
     public static function skip($message = '')
     {
         throw new SkipTestException($message);
-    }
-
-    /**
-     * @param EventDispatcherInterface $dispatcher
-     */
-    public function setDispatcher(EventDispatcherInterface $dispatcher)
-    {
-        $this->dispatcher = $dispatcher;
     }
 
     /**

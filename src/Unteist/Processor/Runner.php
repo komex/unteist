@@ -83,17 +83,15 @@ class Runner
     private $controller;
 
     /**
-     * @param EventDispatcherInterface $dispatcher Global event dispatcher
      * @param ContainerBuilder $container
      *
      * @return Runner
      */
     public function __construct(
-        EventDispatcherInterface $dispatcher,
         ContainerBuilder $container
     ) {
         $this->container = $container;
-        $this->dispatcher = $dispatcher;
+        $this->dispatcher = $container->get('dispatcher');
         $this->logger = $this->container->get('logger');
         $this->precondition = new EventDispatcher();
         $this->tests = new \ArrayObject();

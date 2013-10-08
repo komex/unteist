@@ -39,10 +39,6 @@ use Unteist\Report\Statistics\StatisticsProcessor;
 class Launcher extends Command
 {
     /**
-     * @var EventDispatcherInterface
-     */
-    protected $dispatcher;
-    /**
      * @var ContainerBuilder
      */
     protected $container;
@@ -65,7 +61,6 @@ class Launcher extends Command
     public function __construct()
     {
         $this->statistics = new StatisticsProcessor();
-        $this->dispatcher = new EventDispatcher();
         $this->container = new ContainerBuilder();
         parent::__construct();
     }
@@ -135,7 +130,7 @@ class Launcher extends Command
         // Formatter
         $this->formatter = new Formatter($output, $progress);
         // Configurator
-        $configurator = new Configurator($this->container, $this->dispatcher, $input, $this->formatter);
+        $configurator = new Configurator($this->container, $input, $this->formatter);
         $this->loadConfig($configurator);
         $this->overwriteParams($input);
         $configurator->loadBootstrap();
@@ -144,7 +139,9 @@ class Launcher extends Command
         // Global variables
         $this->started = microtime(true);
         // Register listeners
-        $this->registerListeners($this->dispatcher);
+        /** @var EventDispatcherInterface $dispatcher */
+        $dispatcher = $this->container->get('dispatcher');
+        $this->registerListeners($dispatcher);
         // Run tests
         $status = $processor->run();
         $configurator->loadCleanUp();
