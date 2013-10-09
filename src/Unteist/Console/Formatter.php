@@ -71,6 +71,7 @@ class Formatter
         $this->progress->finish();
         $this->output->writeln(sprintf('Time: <comment>%F</comment> seconds.', $time));
         $this->output->writeln('');
+        $this->printStatistics($statistics);
         if (count($statistics['fail']) > 0 || count($statistics['incomplete']) > 0) {
             $this->fail($statistics);
         } else {
@@ -83,28 +84,8 @@ class Formatter
      *
      * @param StatisticsProcessor $statistics
      */
-    protected function fail(StatisticsProcessor $statistics)
+    private function fail(StatisticsProcessor $statistics)
     {
-        $skipped_count = count($statistics['skipped']);
-        $incomplete_count = count($statistics['incomplete']);
-        $fail_count = count($statistics['fail']);
-        if ($skipped_count > 0) {
-            $style = new OutputFormatterStyle('black', 'yellow');
-            $this->output->getFormatter()->setStyle('skipped', $style);
-            $this->testOutput('Skipped tests:', 'skipped', $statistics['skipped']);
-            $this->output->writeln('');
-        }
-        if ($incomplete_count > 0) {
-            $style = new OutputFormatterStyle('white', 'blue');
-            $this->output->getFormatter()->setStyle('incomplete', $style);
-            $this->testOutput('Incomplete tests:', 'incomplete', $statistics['incomplete']);
-            $this->output->writeln('');
-        }
-        if ($fail_count > 0) {
-            $this->testOutput('Failed tests:', 'error', $statistics['fail']);
-            $this->output->writeln('');
-        }
-
         $this->output->writeln(
             sprintf(
                 '<error>FAILURES! A total of %d sets of tests with %d assertions have been processed</error>',
@@ -116,9 +97,9 @@ class Formatter
             sprintf(
                 '<error>Success: %d, Skipped: %d, Incomplete: %d, Failures: %d</error>',
                 $statistics['success'],
-                $skipped_count,
-                $incomplete_count,
-                $fail_count
+                count($statistics['skipped']),
+                count($statistics['incomplete']),
+                count($statistics['fail'])
             )
         );
     }
@@ -130,7 +111,7 @@ class Formatter
      * @param string $tag Tag name for color output
      * @param StatisticsProcessor|TestEvent[] $tests
      */
-    protected function testOutput($title, $tag, StatisticsProcessor $tests)
+    private function testOutput($title, $tag, StatisticsProcessor $tests)
     {
         $this->output->writeln($title);
         foreach ($tests as $i => $test) {
@@ -157,7 +138,7 @@ class Formatter
      *
      * @param StatisticsProcessor $statistics
      */
-    protected function success(StatisticsProcessor $statistics)
+    private function success(StatisticsProcessor $statistics)
     {
         $style = new OutputFormatterStyle('black', 'green');
         $this->output->getFormatter()->setStyle('success', $style);
@@ -170,5 +151,30 @@ class Formatter
                 $statistics->getCount()
             )
         );
+    }
+
+    /**
+     * Print tests statistics.
+     *
+     * @param StatisticsProcessor $statistics
+     */
+    private function printStatistics(StatisticsProcessor $statistics)
+    {
+        $skipped_count = count($statistics['skipped']);
+        $incomplete_count = count($statistics['incomplete']);
+        $fail_count = count($statistics['fail']);
+        if ($skipped_count > 0) {
+            $style = new OutputFormatterStyle('black', 'yellow');
+            $this->output->getFormatter()->setStyle('skipped', $style);
+            $this->testOutput('Skipped tests:', 'skipped', $statistics['skipped']);
+        }
+        if ($incomplete_count > 0) {
+            $style = new OutputFormatterStyle('white', 'blue');
+            $this->output->getFormatter()->setStyle('incomplete', $style);
+            $this->testOutput('Incomplete tests:', 'incomplete', $statistics['incomplete']);
+        }
+        if ($fail_count > 0) {
+            $this->testOutput('Failed tests:', 'error', $statistics['fail']);
+        }
     }
 }
