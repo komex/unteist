@@ -17,9 +17,21 @@ use Symfony\Component\EventDispatcher\Event;
  */
 class MethodEvent extends Event
 {
+    /**
+     * Method was finished with success status.
+     */
     const METHOD_OK = 1;
+    /**
+     * Method was failed.
+     */
     const METHOD_FAILED = 2;
+    /**
+     * Method was skipped.
+     */
     const METHOD_SKIPPED = 3;
+    /**
+     * Method was incomplete.
+     */
     const METHOD_INCOMPLETE = 4;
     /**
      * @var string
@@ -71,14 +83,10 @@ class MethodEvent extends Event
     private $trace = [];
 
     /**
-     * @param string $class
-     * @param string $method
      * @param int $status
      */
-    public function __construct($class, $method, $status)
+    public function __construct($status)
     {
-        $this->class = $class;
-        $this->method = $method;
         $this->status = intval($status, 10);
     }
 
@@ -163,6 +171,14 @@ class MethodEvent extends Event
     }
 
     /**
+     * @param string $class
+     */
+    public function setClass($class)
+    {
+        $this->class = $class;
+    }
+
+    /**
      * @return string
      */
     public function getException()
@@ -171,9 +187,11 @@ class MethodEvent extends Event
     }
 
     /**
+     * Parse exception and set class, method and exception information.
+     *
      * @param \Exception $exception
      */
-    public function setException(\Exception $exception)
+    public function parseException(\Exception $exception)
     {
         while ($exception->getPrevious() !== null) {
             $exception = $exception->getPrevious();
@@ -248,6 +266,14 @@ class MethodEvent extends Event
     public function getMethod()
     {
         return $this->method;
+    }
+
+    /**
+     * @param string $method
+     */
+    public function setMethod($method)
+    {
+        $this->method = $method;
     }
 
     /**

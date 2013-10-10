@@ -13,8 +13,8 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Unteist\Event\EventStorage;
+use Unteist\Event\MethodEvent;
 use Unteist\Event\TestCaseEvent;
-use Unteist\Event\TestEvent;
 use Unteist\Exception\IncompleteTestException;
 use Unteist\Exception\SkipTestException;
 use Unteist\Exception\TestFailException;
@@ -171,11 +171,10 @@ class Runner
                     $return_code = 1;
                 }
             } catch (SkipTestException $e) {
-                $event = new TestEvent($test->getMethod(), $this->test_case_event);
                 $test->setStatus(TestMeta::TEST_SKIPPED);
-                $event->setStatus(TestMeta::TEST_SKIPPED);
+                $event = new MethodEvent(MethodEvent::METHOD_SKIPPED);
+                $event->parseException($e);
                 $event->setDepends($test->getDependencies());
-                $event->setException($e);
                 $context = [
                     'pid' => getmypid(),
                     'test' => $test->getMethod(),
@@ -183,7 +182,7 @@ class Runner
                     'message' => $e->getMessage(),
                 ];
                 $this->logger->debug('The test was skipped.', $context);
-                $this->dispatcher->dispatch(EventStorage::EV_TEST_SKIPPED, $event);
+                $this->dispatcher->dispatch(EventStorage::EV_METHOD_FINISH, $event);
                 $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
 
                 $return_code = 1;
