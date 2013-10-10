@@ -12,7 +12,6 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Event\EventStorage;
 use Unteist\Event\MethodEvent;
 use Unteist\Event\TestCaseEvent;
-use Unteist\Event\TestEvent;
 use Unteist\Meta\TestMeta;
 use Unteist\Processor\Runner;
 
@@ -115,7 +114,7 @@ abstract class AbstractController
     /**
      * Before test.
      */
-    protected function beforeTest(TestEvent $event)
+    protected function beforeTest(MethodEvent $event)
     {
         $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $event);
     }
@@ -123,7 +122,7 @@ abstract class AbstractController
     /**
      * Test done.
      */
-    protected function afterTest(TestEvent $event)
+    protected function afterTest(MethodEvent $event)
     {
         $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
     }
