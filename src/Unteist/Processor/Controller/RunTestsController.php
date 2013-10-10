@@ -109,7 +109,6 @@ class RunTestsController extends AbstractController
             $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
         } catch (\Exception $e) {
             $controller = new SkipTestsController($this->container);
-            $controller->setException($e);
             $this->runner->setController($controller);
         }
     }

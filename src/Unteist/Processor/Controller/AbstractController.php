@@ -90,7 +90,6 @@ abstract class AbstractController
             $event->parseException($e);
             $this->dispatcher->dispatch(EventStorage::EV_METHOD_FINISH, $event);
             $controller = new SkipTestsController($this->container);
-            $controller->setException($e);
             $this->runner->setController($controller);
         }
     }

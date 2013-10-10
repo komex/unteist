@@ -283,4 +283,44 @@ class MethodEvent extends Event
     {
         $this->status = intval($status, 10);
     }
+
+    /**
+     * Is test success?
+     *
+     * @return bool
+     */
+    public function isSuccess()
+    {
+        return $this->status == self::METHOD_OK;
+    }
+
+    /**
+     * Is test skipped.
+     *
+     * @return bool
+     */
+    public function isSkipped()
+    {
+        return $this->status == self::METHOD_SKIPPED;
+    }
+
+    /**
+     * Is test failed?
+     *
+     * @return bool
+     */
+    public function isFailed()
+    {
+        return $this->status == self::METHOD_FAILED;
+    }
+
+    /**
+     * Is test incomplete?
+     *
+     * @return bool
+     */
+    public function isIncomplete()
+    {
+        return $this->status == self::METHOD_INCOMPLETE;
+    }
 }

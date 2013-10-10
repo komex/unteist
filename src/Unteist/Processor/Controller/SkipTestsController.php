@@ -20,19 +20,6 @@ use Unteist\Meta\TestMeta;
 class SkipTestsController extends AbstractController
 {
     /**
-     * @var \Exception
-     */
-    private $exception;
-
-    /**
-     * @param \Exception $exception
-     */
-    public function setException(\Exception $exception)
-    {
-        $this->exception = $exception;
-    }
-
-    /**
      * Run test.
      *
      * @param TestMeta $test
@@ -46,11 +33,8 @@ class SkipTestsController extends AbstractController
         $event->setClass($test->getClass());
         $event->setMethod($test->getMethod());
         $this->beforeTest($event);
-
         $event->setStatus(MethodEvent::METHOD_SKIPPED);
         $event->setDepends($test->getDependencies());
-        $event->parseException($this->exception);
-
         $this->dispatcher->dispatch(EventStorage::EV_METHOD_FINISH, $event);
         $this->afterTest($event);
 
