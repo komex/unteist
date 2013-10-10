@@ -10,6 +10,7 @@ namespace Unteist\Processor\Controller;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Event\EventStorage;
+use Unteist\Event\MethodEvent;
 use Unteist\Event\TestCaseEvent;
 use Unteist\Event\TestEvent;
 use Unteist\Meta\TestMeta;
@@ -85,6 +86,9 @@ abstract class AbstractController
             $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
             $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
         } catch (\Exception $e) {
+            $event = new MethodEvent(TestMeta::TEST_FAILED);
+            $event->parseException($e);
+            $this->dispatcher->dispatch(EventStorage::EV_METHOD_FINISH, $event);
             $controller = new SkipTestsController($this->container);
             $controller->setException($e);
             $this->runner->setController($controller);
