@@ -44,7 +44,7 @@ class MethodEvent extends Event
     /**
      * @var int
      */
-    private $status = 0;
+    private $status = self::METHOD_OK;
     /**
      * @var int
      */
@@ -81,14 +81,6 @@ class MethodEvent extends Event
      * @var array
      */
     private $trace = [];
-
-    /**
-     * @param int $status
-     */
-    public function __construct($status)
-    {
-        $this->status = intval($status, 10);
-    }
 
     /**
      * Get test's data set number.
@@ -282,5 +274,13 @@ class MethodEvent extends Event
     public function getStatus()
     {
         return $this->status;
+    }
+
+    /**
+     * @param int $status
+     */
+    public function setStatus($status)
+    {
+        $this->status = intval($status, 10);
     }
 }

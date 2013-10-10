@@ -172,7 +172,8 @@ class Runner
                 }
             } catch (SkipTestException $e) {
                 $test->setStatus(TestMeta::TEST_SKIPPED);
-                $event = new MethodEvent(MethodEvent::METHOD_SKIPPED);
+                $event = new MethodEvent();
+                $event->setStatus(MethodEvent::METHOD_SKIPPED);
                 $event->parseException($e);
                 $event->setDepends($test->getDependencies());
                 $context = [
