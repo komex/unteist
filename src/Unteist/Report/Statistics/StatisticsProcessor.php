@@ -7,9 +7,8 @@
 
 namespace Unteist\Report\Statistics;
 
+use Unteist\Event\MethodEvent;
 use Unteist\Event\TestCaseEvent;
-use Unteist\Event\TestEvent;
-use Unteist\Meta\TestMeta;
 
 /**
  * Class Processor
@@ -20,7 +19,7 @@ use Unteist\Meta\TestMeta;
 class StatisticsProcessor implements \Iterator, \Countable, \ArrayAccess
 {
     /**
-     * @var TestEvent[]
+     * @var MethodEvent[]
      */
     protected $events = [];
     /**
@@ -232,9 +231,9 @@ class StatisticsProcessor implements \Iterator, \Countable, \ArrayAccess
     /**
      * Add test event to storage.
      *
-     * @param TestEvent $event
+     * @param MethodEvent $event
      */
-    private function addTestEvent(TestEvent $event)
+    private function addTestEvent(MethodEvent $event)
     {
         array_push($this->events, $event);
     }
@@ -257,20 +256,20 @@ class StatisticsProcessor implements \Iterator, \Countable, \ArrayAccess
             $this->cache['asserts'] += $event->getAsserts();
             $this->cache['time'] += $event->getTime();
             switch ($event->getStatus()) {
-                case TestMeta::TEST_DONE:
+                case MethodEvent::METHOD_OK:
                     $this->cache['success']++;
                     break;
-                case TestMeta::TEST_SKIPPED:
+                case MethodEvent::METHOD_SKIPPED:
                     /** @var self $stat */
                     $stat = $this->cache['skipped'];
                     $stat->addTestEvent($event);
                     break;
-                case TestMeta::TEST_FAILED:
+                case MethodEvent::METHOD_FAILED:
                     /** @var self $stat */
                     $stat = $this->cache['fail'];
                     $stat->addTestEvent($event);
                     break;
-                case TestMeta::TEST_INCOMPLETE:
+                case MethodEvent::METHOD_INCOMPLETE:
                     /** @var self $stat */
                     $stat = $this->cache['incomplete'];
                     $stat->addTestEvent($event);
