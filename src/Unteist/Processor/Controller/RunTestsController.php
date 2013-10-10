@@ -156,8 +156,26 @@ class RunTestsController extends AbstractController
         ];
         /** @var LoggerInterface $logger */
         $logger = $this->container->get('logger');
-        $logger->debug('The test was skipped.', $context);
-        $this->dispatcher->dispatch(EventStorage::EV_METHOD_FINISH, $event);
+        switch ($status) {
+            case MethodEvent::METHOD_OK:
+                $this->dispatcher->dispatch(EventStorage::EV_METHOD_DONE, $event);
+                break;
+            case MethodEvent::METHOD_SKIPPED:
+                $logger->debug('The test was skipped.', $context);
+                $this->dispatcher->dispatch(EventStorage::EV_METHOD_SKIPPED, $event);
+                break;
+            case MethodEvent::METHOD_FAILED:
+                $logger->debug('Assert fail.', $context);
+                $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, $event);
+                break;
+            case MethodEvent::METHOD_INCOMPLETE:
+                $logger->debug('Test incomplete.', $context);
+                $this->dispatcher->dispatch(EventStorage::EV_METHOD_INCOMPLETE, $event);
+                break;
+            default:
+                $logger->critical('Unexpected exception.', $context);
+                $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, $event);
+        }
         if ($send_event) {
             $this->afterTest($event);
         }
@@ -196,7 +214,7 @@ class RunTestsController extends AbstractController
     {
         try {
             $status_code = $this->behavior($test, $data_set);
-            $this->dispatcher->dispatch(EventStorage::EV_METHOD_FINISH, $event);
+            $this->dispatcher->dispatch(EventStorage::EV_METHOD_DONE, $event);
             $this->afterTest($event);
             parent::afterTest($event);
         } catch (TestFailException $e) {

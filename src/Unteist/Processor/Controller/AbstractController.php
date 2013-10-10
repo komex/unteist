@@ -88,7 +88,7 @@ abstract class AbstractController
             $event = new MethodEvent();
             $event->setStatus(MethodEvent::METHOD_FAILED);
             $event->parseException($e);
-            $this->dispatcher->dispatch(EventStorage::EV_METHOD_FINISH, $event);
+            $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, $event);
             $controller = new SkipTestsController($this->container);
             $this->runner->setController($controller);
         }

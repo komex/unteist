@@ -183,7 +183,7 @@ class Runner
                     'message' => $e->getMessage(),
                 ];
                 $this->logger->debug('The test was skipped.', $context);
-                $this->dispatcher->dispatch(EventStorage::EV_METHOD_FINISH, $event);
+                $this->dispatcher->dispatch(EventStorage::EV_METHOD_SKIPPED, $event);
                 $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
 
                 $return_code = 1;

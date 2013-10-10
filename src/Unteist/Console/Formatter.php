@@ -75,16 +75,34 @@ class Formatter implements EventSubscriberInterface
     public static function getSubscribedEvents()
     {
         return [
-            EventStorage::EV_METHOD_FINISH => 'method',
+            EventStorage::EV_METHOD_DONE => 'methodDone',
+            EventStorage::EV_METHOD_FAILED => 'methodFailed',
+            EventStorage::EV_METHOD_SKIPPED => 'methodSkipped',
+            EventStorage::EV_METHOD_INCOMPLETE => 'methodIncomplete',
             EventStorage::EV_CASE_FILTERED => 'advance',
             EventStorage::EV_AFTER_CASE => 'afterCase',
             EventStorage::EV_APP_FINISHED => 'finish',
         ];
     }
 
-    public function method(MethodEvent $event)
+    public function methodDone(MethodEvent $event)
     {
+        var_dump(sprintf('Done %s::%s()', $event->getClass(), $event->getMethod()));
+    }
 
+    public function methodFailed(MethodEvent $event)
+    {
+        var_dump(sprintf('Failed %s::%s()', $event->getClass(), $event->getMethod()));
+    }
+
+    public function methodSkipped(MethodEvent $event)
+    {
+        var_dump(sprintf('Skipped %s::%s()', $event->getClass(), $event->getMethod()));
+    }
+
+    public function methodIncomplete(MethodEvent $event)
+    {
+        var_dump(sprintf('Incomplete %s::%s()', $event->getClass(), $event->getMethod()));
     }
 
     /**
