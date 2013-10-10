@@ -22,13 +22,9 @@ use Symfony\Component\DependencyInjection\Loader\IniFileLoader;
 use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
 use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
-use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Configuration\Configurator;
 use Unteist\Configuration\Extension;
-use Unteist\Event\EventStorage;
-use Unteist\Event\TestCaseEvent;
-use Unteist\Report\Statistics\StatisticsProcessor;
 
 /**
  * Class Launcher
@@ -42,53 +38,14 @@ class Launcher extends Command
      * @var ContainerBuilder
      */
     protected $container;
-    /**
-     * @var float
-     */
-    private $started;
-    /**
-     * @var StatisticsProcessor
-     */
-    private $statistics;
-    /**
-     * @var Formatter
-     */
-    private $formatter;
 
     /**
      * Configure Launcher
      */
     public function __construct()
     {
-        $this->statistics = new StatisticsProcessor();
         $this->container = new ContainerBuilder();
         parent::__construct();
-    }
-
-    /**
-     * Listener on TestCase finish.
-     */
-    public function afterCase(TestCaseEvent $event)
-    {
-        $this->incProgress();
-        $this->statistics->addTestCaseEvent($event);
-    }
-
-    /**
-     * Increase progress bar.
-     */
-    public function incProgress()
-    {
-        $this->formatter->advance();
-    }
-
-    /**
-     * Listener on application finish.
-     */
-    public function finish()
-    {
-        $time = (microtime(true) - $this->started);
-        $this->formatter->finish($time, $this->statistics);
     }
 
     /**
@@ -128,20 +85,18 @@ class Launcher extends Command
         /** @var ProgressHelper $progress */
         $progress = $this->getHelperSet()->get('progress');
         // Formatter
-        $this->formatter = new Formatter($output, $progress);
+        $formatter = new Formatter($output, $progress);
         // Configurator
-        $configurator = new Configurator($this->container, $input, $this->formatter);
+        $configurator = new Configurator($this->container, $input, $formatter);
         $this->loadConfig($configurator);
         $this->overwriteParams($input);
         $configurator->loadBootstrap();
         // Processor
         $processor = $configurator->getProcessor();
-        // Global variables
-        $this->started = microtime(true);
         // Register listeners
         /** @var EventDispatcherInterface $dispatcher */
         $dispatcher = $this->container->get('dispatcher');
-        $this->registerListeners($dispatcher);
+        $dispatcher->addSubscriber($formatter);
         // Run tests
         $status = $processor->run();
         $configurator->loadCleanUp();
@@ -201,17 +156,5 @@ class Launcher extends Command
                 $this->container->setParameter($name, $value);
             }
         }
-    }
-
-    /**
-     * Register all listeners for getting statistics.
-     *
-     * @param EventDispatcherInterface $dispatcher General dispatcher
-     */
-    private function registerListeners(EventDispatcherInterface $dispatcher)
-    {
-        $dispatcher->addListener(EventStorage::EV_AFTER_CASE, [$this, 'afterCase']);
-        $dispatcher->addListener(EventStorage::EV_APP_FINISHED, [$this, 'finish']);
-        $dispatcher->addListener(EventStorage::EV_CASE_FILTERED, [$this, 'incProgress']);
     }
 }
