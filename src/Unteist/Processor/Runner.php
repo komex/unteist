@@ -240,7 +240,7 @@ class Runner
     public function resolveDependencies(TestMeta $test)
     {
         $depends = $test->getDependencies();
-        if (empty($depend)) {
+        if (empty($depends)) {
             return;
         }
         $test->setStatus(TestMeta::TEST_MARKED);
