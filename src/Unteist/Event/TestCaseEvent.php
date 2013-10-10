@@ -8,7 +8,6 @@
 namespace Unteist\Event;
 
 use Symfony\Component\EventDispatcher\Event;
-use Unteist\Meta\TestMeta;
 
 /**
  * Class TestCaseEvent
@@ -23,7 +22,7 @@ class TestCaseEvent extends Event
      */
     protected $class;
     /**
-     * @var TestEvent[]
+     * @var MethodEvent[]
      */
     protected $test_events = [];
 
@@ -48,7 +47,7 @@ class TestCaseEvent extends Event
     /**
      * Get test's events.
      *
-     * @return TestEvent[]
+     * @return MethodEvent[]
      */
     public function getTestEvents()
     {
@@ -58,9 +57,9 @@ class TestCaseEvent extends Event
     /**
      * Add a new event to TestCase.
      *
-     * @param TestEvent $event
+     * @param MethodEvent $event
      */
-    public function addTestEvent(TestEvent $event)
+    public function addTestEvent(MethodEvent $event)
     {
         array_push($this->test_events, $event);
     }
