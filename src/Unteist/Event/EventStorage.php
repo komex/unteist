@@ -32,25 +32,9 @@ final class EventStorage
      */
     const EV_BEFORE_TEST = 'test.before';
     /**
-     * Calls after each success test.
+     * Calls after each called method.
      */
-    const EV_TEST_SUCCESS = 'test.success';
-    /**
-     * Calls after each skipped test.
-     */
-    const EV_TEST_SKIPPED = 'test.skipped';
-    /**
-     * Calls after each fail test.
-     */
-    const EV_TEST_FAIL = 'test.fail';
-    /**
-     * Calls after each test with error.
-     */
-    const EV_TEST_ERROR = 'test.error';
-    /**
-     * Calls after each incomplete test.
-     */
-    const EV_TEST_INCOMPLETE = 'test.incomplete';
+    const EV_METHOD_FINISH = 'method.finish';
     /**
      * Calls after each test in TestCase.
      */
