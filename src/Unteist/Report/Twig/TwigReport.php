@@ -10,8 +10,9 @@ namespace Unteist\Report\Twig;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Unteist\Event\EventStorage;
+use Unteist\Event\MethodEvent;
 use Unteist\Event\TestCaseEvent;
-use Unteist\Report\Statistics\StatisticsProcessor;
+use Unteist\Report\Statistics\ClassStatistics;
 
 /**
  * Class TwigReport
@@ -34,13 +35,13 @@ class TwigReport implements EventSubscriberInterface
      */
     protected $fs;
     /**
-     * @var StatisticsProcessor
+     * @var ClassStatistics
      */
     protected $statistics;
     /**
-     * @var \ArrayObject
+     * @var \ArrayObject[]
      */
-    protected $storage;
+    protected $storage = [];
 
     /**
      * Configure report generator.
@@ -55,15 +56,14 @@ class TwigReport implements EventSubscriberInterface
         $this->twig = new \Twig_Environment($loader);
         $this->twig->addFunction(new \Twig_SimpleFunction('explode', 'explode'));
         $this->twig->addFunction(new \Twig_SimpleFunction('levelUp', [$this, 'levelUp']));
-        $this->twig->addFunction(new \Twig_SimpleFunction('testPercent', [$this, 'getTestPercent']));
+        $this->twig->addFunction(new \Twig_SimpleFunction('getTestPercent', [$this, 'getTestPercent']));
         $this->twig->addFilter(new \Twig_SimpleFilter('getPathByNamespace', [$this, 'getPathByNamespace']));
         $this->fs = new Filesystem();
         if (!$this->fs->exists($report_dir)) {
             $this->fs->mkdir($report_dir);
         }
         $this->output_dir = realpath($report_dir);
-        $this->statistics = new StatisticsProcessor();
-        $this->storage = new \ArrayObject();
+        $this->statistics = new ClassStatistics();
     }
 
     /**
@@ -89,9 +89,59 @@ class TwigReport implements EventSubscriberInterface
     public static function getSubscribedEvents()
     {
         return [
+            EventStorage::EV_METHOD_DONE => 'methodFinish',
+            EventStorage::EV_METHOD_FAILED => 'methodFinish',
+            EventStorage::EV_METHOD_SKIPPED => 'methodFinish',
+            EventStorage::EV_METHOD_INCOMPLETE => 'methodFinish',
             EventStorage::EV_AFTER_CASE => 'onAfterTestCase',
             EventStorage::EV_APP_FINISHED => 'onAppFinished',
         ];
+    }
+
+    /**
+     * Attach method information to storage.
+     *
+     * @param MethodEvent $event
+     */
+    public function methodFinish(MethodEvent $event)
+    {
+        if (empty($this->storage[$event->getClass()])) {
+            $this->storage[$event->getClass()] = new \ArrayObject();
+        }
+        $this->storage[$event->getClass()]->append($event);
+    }
+
+    /**
+     * Generate TestCase report.
+     *
+     * @param TestCaseEvent $event TestCase information
+     */
+    public function onAfterTestCase(TestCaseEvent $event)
+    {
+        $methods = $this->storage[$event->getClass()];
+        $statistics = new ClassStatistics();
+        $statistics->addEvents($methods);
+        $this->statistics->addEvents($methods);
+        $this->statistics->addStatistics($event, $statistics);
+        $content = $this->twig->render(
+            'case.html.twig',
+            ['case' => $methods, 'event' => $event, 'statistics' => $statistics]
+        );
+        $path = $this->getPathByNamespace($event->getClass(), true);
+        $this->fs->mkdir($path);
+        file_put_contents($path . DIRECTORY_SEPARATOR . 'index.html', $content);
+    }
+
+    /**
+     * Generate report index file.
+     */
+    public function onAppFinished()
+    {
+        $content = $this->twig->render(
+            'index.html.twig',
+            ['statistics' => $this->statistics]
+        );
+        file_put_contents($this->output_dir . DIRECTORY_SEPARATOR . 'index.html', $content);
     }
 
     /**
@@ -129,56 +179,19 @@ class TwigReport implements EventSubscriberInterface
     }
 
     /**
-     * Get percenf of specified status type.
+     * Count percents.
      *
-     * @param StatisticsProcessor $statistics
-     * @param string $type Status type
+     * @param int $count
+     * @param int $total
      *
      * @return float
      */
-    public function getTestPercent(StatisticsProcessor $statistics, $type)
+    public function getTestPercent($count, $total)
     {
-        $count = count($statistics);
-        if ($count === 0 || !isset($statistics[$type])) {
+        if ($total === 0) {
             return 0;
         } else {
-            $stat = $statistics[$type];
-            if ($stat instanceof StatisticsProcessor) {
-                $stat = count($stat);
-            }
-
-            return (($stat / $count) * 100);
+            return (($count / $total) * 100);
         }
-    }
-
-    /**
-     * Generate report index file.
-     */
-    public function onAppFinished()
-    {
-        $content = $this->twig->render(
-            'index.html.twig',
-            ['storage' => $this->storage, 'statistics' => $this->statistics]
-        );
-        file_put_contents($this->output_dir . DIRECTORY_SEPARATOR . 'index.html', $content);
-    }
-
-    /**
-     * Generate TestCase report.
-     *
-     * @param TestCaseEvent $event TestCase information
-     */
-    public function onAfterTestCase(TestCaseEvent $event)
-    {
-        $statistics = new StatisticsProcessor($event);
-        $this->statistics->addTestCaseEvent($event);
-        $this->storage[$event->getClass()] = $statistics;
-        $content = $this->twig->render(
-            'case.html.twig',
-            ['case' => $statistics, 'class' => $event->getClass()]
-        );
-        $path = $this->getPathByNamespace($event->getClass(), true);
-        $this->fs->mkdir($path);
-        file_put_contents($path . DIRECTORY_SEPARATOR . 'index.html', $content);
     }
 }

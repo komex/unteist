@@ -21,10 +21,6 @@ class TestCaseEvent extends Event
      * @var string
      */
     protected $class;
-    /**
-     * @var MethodEvent[]
-     */
-    protected $test_events = [];
 
     /**
      * @param string $class Test case class
@@ -42,25 +38,5 @@ class TestCaseEvent extends Event
     public function getClass()
     {
         return $this->class;
-    }
-
-    /**
-     * Get test's events.
-     *
-     * @return MethodEvent[]
-     */
-    public function getTestEvents()
-    {
-        return $this->test_events;
-    }
-
-    /**
-     * Add a new event to TestCase.
-     *
-     * @param MethodEvent $event
-     */
-    public function addTestEvent(MethodEvent $event)
-    {
-        array_push($this->test_events, $event);
     }
 }

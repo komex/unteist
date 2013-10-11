@@ -2,7 +2,7 @@
 
 {% import "macros.html.twig" as macros %}
 
-{% block title %}{{ class }} &minus; {{ parent() }}{% endblock %}
+{% block title %}{{ event.class }} &minus; {{ parent() }}{% endblock %}
 
 {% block javascript %}
     <script type="text/javascript">
@@ -23,11 +23,11 @@
 
 {% block content %}
     <ul class="breadcrumb">
-        <li><a href="{{ levelUp(class) }}index.html">Report</a> <span class="divider">/</span></li>
-        {{ macros.breadcrumb(class) }}
+        <li><a href="{{ levelUp(event.class) }}index.html">Report</a> <span class="divider">/</span></li>
+        {{ macros.breadcrumb(event.class) }}
     </ul>
-    {{ macros.total(case) }}
-    {{ macros.progress(case) }}
+    {{ macros.total(statistics) }}
+    {{ macros.progress(statistics) }}
     <table class="table table-bordered">
         <thead>
         <tr>
@@ -39,26 +39,26 @@
         </tr>
         </thead>
         <tbody>
-        {% for test in case %}
-            <tr class="{{ macros.test_style(test) }}">
+        {% for method in case %}
+            <tr class="{{ macros.style(method) }}">
                 <td>{{ loop.index }}</td>
                 <td>
-                    {% if test.isSuccess() %}
-                        {{ test.method }}
+                    {% if method.isSuccess() or method.isSkipped() %}
+                        {{ method.method }}
                     {% else %}
-                        <a href="#" class="test-method">{{ test.method }}</a>
+                        <a href="#" class="test-method">{{ method.method }}</a>
                     {% endif %}
-                    {% if test.getDataSet() > 0 %}
-                        with data set #{{ test.getDataSet() }}
+                    {% if method.getDataSet() > 0 %}
+                        with data set #{{ method.getDataSet() }}
                     {% endif %}
                 </td>
-                <td>{{ test.asserts }}</td>
-                <td>{{ test.time|number_format(4) }} sec.</td>
-                <td>{{ macros.depends(test.depends) }}</td>
+                <td>{{ method.asserts }}</td>
+                <td>{{ method.time|number_format(4) }} sec.</td>
+                <td>{{ macros.depends(method.depends) }}</td>
             </tr>
-            {% if not test.isSuccess() %}
-                <tr class="additional-info {{ macros.test_style(test) }}">
-                    <td colspan="5"><i>{{ test.getExceptionMessage()|nl2br }}</i></td>
+            {% if not method.isSuccess() %}
+                <tr class="additional-info {{ macros.style(method) }}">
+                    <td colspan="5"><i>{{ method.getExceptionMessage()|nl2br }}</i></td>
                 </tr>
             {% endif %}
         {% endfor %}
@@ -67,9 +67,9 @@
         </tr>
         <tr>
             <td></td>
-            <td><b>Total</b></td>
-            <td>{{ case.asserts }}</td>
-            <td>{{ case.time|number_format(4) }} sec.</td>
+            <td><b>Total</b> ({{ statistics|length }})</td>
+            <td>{{ statistics.asserts }}</td>
+            <td>{{ statistics.time|number_format(4) }} sec.</td>
             <td></td>
         </tr>
         </tbody>
