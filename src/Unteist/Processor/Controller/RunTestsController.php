@@ -108,8 +108,7 @@ class RunTestsController extends AbstractController
         try {
             $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
         } catch (\Exception $e) {
-            $controller = new SkipTestsController($this->container);
-            $this->runner->setController($controller);
+            $this->switchController($e);
         }
     }
 
@@ -142,7 +141,6 @@ class RunTestsController extends AbstractController
 
     private function finish(TestMeta $test, MethodEvent $event, $status, \Exception $e, $send_event = true)
     {
-        $test->setStatus($status);
         $event->parseException($e);
         $event->setStatus($status);
         $event->setTime(floatval(microtime(true) - $this->started));
@@ -158,21 +156,26 @@ class RunTestsController extends AbstractController
         $logger = $this->container->get('logger');
         switch ($status) {
             case MethodEvent::METHOD_OK:
+                $test->setStatus(TestMeta::TEST_DONE);
                 $this->dispatcher->dispatch(EventStorage::EV_METHOD_DONE, $event);
                 break;
             case MethodEvent::METHOD_SKIPPED:
+                $test->setStatus(TestMeta::TEST_SKIPPED);
                 $logger->debug('The test was skipped.', $context);
                 $this->dispatcher->dispatch(EventStorage::EV_METHOD_SKIPPED, $event);
                 break;
             case MethodEvent::METHOD_FAILED:
+                $test->setStatus(TestMeta::TEST_FAILED);
                 $logger->debug('Assert fail.', $context);
                 $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, $event);
                 break;
             case MethodEvent::METHOD_INCOMPLETE:
+                $test->setStatus(TestMeta::TEST_INCOMPLETE);
                 $logger->debug('Test incomplete.', $context);
                 $this->dispatcher->dispatch(EventStorage::EV_METHOD_INCOMPLETE, $event);
                 break;
             default:
+                $test->setStatus(TestMeta::TEST_FAILED);
                 $logger->critical('Unexpected exception.', $context);
                 $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, $event);
         }

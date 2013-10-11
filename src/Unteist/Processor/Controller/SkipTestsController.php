@@ -20,6 +20,19 @@ use Unteist\Meta\TestMeta;
 class SkipTestsController extends AbstractController
 {
     /**
+     * @var string
+     */
+    private $depends;
+
+    /**
+     * @param string $depends
+     */
+    public function setDepends($depends)
+    {
+        $this->depends = $depends;
+    }
+
+    /**
      * Run test.
      *
      * @param TestMeta $test
@@ -34,7 +47,11 @@ class SkipTestsController extends AbstractController
         $event->setMethod($test->getMethod());
         $this->beforeTest($event);
         $event->setStatus(MethodEvent::METHOD_SKIPPED);
-        $event->setDepends($test->getDependencies());
+        $depends = $test->getDependencies();
+        if ($this->depends !== null) {
+            array_unshift($depends, $this->depends);
+        }
+        $event->setDepends($depends);
         $this->dispatcher->dispatch(EventStorage::EV_METHOD_SKIPPED, $event);
         $this->afterTest($event);
 

@@ -85,12 +85,7 @@ abstract class AbstractController
             $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
             $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
         } catch (\Exception $e) {
-            $event = new MethodEvent();
-            $event->setStatus(MethodEvent::METHOD_FAILED);
-            $event->parseException($e);
-            $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, $event);
-            $controller = new SkipTestsController($this->container);
-            $this->runner->setController($controller);
+            $this->switchController($e);
         }
     }
 
@@ -109,6 +104,22 @@ abstract class AbstractController
     public function afterCase()
     {
         $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, $this->test_case_event);
+    }
+
+    /**
+     * Switch controller to SkipTestsController.
+     *
+     * @param \Exception $e
+     */
+    protected function switchController(\Exception $e)
+    {
+        $event = new MethodEvent();
+        $event->setStatus(MethodEvent::METHOD_FAILED);
+        $event->parseException($e);
+        $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, $event);
+        $controller = new SkipTestsController($this->container);
+        $controller->setDepends($event->getMethod());
+        $this->runner->setController($controller);
     }
 
     /**
