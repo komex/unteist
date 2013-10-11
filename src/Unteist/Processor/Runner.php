@@ -13,7 +13,6 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Unteist\Event\EventStorage;
-use Unteist\Event\MethodEvent;
 use Unteist\Event\TestCaseEvent;
 use Unteist\Exception\IncompleteTestException;
 use Unteist\Exception\SkipTestException;
@@ -22,6 +21,7 @@ use Unteist\Filter\MethodsFilter;
 use Unteist\Meta\TestMeta;
 use Unteist\Processor\Controller\AbstractController;
 use Unteist\Processor\Controller\RunTestsController;
+use Unteist\Processor\Controller\SkipTestsController;
 use Unteist\TestCase;
 
 /**
@@ -48,10 +48,6 @@ class Runner
      * @var \Unteist\Filter\MethodsFilterInterface[]
      */
     protected $filters = [];
-    /**
-     * @var EventDispatcherInterface
-     */
-    protected $dispatcher;
     /**
      * @var EventDispatcher
      */
@@ -86,7 +82,6 @@ class Runner
         ContainerBuilder $container
     ) {
         $this->container = $container;
-        $this->dispatcher = $container->get('dispatcher');
         $this->logger = $this->container->get('logger');
         $this->precondition = new EventDispatcher();
         $this->tests = new \ArrayObject();
@@ -159,7 +154,9 @@ class Runner
         $this->precondition($test_case);
         if ($this->tests->count() == 0) {
             $this->logger->notice('Tests not found in TestCase', ['pid' => getmypid()]);
-            $this->dispatcher->dispatch(EventStorage::EV_CASE_FILTERED);
+            /** @var EventDispatcherInterface $dispatcher */
+            $dispatcher = $this->container->get('dispatcher');
+            $dispatcher->dispatch(EventStorage::EV_CASE_FILTERED);
 
             return 1;
         }
@@ -171,21 +168,8 @@ class Runner
                     $return_code = 1;
                 }
             } catch (SkipTestException $e) {
-                $test->setStatus(TestMeta::TEST_SKIPPED);
-                $event = new MethodEvent();
-                $event->setStatus(MethodEvent::METHOD_SKIPPED);
-                $event->parseException($e);
-                $event->setDepends($test->getDependencies());
-                $context = [
-                    'pid' => getmypid(),
-                    'test' => $test->getMethod(),
-                    'exception' => get_class($e),
-                    'message' => $e->getMessage(),
-                ];
-                $this->logger->debug('The test was skipped.', $context);
-                $this->dispatcher->dispatch(EventStorage::EV_METHOD_SKIPPED, $event);
-                $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
-
+                $controller = new SkipTestsController($this->container);
+                $controller->test($test);
                 $return_code = 1;
             } catch (TestFailException $e) {
                 $return_code = 1;
@@ -240,7 +224,7 @@ class Runner
     public function resolveDependencies(TestMeta $test)
     {
         $depends = $test->getDependencies();
-        if (empty($depend)) {
+        if (empty($depends)) {
             return;
         }
         $test->setStatus(TestMeta::TEST_MARKED);
@@ -273,6 +257,10 @@ class Runner
                 case TestMeta::TEST_FAILED:
                     throw new SkipTestException(
                         sprintf('Test method "%s::%s()" was failed', $this->reflection_class->getName(), $depend)
+                    );
+                case TestMeta::TEST_INCOMPLETE:
+                    throw new SkipTestException(
+                        sprintf('Test method "%s::%s()" was uncompleted', $this->reflection_class->getName(), $depend)
                     );
             }
         }
