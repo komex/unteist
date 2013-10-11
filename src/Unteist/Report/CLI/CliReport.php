@@ -253,6 +253,9 @@ class CliReport implements EventSubscriberInterface
     private function printSkippedTests(MethodEvent $method)
     {
         foreach ($this->skipped as $i => $skipped) {
+            if ($method->getClass() !== $skipped->getClass()) {
+                continue;
+            }
             $depends = $skipped->getDepends();
             if (in_array($method->getMethod(), $depends)) {
                 $this->output->writeln(
