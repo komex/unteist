@@ -314,7 +314,7 @@ class Runner
      *
      * @return array
      */
-    protected function getModifiers(\ReflectionMethod $method)
+    private function getModifiers(\ReflectionMethod $method)
     {
         return self::parseDocBlock(
             $method->getDocComment(),

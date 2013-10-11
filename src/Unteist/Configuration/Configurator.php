@@ -16,12 +16,12 @@ use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Finder\Finder;
-use Unteist\Console\Formatter;
 use Unteist\Event\Connector;
 use Unteist\Filter\ClassFilterInterface;
 use Unteist\Filter\MethodsFilterInterface;
 use Unteist\Processor\MultiProcessor;
 use Unteist\Processor\Processor;
+use Unteist\Report\CLI\CliReport;
 
 /**
  * Class Configurator
@@ -40,9 +40,9 @@ class Configurator
      */
     private $input;
     /**
-     * @var Formatter
+     * @var CliReport
      */
-    private $formatter;
+    private $report;
     /**
      * @var array
      */
@@ -57,16 +57,16 @@ class Configurator
      *
      * @param ContainerBuilder $container
      * @param InputInterface $input
-     * @param Formatter $formatter
+     * @param CliReport $report
      */
     public function __construct(
         ContainerBuilder $container,
         InputInterface $input,
-        Formatter $formatter
+        CliReport $report
     ) {
         $this->container = $container;
         $this->input = $input;
-        $this->formatter = $formatter;
+        $this->report = $report;
 
         $directory = realpath(join(DIRECTORY_SEPARATOR, [__DIR__, '..', '..', '..']));
         $loader = new YamlFileLoader($this->container, new FileLocator($directory));
@@ -380,7 +380,7 @@ class Configurator
             }
         }
         // Output information and progress bar
-        $this->formatter->start($files->count());
+        $this->report->start($files->count());
 
         return $files;
     }

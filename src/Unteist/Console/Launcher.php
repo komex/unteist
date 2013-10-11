@@ -25,6 +25,7 @@ use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Configuration\Configurator;
 use Unteist\Configuration\Extension;
+use Unteist\Report\CLI\CliReport;
 
 /**
  * Class Launcher
@@ -84,10 +85,10 @@ class Launcher extends Command
         $output->writeln(sprintf('<info>%s</info>', $this->getApplication()->getName()));
         /** @var ProgressHelper $progress */
         $progress = $this->getHelperSet()->get('progress');
-        // Formatter
-        $formatter = new Formatter($output, $progress);
+        // CLI report
+        $report = new CliReport($output, $progress);
         // Configurator
-        $configurator = new Configurator($this->container, $input, $formatter);
+        $configurator = new Configurator($this->container, $input, $report);
         $this->loadConfig($configurator);
         $this->overwriteParams($input);
         $configurator->loadBootstrap();
@@ -96,7 +97,7 @@ class Launcher extends Command
         // Register listeners
         /** @var EventDispatcherInterface $dispatcher */
         $dispatcher = $this->container->get('dispatcher');
-        $dispatcher->addSubscriber($formatter);
+        $dispatcher->addSubscriber($report);
         // Run tests
         $status = $processor->run();
         $configurator->loadCleanUp();
