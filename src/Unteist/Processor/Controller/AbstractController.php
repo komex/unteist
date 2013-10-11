@@ -10,8 +10,8 @@ namespace Unteist\Processor\Controller;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Event\EventStorage;
+use Unteist\Event\MethodEvent;
 use Unteist\Event\TestCaseEvent;
-use Unteist\Event\TestEvent;
 use Unteist\Meta\TestMeta;
 use Unteist\Processor\Runner;
 
@@ -85,9 +85,7 @@ abstract class AbstractController
             $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
             $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
         } catch (\Exception $e) {
-            $controller = new SkipTestsController($this->container);
-            $controller->setException($e);
-            $this->runner->setController($controller);
+            $this->switchController($e);
         }
     }
 
@@ -109,9 +107,25 @@ abstract class AbstractController
     }
 
     /**
+     * Switch controller to SkipTestsController.
+     *
+     * @param \Exception $e
+     */
+    protected function switchController(\Exception $e)
+    {
+        $event = new MethodEvent();
+        $event->setStatus(MethodEvent::METHOD_FAILED);
+        $event->parseException($e);
+        $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, $event);
+        $controller = new SkipTestsController($this->container);
+        $controller->setDepends($event->getMethod());
+        $this->runner->setController($controller);
+    }
+
+    /**
      * Before test.
      */
-    protected function beforeTest(TestEvent $event)
+    protected function beforeTest(MethodEvent $event)
     {
         $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $event);
     }
@@ -119,7 +133,7 @@ abstract class AbstractController
     /**
      * Test done.
      */
-    protected function afterTest(TestEvent $event)
+    protected function afterTest(MethodEvent $event)
     {
         $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
     }

@@ -10,7 +10,7 @@ namespace Unteist\Processor\Controller;
 use Psr\Log\LoggerInterface;
 use Unteist\Assert\Assert;
 use Unteist\Event\EventStorage;
-use Unteist\Event\TestEvent;
+use Unteist\Event\MethodEvent;
 use Unteist\Exception\IncompleteTestException;
 use Unteist\Exception\SkipTestException;
 use Unteist\Exception\TestErrorException;
@@ -56,7 +56,9 @@ class RunTestsController extends AbstractController
         $status_code = 0;
         $this->context = $this->container->get('context');
         foreach ($dataProvider as $dp_number => $data_set) {
-            $event = new TestEvent($test->getMethod(), $this->test_case_event);
+            $event = new MethodEvent();
+            $event->setClass($test->getClass());
+            $event->setMethod($test->getMethod());
             $event->setDepends($test->getDependencies());
             if (count($dataProvider) > 1) {
                 $event->setDataSet($dp_number + 1);
@@ -64,7 +66,7 @@ class RunTestsController extends AbstractController
             try {
                 $this->beforeTest($event);
             } catch (\Exception $e) {
-                $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e, false);
+                $this->finish($test, $event, MethodEvent::METHOD_SKIPPED, $e, false);
                 continue;
             }
             $code = $this->execute($test, $event, $data_set);
@@ -85,7 +87,12 @@ class RunTestsController extends AbstractController
         parent::afterCase();
     }
 
-    protected function beforeTest(TestEvent $event)
+    /**
+     * Before running method.
+     *
+     * @param MethodEvent $event
+     */
+    protected function beforeTest(MethodEvent $event)
     {
         parent::beforeTest($event);
         $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $event);
@@ -94,68 +101,83 @@ class RunTestsController extends AbstractController
     /**
      * Test done. Generate EV_AFTER_TEST event.
      *
-     * @param TestEvent $event
+     * @param MethodEvent $event
      */
-    protected function afterTest(TestEvent $event)
+    protected function afterTest(MethodEvent $event)
     {
         try {
             $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
         } catch (\Exception $e) {
-            $controller = new SkipTestsController($this->container);
-            $controller->setException($e);
-            $this->runner->setController($controller);
+            $this->switchController($e);
         }
     }
 
     /**
-     * Do all dirty job after test is finish.
+     * @param TestMeta $test
+     * @param MethodEvent $event
+     * @param array $data_set
      *
-     * @param TestMeta $test Meta description of test
-     * @param TestEvent $event Test event
-     * @param int $status Test status
-     * @param \Exception $e
-     * @param bool $send_event Send After test event.
+     * @return int
      */
-    private function finish(TestMeta $test, TestEvent $event, $status, \Exception $e = null, $send_event = true)
+    private function execute(TestMeta $test, MethodEvent $event, array $data_set)
     {
-        $test->setStatus($status);
+        try {
+            $this->started = microtime(true);
+            $this->asserts = Assert::getAssertsCount();
+            $status_code = $this->convert($test, $event, $data_set);
+        } catch (SkipTestException $e) {
+            $this->finish($test, $event, MethodEvent::METHOD_SKIPPED, $e, false);
+            $status_code = 1;
+        } catch (TestFailException $e) {
+            $this->finish($test, $event, MethodEvent::METHOD_FAILED, $e);
+            $status_code = $this->context->onFailure($e);
+        } catch (IncompleteTestException $e) {
+            $this->finish($test, $event, MethodEvent::METHOD_INCOMPLETE, $e);
+            $status_code = $this->context->onIncomplete($e);
+        }
+
+        return $status_code;
+    }
+
+    private function finish(TestMeta $test, MethodEvent $event, $status, \Exception $e, $send_event = true)
+    {
+        $event->parseException($e);
         $event->setStatus($status);
-        $event->setDepends($test->getDependencies());
         $event->setTime(floatval(microtime(true) - $this->started));
         $event->setAsserts(Assert::getAssertsCount() - $this->asserts);
         $this->asserts = Assert::getAssertsCount();
-        if ($status === TestMeta::TEST_DONE) {
-            $context = [];
-        } else {
-            $event->setException($e);
-            $context = [
-                'pid' => getmypid(),
-                'test' => $test->getMethod(),
-                'exception' => get_class($e),
-                'message' => $e->getMessage(),
-            ];
-        }
+        $context = [
+            'pid' => getmypid(),
+            'method' => $event->getMethod(),
+            'exception' => get_class($e),
+            'message' => $e->getMessage(),
+        ];
         /** @var LoggerInterface $logger */
         $logger = $this->container->get('logger');
         switch ($status) {
-            case TestMeta::TEST_DONE:
-                $this->dispatcher->dispatch(EventStorage::EV_TEST_SUCCESS, $event);
+            case MethodEvent::METHOD_OK:
+                $test->setStatus(TestMeta::TEST_DONE);
+                $this->dispatcher->dispatch(EventStorage::EV_METHOD_DONE, $event);
                 break;
-            case TestMeta::TEST_SKIPPED:
+            case MethodEvent::METHOD_SKIPPED:
+                $test->setStatus(TestMeta::TEST_SKIPPED);
                 $logger->debug('The test was skipped.', $context);
-                $this->dispatcher->dispatch(EventStorage::EV_TEST_SKIPPED, $event);
+                $this->dispatcher->dispatch(EventStorage::EV_METHOD_SKIPPED, $event);
                 break;
-            case TestMeta::TEST_FAILED:
+            case MethodEvent::METHOD_FAILED:
+                $test->setStatus(TestMeta::TEST_FAILED);
                 $logger->debug('Assert fail.', $context);
-                $this->dispatcher->dispatch(EventStorage::EV_TEST_FAIL, $event);
+                $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, $event);
                 break;
-            case TestMeta::TEST_INCOMPLETE:
+            case MethodEvent::METHOD_INCOMPLETE:
+                $test->setStatus(TestMeta::TEST_INCOMPLETE);
                 $logger->debug('Test incomplete.', $context);
-                $this->dispatcher->dispatch(EventStorage::EV_TEST_INCOMPLETE, $event);
+                $this->dispatcher->dispatch(EventStorage::EV_METHOD_INCOMPLETE, $event);
                 break;
             default:
+                $test->setStatus(TestMeta::TEST_FAILED);
                 $logger->critical('Unexpected exception.', $context);
-                $this->dispatcher->dispatch(EventStorage::EV_TEST_ERROR, $event);
+                $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, $event);
         }
         if ($send_event) {
             $this->afterTest($event);
@@ -164,49 +186,20 @@ class RunTestsController extends AbstractController
     }
 
     /**
-     * @param TestMeta $test
-     * @param TestEvent $event
-     * @param array $data_set
-     *
-     * @return int
-     */
-    private function execute(TestMeta $test, TestEvent $event, array $data_set)
-    {
-        try {
-            $this->started = microtime(true);
-            $this->asserts = Assert::getAssertsCount();
-            $status_code = $this->convert($test, $event, $data_set);
-        } catch (SkipTestException $e) {
-            $this->finish($test, $event, TestMeta::TEST_SKIPPED, $e);
-            $status_code = 1;
-        } catch (TestFailException $e) {
-            $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
-            $status_code = $this->context->onFailure($e);
-        } catch (IncompleteTestException $e) {
-            $this->finish($test, $event, TestMeta::TEST_INCOMPLETE, $e);
-            $status_code = $this->context->onIncomplete($e);
-        }
-
-        return $status_code;
-    }
-
-    /**
      * Controller behavior.
      *
      * @param TestMeta $test
-     * @param TestEvent $event
      * @param array $data_set
      *
      * @throws TestFailException
      * @return int Status code
      */
-    private function behavior(TestMeta $test, TestEvent $event, array $data_set)
+    private function behavior(TestMeta $test, array $data_set)
     {
         call_user_func_array([$this->runner->getTestCase(), $test->getMethod()], $data_set);
         if ($test->getExpectedException()) {
             throw new TestFailException('Expected exception ' . $test->getExpectedException());
         }
-        $this->finish($test, $event, TestMeta::TEST_DONE);
 
         return 0;
     }
@@ -215,24 +208,27 @@ class RunTestsController extends AbstractController
      * Convert exceptions using context.
      *
      * @param TestMeta $test
-     * @param TestEvent $event
+     * @param MethodEvent $event
      * @param array $data_set
      *
      * @return int Status code
      */
-    private function convert(TestMeta $test, TestEvent $event, array $data_set)
+    private function convert(TestMeta $test, MethodEvent $event, array $data_set)
     {
         try {
-            $status_code = $this->behavior($test, $event, $data_set);
+            $status_code = $this->behavior($test, $data_set);
+            $this->dispatcher->dispatch(EventStorage::EV_METHOD_DONE, $event);
+            $this->afterTest($event);
+            parent::afterTest($event);
         } catch (TestFailException $e) {
             $status_code = $this->context->onFailure($e);
-            $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
+            $this->finish($test, $event, MethodEvent::METHOD_FAILED, $e);
         } catch (TestErrorException $e) {
             $status_code = $this->context->onError($e);
-            $this->finish($test, $event, TestMeta::TEST_FAILED, $e);
+            $this->finish($test, $event, MethodEvent::METHOD_FAILED, $e);
         } catch (IncompleteTestException $e) {
             $status_code = $this->context->onIncomplete($e);
-            $this->finish($test, $event, TestMeta::TEST_INCOMPLETE, $e);
+            $this->finish($test, $event, MethodEvent::METHOD_INCOMPLETE, $e);
         } catch (\Exception $e) {
             $status_code = $this->exceptionControl($test, $e);
         }

@@ -8,7 +8,7 @@
 namespace Unteist\Processor\Controller;
 
 use Unteist\Event\EventStorage;
-use Unteist\Event\TestEvent;
+use Unteist\Event\MethodEvent;
 use Unteist\Meta\TestMeta;
 
 /**
@@ -20,16 +20,16 @@ use Unteist\Meta\TestMeta;
 class SkipTestsController extends AbstractController
 {
     /**
-     * @var \Exception
+     * @var string
      */
-    private $exception;
+    private $depends;
 
     /**
-     * @param \Exception $exception
+     * @param string $depends
      */
-    public function setException(\Exception $exception)
+    public function setDepends($depends)
     {
-        $this->exception = $exception;
+        $this->depends = $depends;
     }
 
     /**
@@ -42,12 +42,17 @@ class SkipTestsController extends AbstractController
     public function test(TestMeta $test)
     {
         $test->setStatus(TestMeta::TEST_SKIPPED);
-        $event = new TestEvent($test->getMethod(), $this->test_case_event);
+        $event = new MethodEvent();
+        $event->setClass($test->getClass());
+        $event->setMethod($test->getMethod());
         $this->beforeTest($event);
-        $event->setException($this->exception);
-        $event->setStatus(TestMeta::TEST_SKIPPED);
-        $event->setDepends($test->getDependencies());
-        $this->dispatcher->dispatch(EventStorage::EV_TEST_SKIPPED, $event);
+        $event->setStatus(MethodEvent::METHOD_SKIPPED);
+        $depends = $test->getDependencies();
+        if ($this->depends !== null) {
+            array_unshift($depends, $this->depends);
+        }
+        $event->setDepends($depends);
+        $this->dispatcher->dispatch(EventStorage::EV_METHOD_SKIPPED, $event);
         $this->afterTest($event);
 
         return 1;

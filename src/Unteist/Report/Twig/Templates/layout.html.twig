@@ -3,19 +3,27 @@
 <head>
     <meta charset="utf-8">
     <title>{% block title %}Unteist{% endblock %}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="http://netdna.bootstrapcdn.com/bootstrap/2.3.2/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <style type="text/css">
+        .progress {
+            margin-bottom: 0;
+        }
+
+        .wrapper {
+            padding-bottom: 10px;
+        }
+    </style>
 </head>
 <body>
 <div class="container">
-    <div class="navbar">
-        <div class="navbar-inner">
-            <a class="brand" href="#">Unteist</a>
+    <nav class="navbar navbar-default">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="#">Unteist</a>
         </div>
-    </div>
+    </nav>
     {% block content %}{% endblock %}
 </div>
-<p class="text-center">Generated at {{ "now"|date("H:i:s m.d.Y") }}</p>
+<p class="text-center">Generated at {{ "now"|date("H:i:s d.m.Y") }}</p>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
 {% block javascript %}{% endblock %}
 </body>
