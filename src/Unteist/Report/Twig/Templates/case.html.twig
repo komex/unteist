@@ -23,11 +23,15 @@
 
 {% block content %}
     <ul class="breadcrumb">
-        <li><a href="{{ levelUp(event.class) }}index.html">Report</a> <span class="divider">/</span></li>
+        <li><a href="{{ levelUp(event.class) }}index.html">Report</a></li>
         {{ macros.breadcrumb(event.class) }}
     </ul>
-    {{ macros.total(statistics) }}
-    {{ macros.progress(statistics) }}
+    <div class="wrapper">
+        {{ macros.total(statistics) }}
+    </div>
+    <div class="wrapper">
+        {{ macros.progress(statistics) }}
+    </div>
     <table class="table table-bordered">
         <thead>
         <tr>

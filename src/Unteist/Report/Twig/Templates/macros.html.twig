@@ -11,7 +11,7 @@
         {% if loop.last %}
             <li class="active">{{ element }}</li>
         {% else %}
-            <li><a href="javascript:">{{ element }}</a> <span class="divider">/</span></li>
+            <li><a href="javascript:">{{ element }}</a></li>
         {% endif %}
     {% endfor %}
 {% endmacro %}
@@ -21,9 +21,9 @@
         {% if method.isSuccess() %}
             success
         {% elseif method.isFailed() %}
-            error
+            danger
         {% elseif method.isIncomplete() %}
-            info
+            active
         {% else %}
             warning
         {% endif %}
@@ -32,29 +32,29 @@
 
 {% macro progress(statistics) %}
     <div class="progress">
-        <div class="bar bar-success" style="width: {{ getTestPercent(statistics.passed, statistics|length) }}%;"
+        <div class="progress-bar progress-bar-success" style="width: {{ getTestPercent(statistics.passed, statistics|length) }}%;"
              title="Success: {{ statistics.passed }}/{{ statistics|length }}"></div>
-        <div class="bar bar-warning" style="width: {{ getTestPercent(statistics.skipped, statistics|length) }}%;"
+        <div class="progress-bar progress-bar-warning" style="width: {{ getTestPercent(statistics.skipped, statistics|length) }}%;"
              title="Skipped: {{ statistics.skipped }}/{{ statistics|length }}"></div>
-        <div class="bar bar-danger" style="width: {{ getTestPercent(statistics.failed, statistics|length) }}%;"
+        <div class="progress-bar progress-bar-danger" style="width: {{ getTestPercent(statistics.failed, statistics|length) }}%;"
              title="Failed: {{ statistics.failed }}/{{ statistics|length }}"></div>
-        <div class="bar bar-info" style="width: {{ getTestPercent(statistics.incomplete, statistics|length) }}%;"
+        <div class="progress-bar progress-bar-info" style="width: {{ getTestPercent(statistics.incomplete, statistics|length) }}%;"
              title="Incomplete: {{ statistics.incomplete }}/{{ statistics|length }}"></div>
     </div>
 {% endmacro %}
 
 {% macro total(statistics) %}
-    <div class="row-fluid">
-        <div class="span3">
+    <div class="row">
+        <div class="col-md-3">
             <span class="label label-success">Success</span>: <b>{{ statistics.passed }}</b>
         </div>
-        <div class="span3">
+        <div class="col-md-3">
             <span class="label label-warning">Skipped</span>: <b>{{ statistics.skipped }}</b>
         </div>
-        <div class="span3">
-            <span class="label label-important">Failed</span>: <b>{{ statistics.failed }}</b>
+        <div class="col-md-3">
+            <span class="label label-danger">Failed</span>: <b>{{ statistics.failed }}</b>
         </div>
-        <div class="span3">
+        <div class="col-md-3">
             <span class="label label-info">Incomplete</span>: <b>{{ statistics.incomplete }}</b>
         </div>
     </div>

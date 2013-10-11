@@ -8,8 +8,12 @@
     <ul class="breadcrumb">
         <li class="active">Report</li>
     </ul>
-    {{ macros.total(statistics) }}
-    {{ macros.progress(statistics) }}
+    <div class="wrapper">
+        {{ macros.total(statistics) }}
+    </div>
+    <div class="wrapper">
+        {{ macros.progress(statistics) }}
+    </div>
     <table class="table table-bordered">
         <thead>
         <tr>
