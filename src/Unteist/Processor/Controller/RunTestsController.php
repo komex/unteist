@@ -139,19 +139,32 @@ class RunTestsController extends AbstractController
         return $status_code;
     }
 
-    private function finish(TestMeta $test, MethodEvent $event, $status, \Exception $e, $send_event = true)
+    /**
+     * Method was finished.
+     *
+     * @param TestMeta $test
+     * @param MethodEvent $event
+     * @param int $status
+     * @param \Exception $e
+     * @param bool $send_event
+     */
+    private function finish(TestMeta $test, MethodEvent $event, $status, \Exception $e = null, $send_event = true)
     {
-        $event->parseException($e);
         $event->setStatus($status);
         $event->setTime(floatval(microtime(true) - $this->started));
         $event->setAsserts(Assert::getAssertsCount() - $this->asserts);
         $this->asserts = Assert::getAssertsCount();
-        $context = [
-            'pid' => getmypid(),
-            'method' => $event->getMethod(),
-            'exception' => get_class($e),
-            'message' => $e->getMessage(),
-        ];
+        if ($e !== null) {
+            $context = [];
+        } else {
+            $event->parseException($e);
+            $context = [
+                'pid' => getmypid(),
+                'method' => $event->getMethod(),
+                'exception' => get_class($e),
+                'message' => $e->getMessage(),
+            ];
+        }
         /** @var LoggerInterface $logger */
         $logger = $this->container->get('logger');
         switch ($status) {
@@ -217,9 +230,7 @@ class RunTestsController extends AbstractController
     {
         try {
             $status_code = $this->behavior($test, $data_set);
-            $this->dispatcher->dispatch(EventStorage::EV_METHOD_DONE, $event);
-            $this->afterTest($event);
-            parent::afterTest($event);
+            $this->finish($test, $event, MethodEvent::METHOD_OK);
         } catch (TestFailException $e) {
             $status_code = $this->context->onFailure($e);
             $this->finish($test, $event, MethodEvent::METHOD_FAILED, $e);
