@@ -171,9 +171,6 @@ class CliReport implements EventSubscriberInterface
      */
     public function start($count)
     {
-        $this->output->writeln(
-            sprintf('Found <comment>%d</comment> %s.', $count, $count === 1 ? 'file' : 'files')
-        );
         $this->progress->start($this->output, $count);
         $this->progress->display();
         $this->started = microtime(true);
