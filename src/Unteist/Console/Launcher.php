@@ -85,6 +85,7 @@ class Launcher extends Command
         $output->writeln(sprintf('<info>%s</info>', $this->getApplication()->getName()));
         /** @var ProgressHelper $progress */
         $progress = $this->getHelperSet()->get('progress');
+        $progress->setFormat(' %percent%% [%bar%] Elapsed: %elapsed%');
         // CLI report
         $report = new CliReport($output, $progress);
         // Configurator
