@@ -154,7 +154,7 @@ class RunTestsController extends AbstractController
         $event->setTime(floatval(microtime(true) - $this->started));
         $event->setAsserts(Assert::getAssertsCount() - $this->asserts);
         $this->asserts = Assert::getAssertsCount();
-        if ($e !== null) {
+        if ($e === null) {
             $context = [];
         } else {
             $event->parseException($e);
