@@ -62,7 +62,7 @@
             </tr>
             {% if not method.isSuccess() %}
                 <tr class="additional-info {{ macros.style(method) }}">
-                    <td colspan="5"><i>{{ method.getExceptionMessage()|nl2br }}</i></td>
+                    <td colspan="5"><i>[{{ method.exception }}]: {{ method.getExceptionMessage()|nl2br }}</i></td>
                 </tr>
             {% endif %}
         {% endfor %}
