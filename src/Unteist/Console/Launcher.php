@@ -95,6 +95,7 @@ class Launcher extends Command
         $configurator->loadBootstrap();
         // Processor
         $processor = $configurator->getProcessor();
+        gc_collect_cycles();
         // Register listeners
         /** @var EventDispatcherInterface $dispatcher */
         $dispatcher = $this->container->get('dispatcher');

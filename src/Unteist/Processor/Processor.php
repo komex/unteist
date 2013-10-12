@@ -192,7 +192,11 @@ class Processor
                 }
             }
 
-            return $this->runCase($class);
+            $result = $this->runCase($class);
+            unset($class);
+            gc_collect_cycles();
+
+            return $result;
         } catch (FilterException $e) {
             $this->logger->notice('File was filtered', ['pid' => getmypid(), 'filter' => $e]);
             /** @var EventDispatcherInterface $dispatcher */
