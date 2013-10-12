@@ -99,7 +99,7 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
         $sources = $node->finalize([[]]);
         $this->assertInternalType('array', $sources);
         $this->assertCount(1, $sources);
-        $this->assertEquals(['in' => '.', 'name' => '*Test.php', 'exclude' => []], $sources[0]);
+        $this->assertEquals(['in' => '.', 'name' => '*Test.php', 'exclude' => [], 'notName' => []], $sources[0]);
     }
 
     /**
