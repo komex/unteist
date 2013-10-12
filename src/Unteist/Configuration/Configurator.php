@@ -366,7 +366,9 @@ class Configurator
             $finder->ignoreUnreadableDirs()->files();
             $finder->in($source['in'])->name($source['name']);
             if (!empty($source['notName'])) {
-                $finder->notName($source['notName']);
+                foreach ($source['notName'] as $name) {
+                    $finder->notName($name);
+                }
             }
             if (!empty($source['exclude'])) {
                 $finder->exclude($source['exclude']);

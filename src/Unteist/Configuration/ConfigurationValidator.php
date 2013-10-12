@@ -183,7 +183,10 @@ class ConfigurationValidator implements ConfigurationInterface
 
         $definition->children()->scalarNode('in')->cannotBeEmpty()->defaultValue('.');
         $definition->children()->scalarNode('name')->cannotBeEmpty()->defaultValue('*Test.php');
-        $definition->children()->scalarNode('notName')->cannotBeEmpty();
+
+        $exclude = $definition->children()->arrayNode('notName');
+        $exclude->requiresAtLeastOneElement();
+        $exclude->prototype('scalar')->cannotBeEmpty();
 
         $exclude = $definition->children()->arrayNode('exclude');
         $exclude->requiresAtLeastOneElement();
