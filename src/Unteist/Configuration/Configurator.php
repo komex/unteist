@@ -21,7 +21,6 @@ use Unteist\Filter\ClassFilterInterface;
 use Unteist\Filter\MethodsFilterInterface;
 use Unteist\Processor\MultiProcessor;
 use Unteist\Processor\Processor;
-use Unteist\Report\CLI\CliReport;
 
 /**
  * Class Configurator
@@ -40,10 +39,6 @@ class Configurator
      */
     private $input;
     /**
-     * @var CliReport
-     */
-    private $report;
-    /**
      * @var array
      */
     private $config = [];
@@ -57,16 +52,11 @@ class Configurator
      *
      * @param ContainerBuilder $container
      * @param InputInterface $input
-     * @param CliReport $report
      */
-    public function __construct(
-        ContainerBuilder $container,
-        InputInterface $input,
-        CliReport $report
-    ) {
+    public function __construct(ContainerBuilder $container, InputInterface $input)
+    {
         $this->container = $container;
         $this->input = $input;
-        $this->report = $report;
 
         $directory = realpath(join(DIRECTORY_SEPARATOR, [__DIR__, '..', '..', '..']));
         $loader = new YamlFileLoader($this->container, new FileLocator($directory));
@@ -168,8 +158,6 @@ class Configurator
                 }
             }
         }
-        // Output information and progress bar
-        $this->report->start($files->count());
 
         return $files;
     }

@@ -86,10 +86,8 @@ class Launcher extends Command
         /** @var ProgressHelper $progress */
         $progress = $this->getHelperSet()->get('progress');
         $progress->setFormat(' %percent%% [%bar%] Elapsed: %elapsed%');
-        // CLI report
-        $report = new CliReport($output, $progress);
         // Configurator
-        $configurator = new Configurator($this->container, $input, $report);
+        $configurator = new Configurator($this->container, $input);
         $this->loadConfig($configurator);
         $this->overwriteParams($input);
         $configurator->loadBootstrap();
@@ -99,7 +97,8 @@ class Launcher extends Command
         // Register listeners
         /** @var EventDispatcherInterface $dispatcher */
         $dispatcher = $this->container->get('dispatcher');
-        $dispatcher->addSubscriber($report);
+        // CLI report
+        $dispatcher->addSubscriber(new CliReport($output, $progress, $configurator->getFiles()->count()));
         // Run tests
         $status = $processor->run($configurator->getFiles());
         $configurator->loadCleanUp();
