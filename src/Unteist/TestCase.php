@@ -32,11 +32,7 @@ class TestCase
     /**
      * @var ContainerBuilder
      */
-    private $config;
-    /**
-     * @var \ArrayObject
-     */
-    private $global_storage;
+    private $container;
 
     /**
      * Create a new TestCase.
@@ -89,28 +85,18 @@ class TestCase
      */
     public function getGlobalStorage()
     {
-        return $this->global_storage;
+        return $this->container->get('storage.global');
     }
 
     /**
-     * Set global storage for variables.
+     * Set configuration container.
      *
-     * @param \ArrayObject $global_storage Global variables
+     * @param ContainerBuilder $container Project configuration
      */
-    public function setGlobalStorage(\ArrayObject $global_storage)
+    public function setContainer(ContainerBuilder $container)
     {
-        $this->global_storage = $global_storage;
-    }
-
-    /**
-     * Set project configuration.
-     *
-     * @param ContainerBuilder $config Project configuration
-     */
-    public function setConfig(ContainerBuilder $config)
-    {
-        $this->config = $config;
-        $this->dispatcher = $config->get('dispatcher');
+        $this->container = $container;
+        $this->dispatcher = $container->get('dispatcher');
     }
 
     /**
@@ -122,7 +108,7 @@ class TestCase
      */
     public function getParameter($name)
     {
-        return $this->config->getParameter($name);
+        return $this->container->getParameter($name);
     }
 
     /**
@@ -132,7 +118,7 @@ class TestCase
      */
     public function getParameters()
     {
-        return $this->config->getParameterBag()->all();
+        return $this->container->getParameterBag()->all();
     }
 
     /**
@@ -144,6 +130,6 @@ class TestCase
      */
     public function getService($name)
     {
-        return $this->config->get($name);
+        return $this->container->get($name);
     }
 }

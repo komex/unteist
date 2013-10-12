@@ -15,7 +15,6 @@ use Unteist\Exception\FilterException;
 use Unteist\Exception\TestErrorException;
 use Unteist\Filter\ClassFilterInterface;
 use Unteist\Filter\MethodsFilterInterface;
-use Unteist\TestCase;
 
 /**
  * Class Processor
@@ -26,14 +25,6 @@ use Unteist\TestCase;
 class Processor
 {
     /**
-     * @var \SplFileInfo[]
-     */
-    protected $suites = [];
-    /**
-     * @var EventDispatcherInterface
-     */
-    protected $dispatcher;
-    /**
      * @var ClassFilterInterface[]
      */
     protected $class_filters = [];
@@ -41,10 +32,6 @@ class Processor
      * @var MethodsFilterInterface[]
      */
     protected $methods_filters = [];
-    /**
-     * @var \ArrayObject
-     */
-    protected $global_storage;
     /**
      * @var ContainerBuilder
      */
@@ -54,48 +41,33 @@ class Processor
      */
     protected $logger;
     /**
-     * @var int
-     */
-    protected $exit_code = 0;
-    /**
      * @var array
      */
     protected $globals = [];
-    /**
-     * @var int
-     */
-    protected $error_types;
 
     /**
      * Create general processor.
      *
      * @param ContainerBuilder $container
-     * @param \ArrayObject $suites
      */
-    public function __construct(
-        ContainerBuilder $container,
-        \ArrayObject $suites
-    ) {
+    public function __construct(ContainerBuilder $container)
+    {
         $this->container = $container;
-        $this->dispatcher = $this->container->get('dispatcher');
         $this->logger = $this->container->get('logger');
-        $this->suites = $suites;
-        $this->global_storage = new \ArrayObject();
     }
 
     /**
-     * Set error types to handle.
+     * Set error handler for specified error types.
      *
      * @param array $error_types
      */
-    public function setErrorTypes(array $error_types)
+    public function setErrorHandler(array $error_types)
     {
         $type = 0;
         foreach ($error_types as $error) {
             $type |= constant($error);
         }
-
-        $this->error_types = $type;
+        set_error_handler([$this, 'errorHandler'], $type);
     }
 
     /**
@@ -119,57 +91,44 @@ class Processor
     }
 
     /**
-     * Remove all class filters.
-     */
-    public function clearClassFilters()
-    {
-        $this->class_filters = [];
-    }
-
-    /**
-     * Remove all methods filters.
-     */
-    public function clearMethodsFilters()
-    {
-        $this->methods_filters = [];
-    }
-
-    /**
      * Handler for PHP errors.
      *
-     * @param int $errno
-     * @param string $errstr
+     * @param int $code Error code
+     * @param string $message Error message
      *
      * @throws TestErrorException
      */
-    public function errorHandler($errno, $errstr)
+    public function errorHandler($code, $message)
     {
-        throw new TestErrorException($errstr, $errno);
+        throw new TestErrorException($message, $code);
     }
 
     /**
      * Run all TestCases.
      *
+     * @param \ArrayObject $suites
+     *
      * @return int Exit code
      */
-    public function run()
+    public function run(\ArrayObject $suites)
     {
-        set_error_handler([$this, 'errorHandler'], $this->error_types);
         /** @var EventDispatcherInterface $dispatcher */
         $dispatcher = $this->container->get('dispatcher');
         $dispatcher->dispatch(EventStorage::EV_APP_STARTED);
         $this->logger->info('Run TestCases in single process.', ['pid' => getmypid()]);
         $this->backupGlobals();
-        foreach ($this->suites as $suite) {
+        $exitCode = 0;
+        foreach ($suites as $suite) {
             if ($this->executor($suite)) {
-                $this->exit_code = 1;
+                $exitCode = 1;
             }
+            gc_collect_cycles();
             $this->restoreGlobals();
         }
-        $this->logger->info('All tests done.', ['pid' => getmypid(), 'exit_code' => $this->exit_code]);
+        $this->logger->info('All tests done.', ['pid' => getmypid(), 'exit_code' => $exitCode]);
         $dispatcher->dispatch(EventStorage::EV_APP_FINISHED);
 
-        return $this->exit_code;
+        return $exitCode;
     }
 
     /**
@@ -190,13 +149,13 @@ class Processor
                 foreach ($this->class_filters as $filter) {
                     $filter->filter($reflection_class);
                 }
+                unset($reflection_class);
             }
+            $class->setContainer($this->container);
+            $runner = new Runner($this->container);
+            $runner->setFilters($this->methods_filters);
 
-            $result = $this->runCase($class);
-            unset($class);
-            gc_collect_cycles();
-
-            return $result;
+            return $runner->run($class);
         } catch (FilterException $e) {
             $this->logger->notice('File was filtered', ['pid' => getmypid(), 'filter' => $e]);
             /** @var EventDispatcherInterface $dispatcher */
@@ -205,21 +164,6 @@ class Processor
 
             return 1;
         }
-    }
-
-    /**
-     * @param TestCase $case
-     *
-     * @return int
-     */
-    protected function runCase(TestCase $case)
-    {
-        $case->setGlobalStorage($this->global_storage);
-        $case->setConfig($this->container);
-        $runner = new Runner($this->container);
-        $runner->setFilters($this->methods_filters);
-
-        return $runner->run($case);
     }
 
     /**

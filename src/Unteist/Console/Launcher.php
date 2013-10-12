@@ -101,7 +101,7 @@ class Launcher extends Command
         $dispatcher = $this->container->get('dispatcher');
         $dispatcher->addSubscriber($report);
         // Run tests
-        $status = $processor->run();
+        $status = $processor->run($configurator->getFiles());
         $configurator->loadCleanUp();
 
         return $status;

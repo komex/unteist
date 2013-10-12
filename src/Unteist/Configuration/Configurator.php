@@ -98,19 +98,13 @@ class Configurator
         $this->configureLogger();
         $this->configureContext();
         if ($this->config['processes'] === 1) {
-            $processor = new Processor(
-                $this->container,
-                $this->getSuite()
-            );
+            $processor = new Processor($this->container);
         } else {
-            $processor = new MultiProcessor(
-                $this->container,
-                $this->getSuite()
-            );
+            $processor = new MultiProcessor($this->container);
             $processor->setProcesses($this->config['processes']);
             $processor->setConnector($this->getConnector());
         }
-        $processor->setErrorTypes($this->config['context']['levels']);
+        $processor->setErrorHandler($this->config['context']['levels']);
 
         if (!empty($this->config['groups'])) {
             array_unshift($this->config['filters']['methods'], 'filter.methods.group');
@@ -144,6 +138,40 @@ class Configurator
     public function loadCleanUp()
     {
         $this->includeFile('cleanup');
+    }
+
+    /**
+     * Get suite files with tests.
+     *
+     * @return \ArrayObject
+     */
+    public function getFiles()
+    {
+        $files = new \ArrayObject();
+        foreach ($this->config['source'] as $source) {
+            $finder = new Finder();
+            $finder->ignoreUnreadableDirs()->files();
+            $finder->in($source['in'])->name($source['name']);
+            if (!empty($source['notName'])) {
+                foreach ($source['notName'] as $name) {
+                    $finder->notName($name);
+                }
+            }
+            if (!empty($source['exclude'])) {
+                $finder->exclude($source['exclude']);
+            }
+            /** @var \SplFileInfo $file */
+            foreach ($finder as $file) {
+                $real_path = $file->getRealPath();
+                if (!$files->offsetExists($real_path) && substr($file->getFilename(), -8) === 'Test.php') {
+                    $files[$real_path] = $file;
+                }
+            }
+        }
+        // Output information and progress bar
+        $this->report->start($files->count());
+
+        return $files;
     }
 
     /**
@@ -351,39 +379,5 @@ class Configurator
         foreach ($listeners as $service) {
             $definition->addMethodCall('addSubscriber', [new Reference($service)]);
         }
-    }
-
-    /**
-     * Get suite files with tests.
-     *
-     * @return \ArrayObject
-     */
-    private function getSuite()
-    {
-        $files = new \ArrayObject();
-        foreach ($this->config['source'] as $source) {
-            $finder = new Finder();
-            $finder->ignoreUnreadableDirs()->files();
-            $finder->in($source['in'])->name($source['name']);
-            if (!empty($source['notName'])) {
-                foreach ($source['notName'] as $name) {
-                    $finder->notName($name);
-                }
-            }
-            if (!empty($source['exclude'])) {
-                $finder->exclude($source['exclude']);
-            }
-            /** @var \SplFileInfo $file */
-            foreach ($finder as $file) {
-                $real_path = $file->getRealPath();
-                if (!$files->offsetExists($real_path) && substr($file->getFilename(), -8) === 'Test.php') {
-                    $files[$real_path] = $file;
-                }
-            }
-        }
-        // Output information and progress bar
-        $this->report->start($files->count());
-
-        return $files;
     }
 }

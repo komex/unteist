@@ -31,3 +31,5 @@ services:
         class: \Unteist\Strategy\Context
     dispatcher:
         class: \Symfony\Component\EventDispatcher\EventDispatcher
+    storage.global:
+        class: \ArrayObject
