@@ -174,6 +174,7 @@ class RunTestsController extends AbstractController
                 break;
             case MethodEvent::METHOD_SKIPPED:
                 $test->setStatus(TestMeta::TEST_SKIPPED);
+                $event->setTime(0);
                 $logger->debug('The test was skipped.', $context);
                 $this->dispatcher->dispatch(EventStorage::EV_METHOD_SKIPPED, $event);
                 break;
