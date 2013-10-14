@@ -107,16 +107,30 @@ abstract class AbstractController
     }
 
     /**
+     * Generate an event with information about failed precondition method.
+     *
+     * @param \Exception $e
+     *
+     * @return MethodEvent
+     */
+    protected function preconditionFailed(\Exception $e)
+    {
+        $event = new MethodEvent();
+        $event->setStatus(MethodEvent::METHOD_FAILED);
+        $event->parseException($e);
+        $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, $event);
+
+        return $event;
+    }
+
+    /**
      * Switch controller to SkipTestsController.
      *
      * @param \Exception $e
      */
     protected function switchController(\Exception $e)
     {
-        $event = new MethodEvent();
-        $event->setStatus(MethodEvent::METHOD_FAILED);
-        $event->parseException($e);
-        $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, $event);
+        $event = $this->preconditionFailed($e);
         $controller = new SkipTestsController($this->container);
         $controller->setDepends($event->getMethod());
         $this->runner->setController($controller);
