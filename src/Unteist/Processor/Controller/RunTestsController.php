@@ -66,7 +66,10 @@ class RunTestsController extends AbstractController
             try {
                 $this->beforeTest($event);
             } catch (\Exception $e) {
-                $this->finish($test, $event, MethodEvent::METHOD_SKIPPED, $e, false);
+                $method = $this->preconditionFailed($e)->getMethod();
+                $controller = new SkipTestsController($this->container);
+                $controller->setDepends($method);
+                $controller->test($test);
                 continue;
             }
             $code = $this->execute($test, $event, $data_set);
