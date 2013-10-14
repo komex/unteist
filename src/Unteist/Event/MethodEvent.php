@@ -123,6 +123,16 @@ class MethodEvent extends Event
     }
 
     /**
+     * Add depend for method.
+     *
+     * @param string $depend
+     */
+    public function addDepend($depend)
+    {
+        array_unshift($this->depends, $depend);
+    }
+
+    /**
      * @return int
      */
     public function getAsserts()
