@@ -14,7 +14,6 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\DependencyInjection\Reference;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Finder\Finder;
 use Unteist\Event\Connector;
 use Unteist\Filter\ClassFilterInterface;
@@ -90,9 +89,11 @@ class Configurator
         if (intval($this->config['processes'], 10) === 1) {
             $processor = new Processor($this->container);
         } else {
+            /** @var Connector $connector */
+            $connector = $this->container->get('connector');
             $processor = new MultiProcessor($this->container);
             $processor->setProcesses($this->config['processes']);
-            $processor->setConnector($this->getConnector());
+            $processor->setConnector($connector);
         }
         $processor->setErrorHandler($this->config['context']['levels']);
 
@@ -325,24 +326,6 @@ class Configurator
         }
 
         return $definition;
-    }
-
-    /**
-     * Get configured connector for multi processors working.
-     *
-     * @return Connector
-     */
-    private function getConnector()
-    {
-        if ($this->container->hasParameter('proxy_events')) {
-            $proxy_events = (array)$this->container->getParameter('proxy_events');
-        } else {
-            $proxy_events = [];
-        }
-        /** @var EventDispatcherInterface $dispatcher */
-        $dispatcher = $this->container->get('dispatcher');
-
-        return new Connector($dispatcher, $proxy_events);
     }
 
     /**
