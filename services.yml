@@ -2,6 +2,7 @@ parameters:
     logger.handler.stream.output: unteist.log
     logger.handler.stream.level: DEBUG
     logger.name: unteist
+    connector.events: []
 
 services:
     logger:
@@ -33,3 +34,6 @@ services:
         class: \Symfony\Component\EventDispatcher\EventDispatcher
     storage.global:
         class: \ArrayObject
+    connector:
+        class: \Unteist\Event\Connector
+        arguments: [ @dispatcher, %connector.events% ]

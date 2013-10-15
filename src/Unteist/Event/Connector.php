@@ -32,19 +32,33 @@ class Connector
      */
     protected $sockets = [];
     /**
-     * @var resource[]
+     * @var resource
      */
-    protected $current_sockets = [];
+    private $parentSocket;
+    /**
+     * @var resource
+     */
+    private $childSocket;
+    /**
+     * @var int
+     */
+    private $parentPID;
+    /**
+     * @var resource
+     */
+    private $queue;
 
     /**
      * @param EventDispatcherInterface $dispatcher
      * @param array $custom_events Custom events to proxy to parent process.
      */
-    public function __construct(EventDispatcherInterface $dispatcher, $custom_events = [])
+    public function __construct(EventDispatcherInterface $dispatcher, array $custom_events = [])
     {
         $this->dispatcher = $dispatcher;
         $class = new \ReflectionClass('\\Unteist\\Event\\EventStorage');
         $this->events = array_unique(array_values($class->getConstants() + $custom_events));
+        $this->parentPID = getmypid();
+        $this->queue = msg_get_queue(ftok(__FILE__, 'U'));
     }
 
     /**
@@ -55,8 +69,12 @@ class Connector
      */
     public function add()
     {
-        $this->current_sockets = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
-        if ($this->current_sockets === false) {
+        list($this->parentSocket, $this->childSocket) = stream_socket_pair(
+            STREAM_PF_UNIX,
+            STREAM_SOCK_STREAM,
+            STREAM_IPPROTO_IP
+        );
+        if ($this->parentSocket === null || $this->childSocket === null) {
             throw new \RuntimeException(
                 sprintf('Could not create a new pair socket: %s', socket_strerror(socket_last_error()))
             );
@@ -70,9 +88,10 @@ class Connector
      */
     public function attach($pid)
     {
-        $this->sockets[$pid] = $this->current_sockets[1];
-        fclose($this->current_sockets[0]);
-        $this->current_sockets = [];
+        $this->sockets[$pid] = $this->childSocket;
+        fclose($this->parentSocket);
+        $this->parentSocket = null;
+        $this->childSocket = null;
     }
 
     /**
@@ -93,7 +112,7 @@ class Connector
         foreach ($this->sockets as $socket) {
             fclose($socket);
         }
-        fclose($this->current_sockets[1]);
+        fclose($this->childSocket);
     }
 
     /**
@@ -108,9 +127,11 @@ class Connector
     {
         $serialized = serialize($event);
         $send_data = pack('N', strlen($serialized)) . $serialized;
-        if (fwrite($this->current_sockets[0], $send_data) === false) {
+        if (fwrite($this->parentSocket, $send_data) === false) {
             throw new \RuntimeException('Could not write event to socket.');
         }
+        msg_send($this->queue, 1, getmypid(), false);
+        posix_kill($this->parentPID, POLL_MSG);
     }
 
     /**
@@ -118,29 +139,19 @@ class Connector
      */
     public function read()
     {
-        if (empty($this->sockets)) {
-            return;
-        }
-        $read = $this->sockets;
-        $num = stream_select($read, $write = null, $exception = null, null, 500000);
-        if ($num === false) {
-            throw new \RuntimeException(
-                sprintf('Cannot read from sockets, reason: %s', socket_strerror(socket_last_error()))
-            );
-        }
-        if ($num > 0) {
-            foreach ($read as $socket) {
-                if (feof($socket)) {
-                    continue;
-                }
-                $packed_len = stream_get_contents($socket, 4);
-                $info = unpack('Nlen', $packed_len);
-                $data = stream_get_contents($socket, $info['len']);
-                /** @var Event $event */
-                $event = unserialize($data);
-                if (!empty($event) && $event instanceof Event) {
-                    $this->dispatcher->dispatch($event->getName(), $event);
-                }
+        while (msg_receive($this->queue, 0, $pid, 128, $message, false, MSG_IPC_NOWAIT)) {
+            $pid = intval($message);
+            $socket = $this->sockets[$pid];
+            if (feof($socket)) {
+                continue;
+            }
+            $packed_len = stream_get_contents($socket, 4);
+            $info = unpack('Nlen', $packed_len);
+            $data = stream_get_contents($socket, $info['len']);
+            /** @var Event $event */
+            $event = unserialize($data);
+            if (!empty($event) && $event instanceof Event) {
+                $this->dispatcher->dispatch($event->getName(), $event);
             }
         }
     }
