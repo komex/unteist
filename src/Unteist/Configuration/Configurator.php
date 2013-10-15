@@ -87,7 +87,7 @@ class Configurator
         $this->registerListeners($this->config['listeners']);
         $this->configureLogger();
         $this->configureContext();
-        if ($this->config['processes'] === 1) {
+        if (intval($this->config['processes'], 10) === 1) {
             $processor = new Processor($this->container);
         } else {
             $processor = new MultiProcessor($this->container);
