@@ -4,7 +4,7 @@
     "keywords": [
         "testing", "test", "unit test", "phpunit", "framework"
     ],
-    "license": "CC-BY-SA",
+    "license": "CC-BY-SA-3.0",
     "type": "library",
     "authors": [
         {
@@ -39,6 +39,9 @@
     },
     "suggest": {
         "ext-pcntl": "Required for run in separate processes.",
+        "ext-sysvmsg": "Required for run in separate processes.",
+        "ext-posix": "The posix PHP extension",
+        "ext-sockets": "The sockets PHP extension",
         "komex/delusion": "Allows you to stub and mock any not build-in classes in your PHP code."
     },
     "autoload": {
