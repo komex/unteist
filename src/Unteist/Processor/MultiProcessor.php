@@ -7,6 +7,7 @@
 
 namespace Unteist\Processor;
 
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Event\Connector;
 use Unteist\Event\EventStorage;
 use Unteist\Event\StorageEvent;
@@ -35,6 +36,10 @@ class MultiProcessor extends Processor
      * @var Connector
      */
     protected $connector;
+    /**
+     * @var int
+     */
+    private $exit_code = 0;
 
     /**
      * Set connector for multi processor working.
@@ -111,26 +116,32 @@ class MultiProcessor extends Processor
      */
     public function updateStorage(StorageEvent $event)
     {
-        $this->global_storage->unserialize($event->getData());
+        /** @var \ArrayObject $globalStorage */
+        $globalStorage = $this->container->get('storage.global');
+        $globalStorage->unserialize($event->getData());
     }
 
     /**
      * Run all TestCases.
      *
+     * @param \ArrayObject $suites
+     *
      * @return int Exit code
      */
-    public function run()
+    public function run(\ArrayObject $suites)
     {
-        set_error_handler([$this, 'errorHandler'], $this->error_types);
-        $this->dispatcher->dispatch(EventStorage::EV_APP_STARTED);
+        /** @var EventDispatcherInterface $dispatcher */
+        $dispatcher = $this->container->get('dispatcher');
+        $dispatcher->dispatch(EventStorage::EV_APP_STARTED);
         $this->logger->info(
             'Run TestCases in forked processes.',
             ['pid' => getmypid(), 'procs' => $this->processes]
         );
         declare(ticks = 1);
         pcntl_signal(SIGCHLD, [$this, 'childSignalHandler']);
-        $this->dispatcher->addListener(EventStorage::EV_STORAGE_GLOBAL_UPDATE, [$this, 'updateStorage']);
-        foreach ($this->suites as $suite) {
+        pcntl_signal(POLL_MSG, [$this->connector, 'read']);
+        $dispatcher->addListener(EventStorage::EV_STORAGE_GLOBAL_UPDATE, [$this, 'updateStorage']);
+        foreach ($suites as $suite) {
             $this->launchJob($suite);
             while (count($this->current_jobs) >= $this->processes) {
                 $this->logger->debug(
@@ -149,7 +160,7 @@ class MultiProcessor extends Processor
         }
         $this->connector->read();
         $this->logger->info('All tests done.', ['pid' => getmypid(), 'exit_code' => $this->exit_code]);
-        $this->dispatcher->dispatch(EventStorage::EV_APP_FINISHED);
+        $dispatcher->dispatch(EventStorage::EV_APP_FINISHED);
 
         return $this->exit_code;
     }
@@ -191,11 +202,15 @@ class MultiProcessor extends Processor
                 }
             } else {
                 $this->connector->activate();
-                $hash = sha1($this->global_storage->serialize());
+                /** @var \ArrayObject $globalStorage */
+                $globalStorage = $this->container->get('storage.global');
+                $hash = sha1($globalStorage->serialize());
                 $status_code = $this->executor($case);
-                $data = $this->global_storage->serialize();
+                $data = $globalStorage->serialize();
                 if (sha1($data) !== $hash) {
-                    $this->dispatcher->dispatch(EventStorage::EV_STORAGE_GLOBAL_UPDATE, new StorageEvent($data));
+                    /** @var EventDispatcherInterface $dispatcher */
+                    $dispatcher = $this->container->get('dispatcher');
+                    $dispatcher->dispatch(EventStorage::EV_STORAGE_GLOBAL_UPDATE, new StorageEvent($data));
                 }
                 exit($status_code);
             }
