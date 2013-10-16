@@ -35,14 +35,13 @@
     },
     "require-dev": {
         "phpunit/phpunit": "3.7.*",
-        "phpmd/phpmd": "1.4.*"
+        "komex/delusion": "dev-develop"
     },
     "suggest": {
         "ext-pcntl": "Required for run in separate processes.",
         "ext-sysvmsg": "Required for run in separate processes.",
         "ext-posix": "The posix PHP extension",
-        "ext-sockets": "The sockets PHP extension",
-        "komex/delusion": "Allows you to stub and mock any not build-in classes in your PHP code."
+        "ext-sockets": "The sockets PHP extension"
     },
     "autoload": {
         "psr-0": {

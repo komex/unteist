@@ -9,7 +9,6 @@ namespace Unteist\Console;
 
 
 use Symfony\Component\Console\Application;
-use Symfony\Component\Console\Input\InputInterface;
 
 /**
  * Class Unteist
@@ -35,11 +34,9 @@ class Unteist extends Application
     /**
      * Gets the name of the command based on input.
      *
-     * @param InputInterface $input The input interface
-     *
      * @return string The command name
      */
-    protected function getCommandName(InputInterface $input)
+    protected function getCommandName()
     {
         // This should return the name of your command.
         return 'run';
