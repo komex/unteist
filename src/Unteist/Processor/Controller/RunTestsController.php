@@ -174,27 +174,32 @@ class RunTestsController extends AbstractController
             case MethodEvent::METHOD_OK:
                 $test->setStatus(TestMeta::TEST_DONE);
                 $this->dispatcher->dispatch(EventStorage::EV_METHOD_DONE, $event);
+                $this->precondition->dispatch(EventStorage::EV_METHOD_DONE, $event);
                 break;
             case MethodEvent::METHOD_SKIPPED:
                 $test->setStatus(TestMeta::TEST_SKIPPED);
                 $event->setTime(0);
                 $logger->debug('The test was skipped.', $context);
                 $this->dispatcher->dispatch(EventStorage::EV_METHOD_SKIPPED, $event);
+                $this->precondition->dispatch(EventStorage::EV_METHOD_SKIPPED, $event);
                 break;
             case MethodEvent::METHOD_FAILED:
                 $test->setStatus(TestMeta::TEST_FAILED);
                 $logger->debug('Assert fail.', $context);
                 $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, $event);
+                $this->precondition->dispatch(EventStorage::EV_METHOD_FAILED, $event);
                 break;
             case MethodEvent::METHOD_INCOMPLETE:
                 $test->setStatus(TestMeta::TEST_INCOMPLETE);
                 $logger->debug('Test incomplete.', $context);
                 $this->dispatcher->dispatch(EventStorage::EV_METHOD_INCOMPLETE, $event);
+                $this->precondition->dispatch(EventStorage::EV_METHOD_INCOMPLETE, $event);
                 break;
             default:
                 $test->setStatus(TestMeta::TEST_FAILED);
                 $logger->critical('Unexpected exception.', $context);
                 $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, $event);
+                $this->precondition->dispatch(EventStorage::EV_METHOD_FAILED, $event);
         }
         if ($send_event) {
             $this->afterTest($event);
