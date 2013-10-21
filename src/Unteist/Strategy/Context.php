@@ -37,16 +37,6 @@ class Context
     protected $custom_exceptions = [];
 
     /**
-     * Setup default strategy.
-     */
-    public function __construct(StrategyInterface $error, StrategyInterface $failure, StrategyInterface $incomplete)
-    {
-        $this->setErrorStrategy($error);
-        $this->setFailureStrategy($failure);
-        $this->setIncompleteStrategy($incomplete);
-    }
-
-    /**
      * Associate exception with system strategy.
      *
      * @param string $exception Exception class name

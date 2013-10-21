@@ -314,13 +314,9 @@ class Configurator
     private function configureContext()
     {
         $definition = $this->container->getDefinition('context');
-        $definition->setArguments(
-            [
-                new Reference($this->config['context']['error']),
-                new Reference($this->config['context']['failure']),
-                new Reference($this->config['context']['incomplete'])
-            ]
-        );
+        $definition->addMethodCall('setErrorStrategy', [new Reference($this->config['context']['error'])]);
+        $definition->addMethodCall('setFailureStrategy', [new Reference($this->config['context']['failure'])]);
+        $definition->addMethodCall('setIncompleteStrategy', [new Reference($this->config['context']['incomplete'])]);
         foreach ($this->config['context']['associations'] as $class => $strategy_id) {
             $definition->addMethodCall('associateException', [$class, new Reference($strategy_id)]);
         }
