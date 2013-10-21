@@ -51,7 +51,14 @@ class RunTestsController extends AbstractController
         if ($test->getStatus() !== TestMeta::TEST_NEW && $test->getStatus() !== TestMeta::TEST_MARKED) {
             return 0;
         }
-        $this->runner->resolveDependencies($test);
+        try {
+            $this->runner->resolveDependencies($test);
+        } catch (SkipTestException $e) {
+            $controller = new SkipTestsController($this->container);
+            $controller->test($test);
+
+            return 1;
+        }
         $dataProvider = $this->runner->getDataSet($test->getDataProvider());
         $status_code = 0;
         $this->context = $this->container->get('context');
@@ -62,15 +69,6 @@ class RunTestsController extends AbstractController
             $event->setDepends($test->getDependencies());
             if (count($dataProvider) > 1) {
                 $event->setDataSet($dp_number + 1);
-            }
-            try {
-                $this->beforeTest($event);
-            } catch (\Exception $e) {
-                $method = $this->preconditionFailed($e)->getMethod();
-                $controller = new SkipTestsController($this->container);
-                $controller->setDepends($method);
-                $controller->test($test);
-                continue;
             }
             $code = $this->execute($test, $event, $data_set);
             if ($code > 0) {
@@ -86,8 +84,13 @@ class RunTestsController extends AbstractController
      */
     public function afterCase()
     {
-        $this->precondition->dispatch(EventStorage::EV_AFTER_CASE);
-        parent::afterCase();
+        try {
+            $this->precondition->dispatch(EventStorage::EV_AFTER_CASE);
+            parent::afterCase();
+        } catch (\Exception $e) {
+            $this->context->onAfterCase($e);
+            $this->preconditionFailed($e);
+        }
     }
 
     /**
@@ -111,6 +114,7 @@ class RunTestsController extends AbstractController
         try {
             $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
         } catch (\Exception $e) {
+            $this->context->onAfterTest($e);
             $this->switchController($e);
         }
     }
@@ -125,18 +129,23 @@ class RunTestsController extends AbstractController
     private function execute(TestMeta $test, MethodEvent $event, array $data_set)
     {
         try {
+            $this->beforeTest($event);
+        } catch (\Exception $e) {
+            $this->context->onBeforeTest($e);
+            $method = $this->preconditionFailed($e)->getMethod();
+            $controller = new SkipTestsController($this->container);
+            $controller->setDepends($method);
+            $controller->test($test);
+
+            return 1;
+        }
+        try {
             $this->started = microtime(true);
             $this->asserts = Assert::getAssertsCount();
             $status_code = $this->convert($test, $event, $data_set);
-        } catch (SkipTestException $e) {
-            $this->finish($test, $event, MethodEvent::METHOD_SKIPPED, $e, false);
-            $status_code = 1;
         } catch (TestFailException $e) {
             $this->finish($test, $event, MethodEvent::METHOD_FAILED, $e);
             $status_code = $this->context->onFailure($e);
-        } catch (IncompleteTestException $e) {
-            $this->finish($test, $event, MethodEvent::METHOD_INCOMPLETE, $e);
-            $status_code = $this->context->onIncomplete($e);
         }
 
         return $status_code;
@@ -240,9 +249,6 @@ class RunTestsController extends AbstractController
         try {
             $status_code = $this->behavior($test, $data_set);
             $this->finish($test, $event, MethodEvent::METHOD_OK);
-        } catch (TestFailException $e) {
-            $status_code = $this->context->onFailure($e);
-            $this->finish($test, $event, MethodEvent::METHOD_FAILED, $e);
         } catch (TestErrorException $e) {
             $status_code = $this->context->onError($e);
             $this->finish($test, $event, MethodEvent::METHOD_FAILED, $e);
@@ -250,7 +256,7 @@ class RunTestsController extends AbstractController
             $status_code = $this->context->onIncomplete($e);
             $this->finish($test, $event, MethodEvent::METHOD_INCOMPLETE, $e);
         } catch (\Exception $e) {
-            $status_code = $this->exceptionControl($test, $e);
+            $status_code = $this->exceptionControl($test, $event, $e);
         }
 
         return $status_code;
@@ -260,11 +266,12 @@ class RunTestsController extends AbstractController
      * Try to resolve situation with exception.
      *
      * @param TestMeta $test
+     * @param MethodEvent $event
      * @param \Exception $e
      *
      * @return int Status code
      */
-    private function exceptionControl(TestMeta $test, \Exception $e)
+    private function exceptionControl(TestMeta $test, MethodEvent $event, \Exception $e)
     {
         if (is_a($e, $test->getExpectedException())) {
             $code = $test->getExpectedExceptionCode();
@@ -278,8 +285,10 @@ class RunTestsController extends AbstractController
                     0,
                     $e
                 );
+                $status = $this->context->onFailure($error);
+                $this->finish($test, $event, MethodEvent::METHOD_FAILED, $e);
 
-                return $this->context->onFailure($error);
+                return $status;
             }
             $message = $test->getExpectedExceptionMessage();
             if ($message !== null && strpos($e->getMessage(), $message) === false) {
@@ -292,8 +301,10 @@ class RunTestsController extends AbstractController
                     0,
                     $e
                 );
+                $status = $this->context->onFailure($error);
+                $this->finish($test, $event, MethodEvent::METHOD_FAILED, $e);
 
-                return $this->context->onFailure($error);
+                return $status;
             }
 
             return 0;

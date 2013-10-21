@@ -14,6 +14,7 @@ use Unteist\Event\MethodEvent;
 use Unteist\Event\TestCaseEvent;
 use Unteist\Meta\TestMeta;
 use Unteist\Processor\Runner;
+use Unteist\Strategy\Context;
 
 /**
  * Class AbstractController
@@ -85,6 +86,9 @@ abstract class AbstractController
             $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
             $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
         } catch (\Exception $e) {
+            /** @var Context $context */
+            $context = $this->container->get('context');
+            $context->onBeforeCase($e);
             $this->switchController($e);
         }
     }
