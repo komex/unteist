@@ -229,8 +229,16 @@ class CliReport implements EventSubscriberInterface
             )
         );
         $this->output->writeln(sprintf('[%s]: %s', $method->getException(), $method->getExceptionMessage()));
-        if ($method->getFile() !== null) {
-            $this->output->writeln(sprintf('%s: %d', $method->getFile(), $method->getLine()));
+        $file = $method->getFile();
+        $line = $method->getLine();
+        foreach ($method->getTrace() as $trace) {
+            $this->output->write(sprintf('- %s%s%s()', $trace['class'], $trace['type'], $trace['function']));
+            $output = sprintf(' at <info>%s</info>:<comment>%d</comment>', $file, $line);
+            $this->output->writeln($output);
+            if (isset($trace['file'])) {
+                $file = $trace['file'];
+                $line = $trace['line'];
+            }
         }
         $this->printSkippedTests($method);
         $this->output->writeln('');

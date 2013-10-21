@@ -198,6 +198,8 @@ class MethodEvent extends Event
         while ($exception->getPrevious() !== null) {
             $exception = $exception->getPrevious();
         }
+        $this->file = $exception->getFile();
+        $this->line = $exception->getLine();
         $this->exception = get_class($exception);
         $this->exceptionMessage = $exception->getMessage();
         $trace = $exception->getTrace();
@@ -223,6 +225,16 @@ class MethodEvent extends Event
     }
 
     /**
+     * Get stack trace of exception.
+     *
+     * @return array
+     */
+    public function getTrace()
+    {
+        return $this->trace;
+    }
+
+    /**
      * @return string
      */
     public function getExceptionMessage()
@@ -239,27 +251,11 @@ class MethodEvent extends Event
     }
 
     /**
-     * @param string $file
-     */
-    public function setFile($file)
-    {
-        $this->file = $file;
-    }
-
-    /**
      * @return int
      */
     public function getLine()
     {
         return $this->line;
-    }
-
-    /**
-     * @param int $line
-     */
-    public function setLine($line)
-    {
-        $this->line = $line;
     }
 
     /**
