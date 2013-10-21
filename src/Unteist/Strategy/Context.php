@@ -136,6 +136,62 @@ class Context
     }
 
     /**
+     * Generate exception on beforeCase fail.
+     *
+     * @param \Exception $exception
+     *
+     * @return int Status code
+     */
+    public function onBeforeCase(\Exception $exception)
+    {
+        $this->beforeCaseStrategy->generateException($exception);
+
+        return 1;
+    }
+
+    /**
+     * Generate exception on beforeTest fail.
+     *
+     * @param \Exception $exception
+     *
+     * @return int Status code
+     */
+    public function onBeforeTest(\Exception $exception)
+    {
+        $this->beforeTestStrategy->generateException($exception);
+
+        return 1;
+    }
+
+    /**
+     * Generate exception on afterTest fail.
+     *
+     * @param \Exception $exception
+     *
+     * @return int Status code
+     */
+    public function onAfterTest(\Exception $exception)
+    {
+        $this->afterTestStrategy->generateException($exception);
+
+        return 1;
+    }
+
+    /**
+     * Generate exception on afterCase fail.
+     *
+     * @param \Exception $exception
+     *
+     * @return int Status code
+     */
+    public function onAfterCase(\Exception $exception)
+    {
+        $this->afterCaseStrategy->generateException($exception);
+
+        return 1;
+    }
+
+    /**
      * @param StrategyInterface $afterCaseStrategy
      */
     public function setAfterCaseStrategy(StrategyInterface $afterCaseStrategy)
