@@ -155,6 +155,7 @@ class Launcher extends Command
         if (!empty($parameters)) {
             parse_str(join('&', $parameters), $params);
             foreach ($params as $name => $value) {
+                $name = str_replace('_', '.', $name);
                 $this->container->setParameter($name, $value);
             }
         }

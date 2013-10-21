@@ -1,4 +1,4 @@
-<phpunit bootstrap="vendor/autoload.php" colors="true" convertErrorsToExceptions="true"
+<phpunit bootstrap="tests/bootstrap.php" colors="true" convertErrorsToExceptions="true"
          convertNoticesToExceptions="true" convertWarningsToExceptions="true">
     <testsuites>
         <testsuite name="Unteist">
