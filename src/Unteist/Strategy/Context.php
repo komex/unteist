@@ -22,19 +22,35 @@ class Context
     /**
      * @var StrategyInterface
      */
-    protected $error_strategy;
+    protected $errorStrategy;
     /**
      * @var StrategyInterface
      */
-    protected $failure_strategy;
+    protected $failureStrategy;
     /**
      * @var StrategyInterface
      */
-    protected $incomplete_strategy;
+    protected $incompleteStrategy;
+    /**
+     * @var StrategyInterface
+     */
+    protected $beforeCaseStrategy;
+    /**
+     * @var StrategyInterface
+     */
+    protected $beforeTestStrategy;
+    /**
+     * @var StrategyInterface
+     */
+    protected $afterTestStrategy;
+    /**
+     * @var StrategyInterface
+     */
+    protected $afterCaseStrategy;
     /**
      * @var StrategyInterface[]
      */
-    protected $custom_exceptions = [];
+    protected $customExceptions = [];
 
     /**
      * Associate exception with system strategy.
@@ -44,37 +60,37 @@ class Context
      */
     public function associateException($exception, StrategyInterface $strategy)
     {
-        $this->custom_exceptions[$exception] = $strategy;
+        $this->customExceptions[$exception] = $strategy;
     }
 
     /**
      * Choose a strategy for the situation in error.
      *
-     * @param StrategyInterface $error_strategy
+     * @param StrategyInterface $strategy
      */
-    public function setErrorStrategy(StrategyInterface $error_strategy)
+    public function setErrorStrategy(StrategyInterface $strategy)
     {
-        $this->error_strategy = $error_strategy;
+        $this->errorStrategy = $strategy;
     }
 
     /**
      * Choose a strategy for the situation in failure test.
      *
-     * @param StrategyInterface $failure_strategy
+     * @param StrategyInterface $strategy
      */
-    public function setFailureStrategy(StrategyInterface $failure_strategy)
+    public function setFailureStrategy(StrategyInterface $strategy)
     {
-        $this->failure_strategy = $failure_strategy;
+        $this->failureStrategy = $strategy;
     }
 
     /**
      * Choose a strategy for the situation in incomplete test.
      *
-     * @param StrategyInterface $incomplete_strategy
+     * @param StrategyInterface $strategy
      */
-    public function setIncompleteStrategy(StrategyInterface $incomplete_strategy)
+    public function setIncompleteStrategy(StrategyInterface $strategy)
     {
-        $this->incomplete_strategy = $incomplete_strategy;
+        $this->incompleteStrategy = $strategy;
     }
 
     /**
@@ -86,7 +102,7 @@ class Context
      */
     public function onError(TestErrorException $exception)
     {
-        $this->error_strategy->generateException($exception);
+        $this->errorStrategy->generateException($exception);
 
         return 1;
     }
@@ -100,7 +116,7 @@ class Context
      */
     public function onFailure(TestFailException $exception)
     {
-        $this->failure_strategy->generateException($exception);
+        $this->failureStrategy->generateException($exception);
 
         return 1;
     }
@@ -114,9 +130,41 @@ class Context
      */
     public function onIncomplete(IncompleteTestException $exception)
     {
-        $this->incomplete_strategy->generateException($exception);
+        $this->incompleteStrategy->generateException($exception);
 
         return 1;
+    }
+
+    /**
+     * @param StrategyInterface $afterCaseStrategy
+     */
+    public function setAfterCaseStrategy(StrategyInterface $afterCaseStrategy)
+    {
+        $this->afterCaseStrategy = $afterCaseStrategy;
+    }
+
+    /**
+     * @param StrategyInterface $afterTestStrategy
+     */
+    public function setAfterTestStrategy(StrategyInterface $afterTestStrategy)
+    {
+        $this->afterTestStrategy = $afterTestStrategy;
+    }
+
+    /**
+     * @param StrategyInterface $beforeCaseStrategy
+     */
+    public function setBeforeCaseStrategy(StrategyInterface $beforeCaseStrategy)
+    {
+        $this->beforeCaseStrategy = $beforeCaseStrategy;
+    }
+
+    /**
+     * @param StrategyInterface $beforeTestStrategy
+     */
+    public function setBeforeTestStrategy(StrategyInterface $beforeTestStrategy)
+    {
+        $this->beforeTestStrategy = $beforeTestStrategy;
     }
 
     /**
@@ -128,8 +176,8 @@ class Context
      */
     public function onUnexpectedException(\Exception $exception)
     {
-        if (isset($this->custom_exceptions[get_class($exception)])) {
-            $this->custom_exceptions[get_class($exception)]->generateException($exception);
+        if (isset($this->customExceptions[get_class($exception)])) {
+            $this->customExceptions[get_class($exception)]->generateException($exception);
         } else {
             throw $exception;
         }
