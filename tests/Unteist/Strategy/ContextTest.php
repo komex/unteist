@@ -8,7 +8,7 @@
 namespace Tests\Unteist\Strategy;
 
 use Unteist\Strategy\Context;
-use Unteist\Strategy\IncompleteTestStrategy;
+use Unteist\Strategy\TestFailStrategy;
 
 /**
  * Class ContextTest
@@ -28,8 +28,7 @@ class ContextTest extends \PHPUnit_Framework_TestCase
      */
     public function setUp()
     {
-        $strategy = new IncompleteTestStrategy();
-        $this->context = new Context($strategy, $strategy, $strategy);
+        $this->context = new Context();
     }
 
     /**
@@ -42,12 +41,12 @@ class ContextTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Unteist\Exception\IncompleteTestException
-     * @expectedExceptionMessage Test was marked as incomplete by chosen strategy
+     * @expectedException \Unteist\Exception\TestFailException
+     * @expectedExceptionMessage Test was marked as failure by chosen strategy
      */
     public function testUnexpectedExceptionWithAssociation()
     {
-        $this->context->associateException('Exception', new IncompleteTestStrategy());
+        $this->context->associateException('Exception', new TestFailStrategy());
         $this->context->onUnexpectedException(new \Exception('Message'));
     }
 }

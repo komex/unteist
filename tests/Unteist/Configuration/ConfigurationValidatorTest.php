@@ -56,12 +56,12 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
         $this->assertArrayHasKey('associations', $defaults);
         $this->assertArrayHasKey('levels', $defaults);
         $this->assertEquals('strategy.fail', $defaults['error']);
-        $this->assertEquals('strategy.fail', $defaults['failure']);
-        $this->assertEquals('strategy.incomplete', $defaults['incomplete']);
-        $this->assertEquals('strategy.fail', $defaults['beforeCase']);
-        $this->assertEquals('strategy.fail', $defaults['beforeTest']);
-        $this->assertEquals('strategy.fail', $defaults['afterTest']);
-        $this->assertEquals('strategy.fail', $defaults['afterCase']);
+        $this->assertEquals('strategy.continue', $defaults['failure']);
+        $this->assertEquals('strategy.continue', $defaults['incomplete']);
+        $this->assertEquals('strategy.continue', $defaults['beforeCase']);
+        $this->assertEquals('strategy.continue', $defaults['beforeTest']);
+        $this->assertEquals('strategy.exception', $defaults['afterTest']);
+        $this->assertEquals('strategy.exception', $defaults['afterCase']);
         $this->assertSame(['E_ALL'], $defaults['levels']);
         $this->assertInternalType('array', $defaults['associations']);
         $this->assertEmpty($defaults['associations']);
