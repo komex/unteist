@@ -7,29 +7,23 @@
 
 namespace Unteist\Strategy;
 
-use Unteist\Exception\IncompleteTestException;
-
 /**
- * Class IncompleteTestStrategy
+ * Class ExceptionStrategy
  *
  * @package Unteist\Strategy
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class IncompleteTestStrategy implements StrategyInterface
+class ExceptionStrategy implements StrategyInterface
 {
     /**
      * Generate new specified exception or do nothing.
      *
      * @param \Exception $exception
      *
-     * @throws IncompleteTestException
+     * @throws \Exception
      */
     public function generateException(\Exception $exception)
     {
-        if ($exception instanceof IncompleteTestException) {
-            throw $exception;
-        } else {
-            throw new IncompleteTestException('Test was marked as incomplete by chosen strategy', 0, $exception);
-        }
+        throw $exception;
     }
 }
