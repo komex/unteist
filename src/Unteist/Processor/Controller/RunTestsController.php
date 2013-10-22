@@ -60,21 +60,21 @@ class RunTestsController extends AbstractController
             return 1;
         }
         $dataProvider = $this->runner->getDataSet($test->getDataProvider());
-        $status_code = 0;
+        $statusCode = 0;
         $this->context = $this->container->get('context');
-        foreach ($dataProvider as $dp_number => $data_set) {
+        foreach ($dataProvider as $index => $dataSet) {
             $event = new MethodEvent();
             $event->configByTestMeta($test);
             if (count($dataProvider) > 1) {
-                $event->setDataSet($dp_number + 1);
+                $event->setDataSet($index + 1);
             }
-            $code = $this->execute($test, $event, $data_set);
+            $code = $this->execute($test, $event, $dataSet);
             if ($code > 0) {
-                $status_code = $code;
+                $statusCode = $code;
             }
         }
 
-        return $status_code;
+        return $statusCode;
     }
 
     /**
@@ -120,11 +120,11 @@ class RunTestsController extends AbstractController
     /**
      * @param TestMeta $test
      * @param MethodEvent $event
-     * @param array $data_set
+     * @param array $dataSet
      *
      * @return int
      */
-    private function execute(TestMeta $test, MethodEvent $event, array $data_set)
+    private function execute(TestMeta $test, MethodEvent $event, array $dataSet)
     {
         try {
             $this->beforeTest($event);
@@ -140,13 +140,13 @@ class RunTestsController extends AbstractController
         try {
             $this->started = microtime(true);
             $this->asserts = Assert::getAssertsCount();
-            $status_code = $this->convert($test, $event, $data_set);
+            $statusCode = $this->convert($test, $event, $dataSet);
         } catch (TestFailException $e) {
             $this->finish($test, $event, MethodEvent::METHOD_FAILED, $e);
-            $status_code = $this->context->onFailure($e);
+            $statusCode = $this->context->onFailure($e);
         }
 
-        return $status_code;
+        return $statusCode;
     }
 
     /**
@@ -155,24 +155,29 @@ class RunTestsController extends AbstractController
      * @param TestMeta $test
      * @param MethodEvent $event
      * @param int $status
-     * @param \Exception $e
-     * @param bool $send_event
+     * @param \Exception $exception
+     * @param bool $sendEvent
      */
-    private function finish(TestMeta $test, MethodEvent $event, $status, \Exception $e = null, $send_event = true)
-    {
+    private function finish(
+        TestMeta $test,
+        MethodEvent $event,
+        $status,
+        \Exception $exception = null,
+        $sendEvent = true
+    ) {
         $event->setStatus($status);
         $event->setTime(floatval(microtime(true) - $this->started));
         $event->setAsserts(Assert::getAssertsCount() - $this->asserts);
         $this->asserts = Assert::getAssertsCount();
-        if ($e === null) {
+        if ($exception === null) {
             $context = [];
         } else {
-            $event->parseException($e);
+            $event->parseException($exception);
             $context = [
                 'pid' => getmypid(),
                 'method' => $event->getMethod(),
-                'exception' => get_class($e),
-                'message' => $e->getMessage(),
+                'exception' => get_class($exception),
+                'message' => $exception->getMessage(),
             ];
         }
         /** @var LoggerInterface $logger */
@@ -208,7 +213,7 @@ class RunTestsController extends AbstractController
                 $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, $event);
                 $this->precondition->dispatch(EventStorage::EV_METHOD_FAILED, $event);
         }
-        if ($send_event) {
+        if ($sendEvent) {
             $this->afterTest($event);
         }
         parent::afterTest($event);
@@ -218,14 +223,14 @@ class RunTestsController extends AbstractController
      * Controller behavior.
      *
      * @param TestMeta $test
-     * @param array $data_set
+     * @param array $dataSet
      *
      * @throws TestFailException
      * @return int Status code
      */
-    private function behavior(TestMeta $test, array $data_set)
+    private function behavior(TestMeta $test, array $dataSet)
     {
-        call_user_func_array([$this->runner->getTestCase(), $test->getMethod()], $data_set);
+        call_user_func_array([$this->runner->getTestCase(), $test->getMethod()], $dataSet);
         if ($test->getExpectedException()) {
             throw new TestFailException('Expected exception ' . $test->getExpectedException());
         }
@@ -238,26 +243,26 @@ class RunTestsController extends AbstractController
      *
      * @param TestMeta $test
      * @param MethodEvent $event
-     * @param array $data_set
+     * @param array $dataSet
      *
      * @return int Status code
      */
-    private function convert(TestMeta $test, MethodEvent $event, array $data_set)
+    private function convert(TestMeta $test, MethodEvent $event, array $dataSet)
     {
         try {
-            $status_code = $this->behavior($test, $data_set);
+            $statusCode = $this->behavior($test, $dataSet);
             $this->finish($test, $event, MethodEvent::METHOD_OK);
         } catch (TestErrorException $e) {
-            $status_code = $this->context->onError($e);
+            $statusCode = $this->context->onError($e);
             $this->finish($test, $event, MethodEvent::METHOD_FAILED, $e);
         } catch (IncompleteTestException $e) {
-            $status_code = $this->context->onIncomplete($e);
+            $statusCode = $this->context->onIncomplete($e);
             $this->finish($test, $event, MethodEvent::METHOD_INCOMPLETE, $e);
         } catch (\Exception $e) {
-            $status_code = $this->exceptionControl($test, $event, $e);
+            $statusCode = $this->exceptionControl($test, $event, $e);
         }
 
-        return $status_code;
+        return $statusCode;
     }
 
     /**
@@ -265,49 +270,49 @@ class RunTestsController extends AbstractController
      *
      * @param TestMeta $test
      * @param MethodEvent $event
-     * @param \Exception $e
+     * @param \Exception $exception
      *
      * @return int Status code
      */
-    private function exceptionControl(TestMeta $test, MethodEvent $event, \Exception $e)
+    private function exceptionControl(TestMeta $test, MethodEvent $event, \Exception $exception)
     {
-        if (is_a($e, $test->getExpectedException())) {
+        if (is_a($exception, $test->getExpectedException())) {
             $code = $test->getExpectedExceptionCode();
-            if ($code !== null && $code !== $e->getCode()) {
+            if ($code !== null && $code !== $exception->getCode()) {
                 $error = new TestFailException(
                     sprintf(
                         'Failed asserting that expected exception code %d is equal to %d',
                         $code,
-                        $e->getCode()
+                        $exception->getCode()
                     ),
                     0,
-                    $e
+                    $exception
                 );
                 $status = $this->context->onFailure($error);
-                $this->finish($test, $event, MethodEvent::METHOD_FAILED, $e);
+                $this->finish($test, $event, MethodEvent::METHOD_FAILED, $exception);
 
                 return $status;
             }
             $message = $test->getExpectedExceptionMessage();
-            if ($message !== null && strpos($e->getMessage(), $message) === false) {
+            if ($message !== null && strpos($exception->getMessage(), $message) === false) {
                 $error = new TestFailException(
                     sprintf(
                         'Failed asserting that exception message "%s" contains "%s"',
-                        $e->getMessage(),
+                        $exception->getMessage(),
                         $message
                     ),
                     0,
-                    $e
+                    $exception
                 );
                 $status = $this->context->onFailure($error);
-                $this->finish($test, $event, MethodEvent::METHOD_FAILED, $e);
+                $this->finish($test, $event, MethodEvent::METHOD_FAILED, $exception);
 
                 return $status;
             }
 
             return 0;
         } else {
-            $this->context->onUnexpectedException($e);
+            $this->context->onUnexpectedException($exception);
 
             return 1;
         }
