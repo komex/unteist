@@ -82,8 +82,6 @@ class TestMetaTest extends \PHPUnit_Framework_TestCase
     {
         return [
             [['expectedException' => 'Exception'], 'Exception'],
-            [['expectedException' => true]],
-            [['expectedException' => []]],
             [['expectedException' => '']],
             [['ExpectedException' => 'dp']],
             [[]],
@@ -91,16 +89,16 @@ class TestMetaTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @param array $modifiers
+     * @param array $annotations
      * @param string $expected
      *
      * @dataProvider dpExpectedException
      */
-    public function testExpectedException(array $modifiers, $expected = null)
+    public function testExpectedException(array $annotations, $expected = null)
     {
         $method = new \ReflectionMethod($this->meta, 'setExpectedException');
         $method->setAccessible(true);
-        $method->invoke($this->meta, $modifiers);
+        $method->invoke($this->meta, $annotations);
         $this->assertSame($expected, $this->meta->getExpectedException());
     }
 
@@ -115,9 +113,6 @@ class TestMetaTest extends \PHPUnit_Framework_TestCase
             'Message must be empty if exception does not set'
         );
 
-        $method->invoke($this->meta, ['expectedException' => 'Exception', 'expectedExceptionMessage' => true]);
-        $this->assertEmpty($this->meta->getExpectedExceptionMessage(), 'Message may be only type of string');
-
         $method->invoke($this->meta, ['expectedException' => 'Exception', 'expectedExceptionMessage' => 'Message']);
         $this->assertSame('Message', $this->meta->getExpectedExceptionMessage());
     }
@@ -130,11 +125,11 @@ class TestMetaTest extends \PHPUnit_Framework_TestCase
         $method->invoke($this->meta, ['expectedExceptionCode' => 5]);
         $this->assertNull($this->meta->getExpectedExceptionCode(), 'Code must be NULL if exception does not set');
 
-        $method->invoke($this->meta, ['expectedException' => 'Exception', 'expectedExceptionCode' => true]);
-        $this->assertNull($this->meta->getExpectedExceptionCode(), 'Code must be set');
-
         $method->invoke($this->meta, ['expectedException' => 'Exception', 'expectedExceptionCode' => 5]);
         $this->assertSame(5, $this->meta->getExpectedExceptionCode());
+
+        $method->invoke($this->meta, ['expectedException' => 'Exception', 'expectedExceptionCode' => '76']);
+        $this->assertSame(76, $this->meta->getExpectedExceptionCode());
     }
 
     public function testDependsDefault()
@@ -152,7 +147,6 @@ class TestMetaTest extends \PHPUnit_Framework_TestCase
     public function dpDepends()
     {
         return [
-            [true, []],
             ['!@*>', []],
             ['test1, test2, test1', ['test1', 'test2']],
             ['test1,method, test2#$, test1', ['test1', 'test2']],
