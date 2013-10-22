@@ -8,6 +8,7 @@ services:
     logger:
         class: \Monolog\Logger
         arguments: [ %logger.name% ]
+        synthetic: true
     logger.handler.stream:
         class: \Monolog\Handler\StreamHandler
         arguments: [ %logger.handler.stream.output%, %logger.handler.stream.level% ]
@@ -30,6 +31,7 @@ services:
         class: \Unteist\Filter\GroupMethodsFilter
     context:
         class: \Unteist\Strategy\Context
+        synthetic: true
     dispatcher:
         class: \Symfony\Component\EventDispatcher\EventDispatcher
     storage.global:
@@ -37,3 +39,6 @@ services:
     connector:
         class: \Unteist\Event\Connector
         arguments: [ @dispatcher, %connector.events% ]
+    runner:
+        class: \Unteist\Processor\Runner
+        synthetic: true

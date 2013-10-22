@@ -152,7 +152,8 @@ class Processor
                 unset($reflection_class);
             }
             $class->setContainer($this->container);
-            $runner = new Runner($this->container);
+            /** @var Runner $runner */
+            $runner = $this->container->get('runner');
             $runner->setFilters($this->methods_filters);
 
             return $runner->run($class);

@@ -86,6 +86,7 @@ class Configurator
         $this->registerListeners($this->config['listeners']);
         $this->configureLogger();
         $this->configureContext();
+        $this->configureRunner();
         if (intval($this->config['processes'], 10) === 1) {
             $processor = new Processor($this->container);
         } else {
@@ -100,14 +101,14 @@ class Configurator
         if (!empty($this->config['groups'])) {
             array_unshift($this->config['filters']['methods'], 'filter.methods.group');
         }
-        foreach ($this->config['filters']['class'] as $filter_id) {
+        foreach ($this->config['filters']['class'] as $filterId) {
             /** @var ClassFilterInterface $filter */
-            $filter = $this->container->get($filter_id);
+            $filter = $this->container->get($filterId);
             $processor->addClassFilter($filter);
         }
-        foreach ($this->config['filters']['methods'] as $filter_id) {
+        foreach ($this->config['filters']['methods'] as $filterId) {
             /** @var MethodsFilterInterface $filter */
-            $filter = $this->container->get($filter_id);
+            $filter = $this->container->get($filterId);
             $filter->setConfig($this->config);
             $processor->addMethodsFilter($filter);
         }
@@ -153,14 +154,21 @@ class Configurator
             }
             /** @var \SplFileInfo $file */
             foreach ($finder as $file) {
-                $real_path = $file->getRealPath();
-                if (!$files->offsetExists($real_path) && substr($file->getFilename(), -8) === 'Test.php') {
-                    $files[$real_path] = $file;
+                $realPath = $file->getRealPath();
+                if (!$files->offsetExists($realPath) && substr($file->getFilename(), -8) === 'Test.php') {
+                    $files[$realPath] = $file;
                 }
             }
         }
 
         return $files;
+    }
+
+    private function configureRunner()
+    {
+        $runner = $this->container->getDefinition('runner');
+        $runner->addArgument($this->container);
+        $runner->setSynthetic(false);
     }
 
     /**
@@ -191,9 +199,9 @@ class Configurator
         if ($processes !== null) {
             $config['processes'] = $processes;
         }
-        $report_dir = $this->input->getOption('report-dir');
-        if ($report_dir !== null) {
-            $config['report_dir'] = $report_dir;
+        $reportDir = $this->input->getOption('report-dir');
+        if ($reportDir !== null) {
+            $config['report_dir'] = $reportDir;
         }
         $groups = $this->input->getOption('group');
         if (!empty($groups)) {
@@ -302,6 +310,7 @@ class Configurator
         foreach ($handlers as $handler) {
             $definition->addMethodCall('pushHandler', [new Reference($handler)]);
         }
+        $definition->setSynthetic(false);
 
         return $definition;
     }
@@ -322,9 +331,10 @@ class Configurator
         $definition->addMethodCall('setBeforeTestStrategy', [new Reference($context['beforeTest'])]);
         $definition->addMethodCall('setAfterTestStrategy', [new Reference($context['afterTest'])]);
         $definition->addMethodCall('setAfterCaseStrategy', [new Reference($context['afterCase'])]);
-        foreach ($context['associations'] as $class => $strategy_id) {
-            $definition->addMethodCall('associateException', [$class, new Reference($strategy_id)]);
+        foreach ($context['associations'] as $class => $strategyId) {
+            $definition->addMethodCall('associateException', [$class, new Reference($strategyId)]);
         }
+        $definition->setSynthetic(false);
 
         return $definition;
     }
