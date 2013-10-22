@@ -64,9 +64,7 @@ class RunTestsController extends AbstractController
         $this->context = $this->container->get('context');
         foreach ($dataProvider as $dp_number => $data_set) {
             $event = new MethodEvent();
-            $event->setClass($test->getClass());
-            $event->setMethod($test->getMethod());
-            $event->setDepends($test->getDependencies());
+            $event->configByTestMeta($test);
             if (count($dataProvider) > 1) {
                 $event->setDataSet($dp_number + 1);
             }

@@ -8,6 +8,7 @@
 namespace Unteist\Event;
 
 use Symfony\Component\EventDispatcher\Event;
+use Unteist\Meta\TestMeta;
 
 /**
  * Class MethodEvent
@@ -81,6 +82,31 @@ class MethodEvent extends Event
      * @var array
      */
     private $trace = [];
+    /**
+     * @var array
+     */
+    private $annotations;
+
+    /**
+     * @param TestMeta $test
+     */
+    public function configByTestMeta(TestMeta $test)
+    {
+        $this->class = $test->getClass();
+        $this->method = $test->getMethod();
+        $this->depends = $test->getDependencies();
+        $this->annotations = $test->getAnnotations();
+    }
+
+    /**
+     * Get the list of raw annotations.
+     *
+     * @return array
+     */
+    public function getAnnotations()
+    {
+        return $this->annotations;
+    }
 
     /**
      * Get test's data set number.
@@ -110,16 +136,6 @@ class MethodEvent extends Event
     public function getDepends()
     {
         return $this->depends;
-    }
-
-    /**
-     * Set test's depends.
-     *
-     * @param array $depends
-     */
-    public function setDepends(array $depends)
-    {
-        $this->depends = $depends;
     }
 
     /**
@@ -170,14 +186,6 @@ class MethodEvent extends Event
     public function getClass()
     {
         return $this->class;
-    }
-
-    /**
-     * @param string $class
-     */
-    public function setClass($class)
-    {
-        $this->class = $class;
     }
 
     /**
@@ -264,14 +272,6 @@ class MethodEvent extends Event
     public function getMethod()
     {
         return $this->method;
-    }
-
-    /**
-     * @param string $method
-     */
-    public function setMethod($method)
-    {
-        $this->method = $method;
     }
 
     /**
