@@ -75,9 +75,8 @@ class Runner
      *
      * @return Runner
      */
-    public function __construct(
-        ContainerBuilder $container
-    ) {
+    public function __construct(ContainerBuilder $container)
+    {
         $this->container = $container;
         $this->logger = $this->container->get('logger');
         $this->precondition = new EventDispatcher();
@@ -85,27 +84,26 @@ class Runner
     }
 
     /**
-     * Parse block with annotations.
+     * Get raw annotations for reflected object.
      *
-     * @param string $doc Comments string
-     * @param array $keywords Allowed keywords
+     * @param \ReflectionFunctionAbstract $object
      *
      * @return array
      */
-    public static function parseDocBlock($doc, array $keywords)
+    public static function getAnnotations(\ReflectionFunctionAbstract $object)
     {
+        $doc = $object->getDocComment();
         if (empty($doc)) {
-            $annotation = [];
+            return [];
         } else {
-            $pattern = sprintf('{\*\s*@(%s)\b(?:\s+([\w\s\\\\,]+))?[\r\n]*(?!\*)}', join('|', $keywords));
-            preg_match_all($pattern, $doc, $matches, PREG_SET_ORDER);
-            $annotation = [];
+            preg_match_all('{\*\s*@([a-z]+)\b(?:[\t ]+([^\n]+))?[\r\n]*(?!\*)}i', $doc, $matches, PREG_SET_ORDER);
+            $result = [];
             foreach ($matches as $match) {
-                $annotation[trim($match[1])] = trim($match[2]) ? : true;
+                $result[$match[1]] = count($match) === 2 ? null : $match[2];
             }
-        }
 
-        return $annotation;
+            return $result;
+        }
     }
 
     /**
@@ -167,36 +165,6 @@ class Runner
         $this->controller->afterCase();
 
         return $return_code;
-    }
-
-    /**
-     * Get test method by name.
-     * If test does not exits in list, method tries to add it.
-     *
-     * @param string $method Method name
-     *
-     * @return TestMeta
-     * @throws \InvalidArgumentException If test method does not exists
-     */
-    public function getTestMethod($method)
-    {
-        if ($this->tests->offsetExists($method)) {
-            return $this->tests->offsetGet($method);
-        }
-        if ($this->reflection_class->hasMethod($method)) {
-            $reflection_method = $this->reflection_class->getMethod($method);
-            $modifiers = $this->getModifiers($reflection_method);
-            if ($this->isTest($reflection_method, $modifiers)) {
-                return $this->addTest($reflection_method, $modifiers);
-            }
-        }
-        throw new \InvalidArgumentException(
-            sprintf(
-                'The depends method "%s::%s()" does not exists or is not a test',
-                $this->reflection_class->getName(),
-                $method
-            )
-        );
     }
 
     /**
@@ -295,59 +263,62 @@ class Runner
     }
 
     /**
-     * Parse docBlock and gets Modifiers.
+     * Get test method by name.
+     * If test does not exits in list, method tries to add it.
      *
-     * @param \ReflectionMethod $method Parsed method
+     * @param string $method Method name
      *
-     * @return array
+     * @return TestMeta
+     * @throws \InvalidArgumentException If test method does not exists
      */
-    private function getModifiers(\ReflectionMethod $method)
+    private function getTestMethod($method)
     {
-        return self::parseDocBlock(
-            $method->getDocComment(),
-            [
-                'beforeTest',
-                'afterTest',
-                'beforeCase',
-                'afterCase',
-                'group',
-                'depends',
-                'dataProvider',
-                'test',
-                'expectedException',
-                'expectedExceptionMessage',
-                'expectedExceptionCode',
-            ]
+        if ($this->tests->offsetExists($method)) {
+            return $this->tests->offsetGet($method);
+        }
+        if ($this->reflection_class->hasMethod($method)) {
+            $reflection_method = $this->reflection_class->getMethod($method);
+            $annotations = self::getAnnotations($reflection_method);
+            if ($this->isTest($reflection_method, $annotations)) {
+                return $this->addTest($reflection_method, $annotations);
+            }
+        }
+        throw new \InvalidArgumentException(
+            sprintf(
+                'The depends method "%s::%s()" does not exists or is not a test',
+                $this->reflection_class->getName(),
+                $method
+            )
         );
     }
 
     /**
      * @param \ReflectionMethod $method
      *
-     * @param array $modifiers
+     * @param array $annotations
      *
      * @return bool
      */
-    private function isTest(\ReflectionMethod $method, array $modifiers)
+    private function isTest(\ReflectionMethod $method, array $annotations)
     {
-        $method_filter = new MethodsFilter();
-        $method_filter->setModifiers($modifiers);
+        $methodFilter = new MethodsFilter();
+        $methodFilter->setAnnotations($annotations);
 
-        return $method_filter->condition($method);
+        return $methodFilter->condition($method);
     }
 
     /**
      * Check if method is filtered.
      *
      * @param \ReflectionMethod $method
-     * @param array $modifiers
+     * @param array $annotations
      *
      * @return bool
      */
-    private function filtered(\ReflectionMethod $method, array $modifiers)
+    private function filtered(\ReflectionMethod $method, array $annotations)
     {
         foreach ($this->filters as $filter) {
-            $filter->setParams($modifiers);
+            $filter->setAnnotations($annotations);
             if (!$filter->condition($method)) {
                 $this->logger->debug(
                     'Method is not a test.',
@@ -383,14 +354,14 @@ class Runner
             if ($this->tests->offsetExists($method->getName())) {
                 continue;
             }
-            $modifiers = $this->getModifiers($method);
-            if ($this->isTest($method, $modifiers)) {
-                if ($this->filtered($method, $modifiers)) {
+            $annotations = self::getAnnotations($method);
+            if ($this->isTest($method, $annotations)) {
+                if ($this->filtered($method, $annotations)) {
                     continue;
                 }
-                $this->addTest($method, $modifiers);
+                $this->addTest($method, $annotations);
             } else {
-                foreach (array_keys($modifiers) as $event) {
+                foreach (array_keys($annotations) as $event) {
                     $this->registerEventListener($event, $method->getName());
                 }
             }
@@ -399,17 +370,17 @@ class Runner
 
     /**
      * @param \ReflectionMethod $method
-     * @param array $modifiers
+     * @param array $annotations
      *
      * @return TestMeta
      */
-    private function addTest(\ReflectionMethod $method, array $modifiers)
+    private function addTest(\ReflectionMethod $method, array $annotations)
     {
         $method_name = $method->getName();
         $this->tests[$method_name] = new TestMeta(
             $this->reflection_class->getName(),
             $method_name,
-            $modifiers,
+            $annotations,
             $this->logger
         );
 
