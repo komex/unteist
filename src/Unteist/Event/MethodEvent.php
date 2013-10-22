@@ -8,6 +8,7 @@
 namespace Unteist\Event;
 
 use Symfony\Component\EventDispatcher\Event;
+use Unteist\Meta\TestMeta;
 
 /**
  * Class MethodEvent
@@ -60,7 +61,7 @@ class MethodEvent extends Event
     /**
      * @var int
      */
-    private $data_set = 0;
+    private $dataSet = 0;
     /**
      * @var string
      */
@@ -81,6 +82,31 @@ class MethodEvent extends Event
      * @var array
      */
     private $trace = [];
+    /**
+     * @var array
+     */
+    private $annotations;
+
+    /**
+     * @param TestMeta $test
+     */
+    public function configByTestMeta(TestMeta $test)
+    {
+        $this->class = $test->getClass();
+        $this->method = $test->getMethod();
+        $this->depends = $test->getDependencies();
+        $this->annotations = $test->getAnnotations();
+    }
+
+    /**
+     * Get the list of raw annotations.
+     *
+     * @return array
+     */
+    public function getAnnotations()
+    {
+        return $this->annotations;
+    }
 
     /**
      * Get test's data set number.
@@ -89,17 +115,17 @@ class MethodEvent extends Event
      */
     public function getDataSet()
     {
-        return $this->data_set;
+        return $this->dataSet;
     }
 
     /**
      * Set test's data set number.
      *
-     * @param int $data_set
+     * @param int $dataSet
      */
-    public function setDataSet($data_set)
+    public function setDataSet($dataSet)
     {
-        $this->data_set = intval($data_set, 10);
+        $this->dataSet = intval($dataSet, 10);
     }
 
     /**
@@ -110,16 +136,6 @@ class MethodEvent extends Event
     public function getDepends()
     {
         return $this->depends;
-    }
-
-    /**
-     * Set test's depends.
-     *
-     * @param array $depends
-     */
-    public function setDepends(array $depends)
-    {
-        $this->depends = $depends;
     }
 
     /**
@@ -173,14 +189,6 @@ class MethodEvent extends Event
     }
 
     /**
-     * @param string $class
-     */
-    public function setClass($class)
-    {
-        $this->class = $class;
-    }
-
-    /**
      * @return string
      */
     public function getException()
@@ -203,7 +211,7 @@ class MethodEvent extends Event
         $this->exception = get_class($exception);
         $this->exceptionMessage = $exception->getMessage();
         $trace = $exception->getTrace();
-        $expected_call_user_func = false;
+        $expectedCallUserFunc = false;
         $this->trace = [];
         foreach ($trace as $record) {
             unset($record['args']);
@@ -211,15 +219,15 @@ class MethodEvent extends Event
             if (empty($record['file']) && is_subclass_of($record['class'], '\\Unteist\\TestCase')) {
                 $this->class = $record['class'];
                 $this->method = $record['function'];
-                $expected_call_user_func = true;
+                $expectedCallUserFunc = true;
                 continue;
             }
-            if ($expected_call_user_func && substr($record['function'], 0, 14) === 'call_user_func') {
+            if ($expectedCallUserFunc && substr($record['function'], 0, 14) === 'call_user_func') {
                 array_pop($this->trace);
 
                 return;
             } else {
-                $expected_call_user_func = false;
+                $expectedCallUserFunc = false;
             }
         }
     }
@@ -264,14 +272,6 @@ class MethodEvent extends Event
     public function getMethod()
     {
         return $this->method;
-    }
-
-    /**
-     * @param string $method
-     */
-    public function setMethod($method)
-    {
-        $this->method = $method;
     }
 
     /**

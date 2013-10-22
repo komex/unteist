@@ -43,9 +43,7 @@ class SkipTestsController extends AbstractController
     {
         $test->setStatus(TestMeta::TEST_SKIPPED);
         $event = new MethodEvent();
-        $event->setClass($test->getClass());
-        $event->setMethod($test->getMethod());
-        $event->setDepends($test->getDependencies());
+        $event->configByTestMeta($test);
         $this->beforeTest($event);
         $event->setStatus(MethodEvent::METHOD_SKIPPED);
         if ($this->depends !== null) {
