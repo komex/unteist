@@ -45,15 +45,23 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
         $node = $this->getNode('getContextSection', 'context');
         /** @var array $defaults */
         $defaults = $node->getDefaultValue();
-        $this->assertCount(5, $defaults);
+        $this->assertCount(9, $defaults);
         $this->assertArrayHasKey('error', $defaults);
         $this->assertArrayHasKey('failure', $defaults);
         $this->assertArrayHasKey('incomplete', $defaults);
+        $this->assertArrayHasKey('beforeCase', $defaults);
+        $this->assertArrayHasKey('beforeTest', $defaults);
+        $this->assertArrayHasKey('afterTest', $defaults);
+        $this->assertArrayHasKey('afterCase', $defaults);
         $this->assertArrayHasKey('associations', $defaults);
         $this->assertArrayHasKey('levels', $defaults);
         $this->assertEquals('strategy.fail', $defaults['error']);
-        $this->assertEquals('strategy.fail', $defaults['failure']);
-        $this->assertEquals('strategy.incomplete', $defaults['incomplete']);
+        $this->assertEquals('strategy.continue', $defaults['failure']);
+        $this->assertEquals('strategy.continue', $defaults['incomplete']);
+        $this->assertEquals('strategy.continue', $defaults['beforeCase']);
+        $this->assertEquals('strategy.continue', $defaults['beforeTest']);
+        $this->assertEquals('strategy.exception', $defaults['afterTest']);
+        $this->assertEquals('strategy.exception', $defaults['afterCase']);
         $this->assertSame(['E_ALL'], $defaults['levels']);
         $this->assertInternalType('array', $defaults['associations']);
         $this->assertEmpty($defaults['associations']);

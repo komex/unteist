@@ -14,14 +14,11 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Unteist\Event\EventStorage;
 use Unteist\Event\TestCaseEvent;
-use Unteist\Exception\IncompleteTestException;
 use Unteist\Exception\SkipTestException;
-use Unteist\Exception\TestFailException;
 use Unteist\Filter\MethodsFilter;
 use Unteist\Meta\TestMeta;
 use Unteist\Processor\Controller\AbstractController;
 use Unteist\Processor\Controller\RunTestsController;
-use Unteist\Processor\Controller\SkipTestsController;
 use Unteist\TestCase;
 
 /**
@@ -163,17 +160,7 @@ class Runner
         $return_code = 0;
         $this->controller->beforeCase();
         foreach ($this->tests as $test) {
-            try {
-                if ($this->controller->test($test)) {
-                    $return_code = 1;
-                }
-            } catch (SkipTestException $e) {
-                $controller = new SkipTestsController($this->container);
-                $controller->test($test);
-                $return_code = 1;
-            } catch (TestFailException $e) {
-                $return_code = 1;
-            } catch (IncompleteTestException $e) {
+            if ($this->controller->test($test)) {
                 $return_code = 1;
             }
         }

@@ -313,15 +313,16 @@ class Configurator
      */
     private function configureContext()
     {
+        $context = $this->config['context'];
         $definition = $this->container->getDefinition('context');
-        $definition->setArguments(
-            [
-                new Reference($this->config['context']['error']),
-                new Reference($this->config['context']['failure']),
-                new Reference($this->config['context']['incomplete'])
-            ]
-        );
-        foreach ($this->config['context']['associations'] as $class => $strategy_id) {
+        $definition->addMethodCall('setErrorStrategy', [new Reference($context['error'])]);
+        $definition->addMethodCall('setFailureStrategy', [new Reference($context['failure'])]);
+        $definition->addMethodCall('setIncompleteStrategy', [new Reference($context['incomplete'])]);
+        $definition->addMethodCall('setBeforeCaseStrategy', [new Reference($context['beforeCase'])]);
+        $definition->addMethodCall('setBeforeTestStrategy', [new Reference($context['beforeTest'])]);
+        $definition->addMethodCall('setAfterTestStrategy', [new Reference($context['afterTest'])]);
+        $definition->addMethodCall('setAfterCaseStrategy', [new Reference($context['afterCase'])]);
+        foreach ($context['associations'] as $class => $strategy_id) {
             $definition->addMethodCall('associateException', [$class, new Reference($strategy_id)]);
         }
 

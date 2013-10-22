@@ -18,10 +18,10 @@ services:
         arguments: [ %report.dir% ]
     strategy.fail:
         class: \Unteist\Strategy\TestFailStrategy
-    strategy.incomplete:
-        class: \Unteist\Strategy\IncompleteTestStrategy
     strategy.continue:
-        class: \Unteist\Strategy\DoNothingStrategy
+        class: \Unteist\Strategy\ContinueStrategy
+    strategy.exception:
+        class: \Unteist\Strategy\ExceptionStrategy
     filter.class.base:
         class: \Unteist\Filter\ClassFilter
     filter.methods.base:

@@ -145,12 +145,28 @@ class ConfigurationValidator implements ConfigurationInterface
         $definition->cannotBeEmpty()->defaultValue('strategy.fail');
 
         $definition = $section->children()->enumNode('failure');
-        $definition->values(['strategy.fail', 'strategy.continue']);
-        $definition->cannotBeEmpty()->defaultValue('strategy.fail');
+        $definition->values(['strategy.exception', 'strategy.continue']);
+        $definition->cannotBeEmpty()->defaultValue('strategy.continue');
 
         $definition = $section->children()->enumNode('incomplete');
-        $definition->values(['strategy.fail', 'strategy.incomplete', 'strategy.continue']);
-        $definition->cannotBeEmpty()->defaultValue('strategy.incomplete');
+        $definition->values(['strategy.exception', 'strategy.continue']);
+        $definition->cannotBeEmpty()->defaultValue('strategy.continue');
+
+        $definition = $section->children()->enumNode('beforeCase');
+        $definition->values(['strategy.exception', 'strategy.continue']);
+        $definition->cannotBeEmpty()->defaultValue('strategy.continue');
+
+        $definition = $section->children()->enumNode('beforeTest');
+        $definition->values(['strategy.exception', 'strategy.continue']);
+        $definition->cannotBeEmpty()->defaultValue('strategy.continue');
+
+        $definition = $section->children()->enumNode('afterTest');
+        $definition->values(['strategy.exception', 'strategy.continue']);
+        $definition->cannotBeEmpty()->defaultValue('strategy.exception');
+
+        $definition = $section->children()->enumNode('afterCase');
+        $definition->values(['strategy.exception', 'strategy.continue']);
+        $definition->cannotBeEmpty()->defaultValue('strategy.exception');
 
         $definition = $section->children()->arrayNode('associations');
         $definition->requiresAtLeastOneElement()->useAttributeAsKey('name');
