@@ -32,9 +32,16 @@ interface MethodsFilterInterface
     public function getName();
 
     /**
-     * Get tests parameters.
+     * Set method's annotations to filter.
+     *
+     * @param array $annotations
+     */
+    public function setAnnotations(array $annotations);
+
+    /**
+     * Set global configuration.
      *
      * @param array $config
      */
-    public function setParams(array $config);
+    public function setConfig(array $config);
 }

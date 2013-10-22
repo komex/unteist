@@ -7,8 +7,6 @@
 
 namespace Unteist\Filter;
 
-use Unteist\Processor\Runner;
-
 /**
  * Class GroupMethodsFilter
  *
@@ -18,9 +16,13 @@ use Unteist\Processor\Runner;
 class GroupMethodsFilter implements MethodsFilterInterface
 {
     /**
+     * @var string
+     */
+    private $methodGroups;
+    /**
      * @var array
      */
-    private $groups;
+    private $neededGroups;
 
     /**
      * Condition for filter test methods.
@@ -31,17 +33,12 @@ class GroupMethodsFilter implements MethodsFilterInterface
      */
     public function condition(\ReflectionMethod $method)
     {
-        if (empty($this->groups)) {
-            return true;
+        if (empty($this->methodGroups)) {
+            return false;
         } else {
-            $annotation = Runner::parseDocBlock($method->getDocComment(), ['group']);
-            if (empty($annotation['group'])) {
-                return false;
-            } else {
-                $annotation['group'] = preg_split('/[\s,]+/', $annotation['group'], -1, PREG_SPLIT_NO_EMPTY);
+            $methodGroups = preg_split('/[\s,]+/', $this->methodGroups, -1, PREG_SPLIT_NO_EMPTY);
 
-                return count(array_intersect($annotation['group'], $this->groups)) > 0;
-            }
+            return count(array_intersect($methodGroups, $this->neededGroups)) > 0;
         }
     }
 
@@ -56,14 +53,30 @@ class GroupMethodsFilter implements MethodsFilterInterface
     }
 
     /**
-     * Get tests parameters.
+     * Set method's annotations to filter.
+     *
+     * @param array $annotations
+     */
+    public function setAnnotations(array $annotations)
+    {
+        if (isset($annotations['groups'])) {
+            $this->methodGroups = $annotations['groups'];
+        }
+    }
+
+    /**
+     * Set global configuration.
      *
      * @param array $config
+     *
+     * @throws \InvalidArgumentException
      */
-    public function setParams(array $config)
+    public function setConfig(array $config)
     {
-        if (!empty($config['groups'])) {
-            $this->groups = $config['groups'];
+        if (empty($config['groups']) or !is_array($config['groups'])) {
+            throw new \InvalidArgumentException('The list of needed groups does not specified in configuration.');
+        } else {
+            $this->$neededGroups = $config['groups'];
         }
     }
 }
