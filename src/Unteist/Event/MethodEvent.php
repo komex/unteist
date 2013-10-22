@@ -61,7 +61,7 @@ class MethodEvent extends Event
     /**
      * @var int
      */
-    private $data_set = 0;
+    private $dataSet = 0;
     /**
      * @var string
      */
@@ -115,17 +115,17 @@ class MethodEvent extends Event
      */
     public function getDataSet()
     {
-        return $this->data_set;
+        return $this->dataSet;
     }
 
     /**
      * Set test's data set number.
      *
-     * @param int $data_set
+     * @param int $dataSet
      */
-    public function setDataSet($data_set)
+    public function setDataSet($dataSet)
     {
-        $this->data_set = intval($data_set, 10);
+        $this->dataSet = intval($dataSet, 10);
     }
 
     /**
@@ -211,7 +211,7 @@ class MethodEvent extends Event
         $this->exception = get_class($exception);
         $this->exceptionMessage = $exception->getMessage();
         $trace = $exception->getTrace();
-        $expected_call_user_func = false;
+        $expectedCallUserFunc = false;
         $this->trace = [];
         foreach ($trace as $record) {
             unset($record['args']);
@@ -219,15 +219,15 @@ class MethodEvent extends Event
             if (empty($record['file']) && is_subclass_of($record['class'], '\\Unteist\\TestCase')) {
                 $this->class = $record['class'];
                 $this->method = $record['function'];
-                $expected_call_user_func = true;
+                $expectedCallUserFunc = true;
                 continue;
             }
-            if ($expected_call_user_func && substr($record['function'], 0, 14) === 'call_user_func') {
+            if ($expectedCallUserFunc && substr($record['function'], 0, 14) === 'call_user_func') {
                 array_pop($this->trace);
 
                 return;
             } else {
-                $expected_call_user_func = false;
+                $expectedCallUserFunc = false;
             }
         }
     }
