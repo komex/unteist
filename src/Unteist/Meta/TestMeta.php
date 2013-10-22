@@ -62,6 +62,10 @@ class TestMeta
      */
     protected $method;
     /**
+     * @var array
+     */
+    protected $annotations;
+    /**
      * @var LoggerInterface
      */
     protected $logger;
@@ -88,6 +92,7 @@ class TestMeta
     {
         $this->class = $class;
         $this->method = $method;
+        $this->annotations = $annotations;
         $this->logger = $logger;
         $this->logger->debug(
             'Registering a new test method.',
@@ -197,6 +202,16 @@ class TestMeta
     public function __toString()
     {
         return $this->class . '::' . $this->method;
+    }
+
+    /**
+     * Get the full list of raw annotations.
+     *
+     * @return array
+     */
+    public function getAnnotations()
+    {
+        return $this->annotations;
     }
 
     /**
