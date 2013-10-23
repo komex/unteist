@@ -119,10 +119,7 @@ class TwigReport implements EventSubscriberInterface
     public function onAfterTestCase(TestCaseEvent $event)
     {
         $methods = $this->storage[$event->getClass()];
-        $statistics = new ClassStatistics();
-        $statistics->addEvents($methods);
-        $this->statistics->addEvents($methods);
-        $this->statistics->addStatistics($event, $statistics);
+        $statistics = $this->statistics->add($event, $methods);
         $content = $this->twig->render(
             'case.html.twig',
             ['case' => $methods, 'event' => $event, 'statistics' => $statistics]

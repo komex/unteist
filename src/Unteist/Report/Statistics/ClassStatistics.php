@@ -50,6 +50,10 @@ class ClassStatistics implements \Countable, \Iterator
      * @var int
      */
     private $count = 0;
+    /**
+     * @var TestCaseEvent
+     */
+    private $caseEvent;
 
     public function __construct()
     {
@@ -113,34 +117,32 @@ class ClassStatistics implements \Countable, \Iterator
     }
 
     /**
-     * @param \ArrayObject|MethodEvent[] $data
+     * Add new TestCase event to statistics.
+     *
+     * @param TestCaseEvent $caseEvent
+     * @param \ArrayObject $events
+     *
+     * @return ClassStatistics
      */
-    public function addEvents(\ArrayObject $data)
+    public function add(TestCaseEvent $caseEvent, \ArrayObject $events)
     {
-        foreach ($data as $event) {
-            $this->count++;
-            $this->asserts += $event->getAsserts();
-            $this->time += $event->getTime();
-            switch ($event->getStatus()) {
-                case MethodEvent::METHOD_OK:
-                    $this->passed++;
-                    break;
-                case MethodEvent::METHOD_SKIPPED:
-                    $this->skipped++;
-                    break;
-                case MethodEvent::METHOD_FAILED:
-                    $this->failed++;
-                    break;
-                case MethodEvent::METHOD_INCOMPLETE:
-                    $this->incomplete++;
-                    break;
-            }
-        }
+        $statistics = new self();
+        $statistics->addEvents($events);
+        $statistics->setCaseEvent($caseEvent);
+        $this->storage[$caseEvent->getClass()] = $statistics;
+        $this->addEvents($events);
+
+        return $statistics;
     }
 
-    public function addStatistics(TestCaseEvent $event, self $statistics)
+    /**
+     * Get TestCase event owned this statistics.
+     *
+     * @return TestCaseEvent
+     */
+    public function getCaseEvent()
     {
-        $this->storage[$event->getClass()] = $statistics;
+        return $this->caseEvent;
     }
 
     /**
@@ -211,5 +213,41 @@ class ClassStatistics implements \Countable, \Iterator
     public function getTime()
     {
         return $this->time;
+    }
+
+    /**
+     * @param \ArrayObject|MethodEvent[] $events
+     */
+    private function addEvents(\ArrayObject $events)
+    {
+        foreach ($events as $event) {
+            $this->count++;
+            $this->asserts += $event->getAsserts();
+            $this->time += $event->getTime();
+            switch ($event->getStatus()) {
+                case MethodEvent::METHOD_OK:
+                    $this->passed++;
+                    break;
+                case MethodEvent::METHOD_SKIPPED:
+                    $this->skipped++;
+                    break;
+                case MethodEvent::METHOD_FAILED:
+                    $this->failed++;
+                    break;
+                case MethodEvent::METHOD_INCOMPLETE:
+                    $this->incomplete++;
+                    break;
+            }
+        }
+    }
+
+    /**
+     * Set TestCase event owned this statistics.
+     *
+     * @param TestCaseEvent $caseEvent
+     */
+    private function setCaseEvent(TestCaseEvent $caseEvent)
+    {
+        $this->caseEvent = $caseEvent;
     }
 }
