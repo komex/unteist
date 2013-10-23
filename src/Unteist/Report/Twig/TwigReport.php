@@ -29,7 +29,7 @@ class TwigReport implements EventSubscriberInterface
     /**
      * @var string
      */
-    protected $output_dir;
+    protected $outputDir;
     /**
      * @var Filesystem
      */
@@ -46,23 +46,23 @@ class TwigReport implements EventSubscriberInterface
     /**
      * Configure report generator.
      *
-     * @param string $report_dir Report output directory
-     * @param array $alt_template_paths Paths to alternative templates.
+     * @param string $reportDir Report output directory
+     * @param array $altTemplatePaths Paths to alternative templates.
      */
-    public function __construct($report_dir, array $alt_template_paths = [])
+    public function __construct($reportDir, array $altTemplatePaths = [])
     {
-        array_push($alt_template_paths, __DIR__ . DIRECTORY_SEPARATOR . 'Templates');
-        $loader = new \Twig_Loader_Filesystem($alt_template_paths);
+        array_push($altTemplatePaths, __DIR__ . DIRECTORY_SEPARATOR . 'Templates');
+        $loader = new \Twig_Loader_Filesystem($altTemplatePaths);
         $this->twig = new \Twig_Environment($loader);
         $this->twig->addFunction(new \Twig_SimpleFunction('explode', 'explode'));
         $this->twig->addFunction(new \Twig_SimpleFunction('levelUp', [$this, 'levelUp']));
         $this->twig->addFunction(new \Twig_SimpleFunction('getTestPercent', [$this, 'getTestPercent']));
         $this->twig->addFilter(new \Twig_SimpleFilter('getPathByNamespace', [$this, 'getPathByNamespace']));
         $this->fs = new Filesystem();
-        if (!$this->fs->exists($report_dir)) {
-            $this->fs->mkdir($report_dir);
+        if (!$this->fs->exists($reportDir)) {
+            $this->fs->mkdir($reportDir);
         }
-        $this->output_dir = realpath($report_dir);
+        $this->outputDir = realpath($reportDir);
         $this->statistics = new ClassStatistics();
     }
 
@@ -141,7 +141,7 @@ class TwigReport implements EventSubscriberInterface
             'index.html.twig',
             ['statistics' => $this->statistics]
         );
-        file_put_contents($this->output_dir . DIRECTORY_SEPARATOR . 'index.html', $content);
+        file_put_contents($this->outputDir . DIRECTORY_SEPARATOR . 'index.html', $content);
     }
 
     /**
@@ -156,7 +156,7 @@ class TwigReport implements EventSubscriberInterface
         if (empty($namespace)) {
             return '';
         } else {
-            return $this->fs->makePathRelative($this->output_dir, $this->getPathByNamespace($namespace, true));
+            return $this->fs->makePathRelative($this->outputDir, $this->getPathByNamespace($namespace, true));
         }
     }
 
@@ -172,7 +172,7 @@ class TwigReport implements EventSubscriberInterface
     {
         $path = str_replace('\\', DIRECTORY_SEPARATOR, $namespace);
         if ($absolute) {
-            $path = $this->output_dir . DIRECTORY_SEPARATOR . $path;
+            $path = $this->outputDir . DIRECTORY_SEPARATOR . $path;
         }
 
         return $path;

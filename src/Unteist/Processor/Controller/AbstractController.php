@@ -42,7 +42,7 @@ abstract class AbstractController
     /**
      * @var TestCaseEvent
      */
-    protected $test_case_event;
+    protected $testCaseEvent;
 
     /**
      * @param ContainerBuilder $container
@@ -70,11 +70,11 @@ abstract class AbstractController
     }
 
     /**
-     * @param TestCaseEvent $test_case_event
+     * @param TestCaseEvent $testCaseEvent
      */
-    public function setTestCaseEvent(TestCaseEvent $test_case_event)
+    public function setTestCaseEvent(TestCaseEvent $testCaseEvent)
     {
-        $this->test_case_event = $test_case_event;
+        $this->testCaseEvent = $testCaseEvent;
     }
 
     /**
@@ -83,7 +83,7 @@ abstract class AbstractController
     public function beforeCase()
     {
         try {
-            $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->test_case_event);
+            $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->testCaseEvent);
             $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
         } catch (\Exception $e) {
             /** @var Context $context */
@@ -107,7 +107,7 @@ abstract class AbstractController
      */
     public function afterCase()
     {
-        $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, $this->test_case_event);
+        $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, $this->testCaseEvent);
     }
 
     /**
