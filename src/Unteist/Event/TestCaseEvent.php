@@ -21,6 +21,10 @@ class TestCaseEvent extends Event
      * @var string
      */
     protected $class;
+    /**
+     * @var array
+     */
+    protected $annotations;
 
     /**
      * @param string $class Test case class
@@ -38,5 +42,25 @@ class TestCaseEvent extends Event
     public function getClass()
     {
         return $this->class;
+    }
+
+    /**
+     * Get class annotations.
+     *
+     * @return array
+     */
+    public function getAnnotations()
+    {
+        return $this->annotations;
+    }
+
+    /**
+     * Set class annotations.
+     *
+     * @param array $annotations
+     */
+    public function setAnnotations(array $annotations)
+    {
+        $this->annotations = $annotations;
     }
 }

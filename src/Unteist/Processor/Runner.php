@@ -86,17 +86,16 @@ class Runner
     /**
      * Get raw annotations for reflected object.
      *
-     * @param \ReflectionFunctionAbstract $object
+     * @param string $comments
      *
      * @return array
      */
-    public static function getAnnotations(\ReflectionFunctionAbstract $object)
+    public static function getAnnotations($comments)
     {
-        $doc = $object->getDocComment();
-        if (empty($doc)) {
+        if (empty($comments) or !is_string($comments)) {
             return [];
         } else {
-            preg_match_all('{\*\s*@([a-z]+)\b(?:[\t ]+([^\n]+))?[\r\n]*(?!\*)}i', $doc, $matches, PREG_SET_ORDER);
+            preg_match_all('{\*\s*@([a-z]+)\b(?:[\t ]+([^\n]+))?[\r\n]*(?!\*)}i', $comments, $matches, PREG_SET_ORDER);
             $result = [];
             foreach ($matches as $match) {
                 $result[$match[1]] = count($match) === 2 ? null : $match[2];
@@ -278,7 +277,7 @@ class Runner
         }
         if ($this->reflectionClass->hasMethod($method)) {
             $reflectionMethod = $this->reflectionClass->getMethod($method);
-            $annotations = self::getAnnotations($reflectionMethod);
+            $annotations = self::getAnnotations($reflectionMethod->getDocComment());
             if ($this->isTest($reflectionMethod, $annotations)) {
                 return $this->addTest($reflectionMethod, $annotations);
             }
@@ -346,6 +345,7 @@ class Runner
         $this->testCase = $testCase;
         $this->reflectionClass = new \ReflectionClass($this->testCase);
         $this->testCaseEvent = new TestCaseEvent($this->reflectionClass->getName());
+        $this->testCaseEvent->setAnnotations(self::getAnnotations($this->reflectionClass->getDocComment()));
         $this->setController(new RunTestsController($this->container));
         if ($testCase instanceof EventSubscriberInterface) {
             $this->precondition->addSubscriber($testCase);
@@ -354,7 +354,7 @@ class Runner
             if ($this->tests->offsetExists($method->getName())) {
                 continue;
             }
-            $annotations = self::getAnnotations($method);
+            $annotations = self::getAnnotations($method->getDocComment());
             if ($this->isTest($method, $annotations)) {
                 if ($this->filtered($method, $annotations)) {
                     continue;
