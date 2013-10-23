@@ -42,3 +42,11 @@ services:
     runner:
         class: \Unteist\Processor\Runner
         synthetic: true
+    processor:
+        class: \Unteist\Processor\Processor
+        synthetic: true
+    processor.multi:
+        class: \Unteist\Processor\MultiProcessor
+        calls:
+            - [ setConnector, [ @connector ] ]
+        synthetic: true

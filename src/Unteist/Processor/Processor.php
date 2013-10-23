@@ -27,11 +27,11 @@ class Processor
     /**
      * @var ClassFilterInterface[]
      */
-    protected $class_filters = [];
+    protected $classFilters = [];
     /**
      * @var MethodsFilterInterface[]
      */
-    protected $methods_filters = [];
+    protected $methodsFilters = [];
     /**
      * @var ContainerBuilder
      */
@@ -59,12 +59,12 @@ class Processor
     /**
      * Set error handler for specified error types.
      *
-     * @param array $error_types
+     * @param array $errorTypes
      */
-    public function setErrorHandler(array $error_types)
+    public function setErrorHandler(array $errorTypes)
     {
         $type = 0;
-        foreach ($error_types as $error) {
+        foreach ($errorTypes as $error) {
             $type |= constant($error);
         }
         set_error_handler([$this, 'errorHandler'], $type);
@@ -77,7 +77,7 @@ class Processor
      */
     public function addClassFilter(ClassFilterInterface $filter)
     {
-        $this->class_filters[$filter->getName()] = $filter;
+        $this->classFilters[$filter->getName()] = $filter;
     }
 
     /**
@@ -87,7 +87,7 @@ class Processor
      */
     public function addMethodsFilter(MethodsFilterInterface $filter)
     {
-        $this->methods_filters[$filter->getName()] = $filter;
+        $this->methodsFilters[$filter->getName()] = $filter;
     }
 
     /**
@@ -144,17 +144,17 @@ class Processor
             $this->logger->debug('Trying to load TestCase.', ['pid' => getmypid(), 'file' => $case->getRealPath()]);
             $class = TestCaseLoader::load($case);
             $this->logger->debug('TestCase was found.', ['pid' => getmypid(), 'class' => get_class($class)]);
-            if (!empty($this->class_filters)) {
-                $reflection_class = new \ReflectionClass($class);
-                foreach ($this->class_filters as $filter) {
-                    $filter->filter($reflection_class);
+            if (!empty($this->classFilters)) {
+                $reflectionClass = new \ReflectionClass($class);
+                foreach ($this->classFilters as $filter) {
+                    $filter->filter($reflectionClass);
                 }
-                unset($reflection_class);
+                unset($reflectionClass);
             }
             $class->setContainer($this->container);
             /** @var Runner $runner */
             $runner = $this->container->get('runner');
-            $runner->setFilters($this->methods_filters);
+            $runner->setFilters($this->methodsFilters);
 
             return $runner->run($class);
         } catch (FilterException $e) {

@@ -15,10 +15,6 @@ use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\Finder\Finder;
-use Unteist\Event\Connector;
-use Unteist\Filter\ClassFilterInterface;
-use Unteist\Filter\MethodsFilterInterface;
-use Unteist\Processor\MultiProcessor;
 use Unteist\Processor\Processor;
 
 /**
@@ -86,34 +82,29 @@ class Configurator
         $this->registerListeners($this->config['listeners']);
         $this->configureLogger();
         $this->configureContext();
-        $this->configureRunner();
+        $this->getDefinition('runner');
         if (intval($this->config['processes'], 10) === 1) {
-            $processor = new Processor($this->container);
+            $serviceID = 'processor';
+            $definition = $this->getDefinition($serviceID);
         } else {
-            /** @var Connector $connector */
-            $connector = $this->container->get('connector');
-            $processor = new MultiProcessor($this->container);
-            $processor->setProcesses($this->config['processes']);
-            $processor->setConnector($connector);
+            $serviceID = 'processor.multi';
+            $definition = $this->getDefinition($serviceID);
+            $definition->addMethodCall('setProcesses', [$this->config['processes']]);
         }
-        $processor->setErrorHandler($this->config['context']['levels']);
+        $definition->addMethodCall('setErrorHandler', [$this->config['context']['levels']]);
 
         if (!empty($this->config['groups'])) {
             array_unshift($this->config['filters']['methods'], 'filter.methods.group');
         }
         foreach ($this->config['filters']['class'] as $filterId) {
-            /** @var ClassFilterInterface $filter */
-            $filter = $this->container->get($filterId);
-            $processor->addClassFilter($filter);
+            $definition->addMethodCall('addClassFilter', [new Reference($filterId)]);
         }
         foreach ($this->config['filters']['methods'] as $filterId) {
-            /** @var MethodsFilterInterface $filter */
-            $filter = $this->container->get($filterId);
-            $filter->setConfig($this->config);
-            $processor->addMethodsFilter($filter);
+            $definition->addMethodCall('addMethodsFilter', [new Reference($filterId)]);
         }
 
-        return $processor;
+
+        return $this->container->get($serviceID);
     }
 
     /**
@@ -164,11 +155,16 @@ class Configurator
         return $files;
     }
 
-    private function configureRunner()
+    /**
+     * Get definition of processor.
+     */
+    private function getDefinition($name)
     {
-        $runner = $this->container->getDefinition('runner');
-        $runner->addArgument($this->container);
-        $runner->setSynthetic(false);
+        $definition = $this->container->getDefinition($name);
+        $definition->addArgument($this->container);
+        $definition->setSynthetic(false);
+
+        return $definition;
     }
 
     /**
