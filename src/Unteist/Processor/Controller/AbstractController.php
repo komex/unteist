@@ -7,90 +7,31 @@
 
 namespace Unteist\Processor\Controller;
 
-use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Event\EventStorage;
 use Unteist\Event\MethodEvent;
 use Unteist\Event\TestCaseEvent;
 use Unteist\Meta\TestMeta;
-use Unteist\Processor\Runner;
-use Unteist\Strategy\Context;
 
 /**
  * Class AbstractController
  *
  * @package Unteist\Processor\Controller
+ * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
 abstract class AbstractController
 {
     /**
-     * @var Runner
-     */
-    protected $runner;
-    /**
-     * @var ContainerBuilder
-     */
-    protected $container;
-    /**
      * @var EventDispatcherInterface
      */
     protected $dispatcher;
-    /**
-     * @var EventDispatcherInterface
-     */
-    protected $precondition;
-    /**
-     * @var TestCaseEvent
-     */
-    protected $testCaseEvent;
 
     /**
-     * @param ContainerBuilder $container
+     * @param EventDispatcherInterface $dispatcher
      */
-    public function __construct(ContainerBuilder $container)
+    public function setDispatcher(EventDispatcherInterface $dispatcher)
     {
-        $this->container = $container;
-        $this->dispatcher = $container->get('dispatcher');
-    }
-
-    /**
-     * @param EventDispatcherInterface $precondition
-     */
-    public function setPrecondition(EventDispatcherInterface $precondition)
-    {
-        $this->precondition = $precondition;
-    }
-
-    /**
-     * @param Runner $runner
-     */
-    public function setRunner(Runner $runner)
-    {
-        $this->runner = $runner;
-    }
-
-    /**
-     * @param TestCaseEvent $testCaseEvent
-     */
-    public function setTestCaseEvent(TestCaseEvent $testCaseEvent)
-    {
-        $this->testCaseEvent = $testCaseEvent;
-    }
-
-    /**
-     * Before all tests.
-     */
-    public function beforeCase()
-    {
-        try {
-            $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $this->testCaseEvent);
-            $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
-        } catch (\Exception $e) {
-            /** @var Context $context */
-            $context = $this->container->get('context');
-            $context->onBeforeCase($e);
-            $this->switchController($e);
-        }
+        $this->dispatcher = $dispatcher;
     }
 
     /**
@@ -105,39 +46,9 @@ abstract class AbstractController
     /**
      * All tests done.
      */
-    public function afterCase()
+    public function afterCase(TestCaseEvent $testCaseEvent)
     {
-        $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, $this->testCaseEvent);
-    }
-
-    /**
-     * Generate an event with information about failed precondition method.
-     *
-     * @param \Exception $e
-     *
-     * @return MethodEvent
-     */
-    protected function preconditionFailed(\Exception $e)
-    {
-        $event = new MethodEvent();
-        $event->setStatus(MethodEvent::METHOD_FAILED);
-        $event->parseException($e);
-        $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, $event);
-
-        return $event;
-    }
-
-    /**
-     * Switch controller to SkipTestsController.
-     *
-     * @param \Exception $e
-     */
-    protected function switchController(\Exception $e)
-    {
-        $event = $this->preconditionFailed($e);
-        $controller = new SkipTestsController($this->container);
-        $controller->setDepends($event->getMethod());
-        $this->runner->setController($controller);
+        $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, $testCaseEvent);
     }
 
     /**
