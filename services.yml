@@ -41,6 +41,7 @@ services:
         arguments: [ @dispatcher, %connector.events% ]
     runner:
         class: \Unteist\Processor\Runner
+        scope: prototype
         synthetic: true
     processor:
         class: \Unteist\Processor\Processor
@@ -50,3 +51,16 @@ services:
         calls:
             - [ setConnector, [ @connector ] ]
         synthetic: true
+    controller:
+        abstract: true
+        calls:
+            - [ setDispatcher, [ @dispatcher ] ]
+    controller.skip:
+        parent: controller
+        class: \Unteist\Processor\Controller\SkipTestsController
+    controller.run:
+        parent: controller
+        class: \Unteist\Processor\Controller\RunTestsController
+        calls:
+            - [ setContext, [ @context ] ]
+            - [ setLogger, [ @logger ] ]

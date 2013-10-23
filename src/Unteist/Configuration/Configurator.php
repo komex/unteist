@@ -102,6 +102,7 @@ class Configurator
         foreach ($this->config['filters']['methods'] as $filterId) {
             $definition->addMethodCall('addMethodsFilter', [new Reference($filterId)]);
         }
+        $this->container->compile();
 
 
         return $this->container->get($serviceID);
