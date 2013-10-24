@@ -27,11 +27,11 @@ class MultiProcessor extends Processor
     /**
      * @var \SplFileInfo[]
      */
-    protected $current_jobs = [];
+    protected $currentJobs = [];
     /**
      * @var array
      */
-    protected $signal_queue = [];
+    protected $signalQueue = [];
     /**
      * @var Connector
      */
@@ -39,7 +39,7 @@ class MultiProcessor extends Processor
     /**
      * @var int
      */
-    private $exit_code = 0;
+    private $exitCode = 0;
 
     /**
      * Set connector for multi processor working.
@@ -85,24 +85,24 @@ class MultiProcessor extends Processor
 
         //Make sure we get all of the exited children
         while ($pid > 0) {
-            if ($pid && isset($this->current_jobs[$pid])) {
-                $exit_code = pcntl_wexitstatus($status);
-                if ($exit_code == 0) {
+            if ($pid && isset($this->currentJobs[$pid])) {
+                $exitCode = pcntl_wexitstatus($status);
+                if ($exitCode == 0) {
                     $this->logger->debug('TestCase was successful finished.', ['pid' => $pid]);
                 } else {
                     $this->logger->info(
                         'Process exited with status != 0.',
-                        ['pid' => $pid, 'exit_code' => $exit_code]
+                        ['pid' => $pid, 'exitCode' => $exitCode]
                     );
-                    $this->exit_code = $exit_code;
+                    $this->exitCode = $exitCode;
                 }
-                unset($this->current_jobs[$pid]);
+                unset($this->currentJobs[$pid]);
             } else {
                 if ($pid) {
                     //Oh no, our job has finished before this parent process could even note that it had been launched!
                     //Let's make note of it and handle it when the parent process is ready for it
                     $this->logger->debug('Adding process to signal queue.', ['pid' => $pid]);
-                    $this->signal_queue[$pid] = $status;
+                    $this->signalQueue[$pid] = $status;
                 }
             }
             $pid = pcntl_waitpid(-1, $status, WNOHANG);
@@ -143,26 +143,26 @@ class MultiProcessor extends Processor
         $dispatcher->addListener(EventStorage::EV_STORAGE_GLOBAL_UPDATE, [$this, 'updateStorage']);
         foreach ($suites as $suite) {
             $this->launchJob($suite);
-            while (count($this->current_jobs) >= $this->processes) {
+            while (count($this->currentJobs) >= $this->processes) {
                 $this->logger->debug(
                     'Maximum children allowed, waiting.',
-                    ['jobs' => array_keys($this->current_jobs)]
+                    ['jobs' => array_keys($this->currentJobs)]
                 );
                 $this->connector->read();
             }
         }
-        while (count($this->current_jobs) > 0) {
+        while (count($this->currentJobs) > 0) {
             $this->logger->debug(
                 'Waiting for current jobs to finish.',
-                ['jobs' => array_keys($this->current_jobs)]
+                ['jobs' => array_keys($this->currentJobs)]
             );
             $this->connector->read();
         }
         $this->connector->read();
-        $this->logger->info('All tests done.', ['pid' => getmypid(), 'exit_code' => $this->exit_code]);
+        $this->logger->info('All tests done.', ['pid' => getmypid(), 'exitCode' => $this->exitCode]);
         $dispatcher->dispatch(EventStorage::EV_APP_FINISHED);
 
-        return $this->exit_code;
+        return $this->exitCode;
     }
 
     /**
@@ -187,32 +187,32 @@ class MultiProcessor extends Processor
                 // Parent process
                 // Sometimes you can receive a signal to the childSignalHandler function before this code executes if
                 // the child script executes quickly enough!
-                $this->current_jobs[$pid] = $case;
+                $this->currentJobs[$pid] = $case;
 
                 // In the event that a signal for this pid was caught before we get here,
-                // it will be in our signal_queue array.
+                // it will be in our signalQueue array.
                 // So let's go ahead and process it now as if we'd just received the signal
-                if (isset($this->signal_queue[$pid])) {
+                if (isset($this->signalQueue[$pid])) {
                     $this->logger->info(
                         'Found new pid in the signal queue, processing it now.',
                         ['pid' => $pid, 'file' => $case->getPathname()]
                     );
-                    $this->childSignalHandler(SIGCHLD, $pid, $this->signal_queue[$pid]);
-                    unset($this->signal_queue[$pid]);
+                    $this->childSignalHandler(SIGCHLD, $pid, $this->signalQueue[$pid]);
+                    unset($this->signalQueue[$pid]);
                 }
             } else {
                 $this->connector->activate();
                 /** @var \ArrayObject $globalStorage */
                 $globalStorage = $this->container->get('storage.global');
                 $hash = sha1($globalStorage->serialize());
-                $status_code = $this->executor($case);
+                $exitCode = $this->executor($case);
                 $data = $globalStorage->serialize();
                 if (sha1($data) !== $hash) {
                     /** @var EventDispatcherInterface $dispatcher */
                     $dispatcher = $this->container->get('dispatcher');
                     $dispatcher->dispatch(EventStorage::EV_STORAGE_GLOBAL_UPDATE, new StorageEvent($data));
                 }
-                exit($status_code);
+                exit($exitCode);
             }
         }
 

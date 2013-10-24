@@ -111,7 +111,7 @@ class Processor extends ContainerAware
             gc_collect_cycles();
             $this->restoreGlobals();
         }
-        $this->logger->info('All tests done.', ['pid' => getmypid(), 'exit_code' => $exitCode]);
+        $this->logger->info('All tests done.', ['pid' => getmypid(), 'exitCode' => $exitCode]);
         $dispatcher->dispatch(EventStorage::EV_APP_FINISHED);
 
         return $exitCode;
