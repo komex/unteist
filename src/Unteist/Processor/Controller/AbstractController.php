@@ -36,13 +36,35 @@ abstract class AbstractController extends ContainerAware
     }
 
     /**
+     * @param TestMeta $test
+     *
+     * @return TestMeta
+     */
+    public function resolveDependencies(TestMeta $test)
+    {
+
+    }
+
+    /**
+     * @param TestMeta $test
+     *
+     * @return array
+     */
+    public function getDataSet(TestMeta $test)
+    {
+        return [[]];
+    }
+
+    /**
      * Run the test.
      *
      * @param TestMeta $test
+     * @param MethodEvent $event
+     * @param array $dataSet
      *
-     * @return int
+     * @return int Status code
      */
-    abstract public function test(TestMeta $test);
+    abstract public function test(TestMeta $test, MethodEvent $event, array $dataSet);
 
     /**
      * All tests done.
@@ -55,7 +77,7 @@ abstract class AbstractController extends ContainerAware
     /**
      * Before test.
      */
-    protected function beforeTest(MethodEvent $event)
+    public function beforeTest(MethodEvent $event)
     {
         $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $event);
     }
@@ -63,7 +85,7 @@ abstract class AbstractController extends ContainerAware
     /**
      * Test done.
      */
-    protected function afterTest(MethodEvent $event)
+    public function afterTest(MethodEvent $event)
     {
         $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
     }

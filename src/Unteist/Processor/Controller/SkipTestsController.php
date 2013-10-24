@@ -36,22 +36,19 @@ class SkipTestsController extends AbstractController
      * Run test.
      *
      * @param TestMeta $test
+     * @param MethodEvent $event
+     * @param array $dataSet
      *
      * @return int
      */
-    public function test(TestMeta $test)
+    public function test(TestMeta $test, MethodEvent $event, array $dataSet)
     {
         $test->setStatus(TestMeta::TEST_SKIPPED);
-        /** @var MethodEvent $event */
-        $event = $this->container->get('event.method');
-        $event->configByTestMeta($test);
-        $this->beforeTest($event);
         $event->setStatus(MethodEvent::METHOD_SKIPPED);
         if ($this->depends !== null) {
             $event->addDepend($this->depends);
         }
         $this->dispatcher->dispatch(EventStorage::EV_METHOD_SKIPPED, $event);
-        $this->afterTest($event);
 
         return 1;
     }
