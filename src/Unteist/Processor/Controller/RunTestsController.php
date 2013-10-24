@@ -146,9 +146,9 @@ class RunTestsController extends AbstractController
         try {
             $this->precondition->dispatch(EventStorage::EV_AFTER_CASE);
             parent::afterCase($testCaseEvent);
-        } catch (\Exception $e) {
-            $this->context->onAfterCase($e);
-            $this->preconditionFailed($e);
+        } catch (\Exception $exception) {
+            $this->context->onAfterCase($exception);
+            $this->preconditionFailed($exception);
         }
     }
 
@@ -172,24 +172,24 @@ class RunTestsController extends AbstractController
     {
         try {
             $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
-        } catch (\Exception $e) {
-            $this->context->onAfterTest($e);
-            $this->switchController($e);
+        } catch (\Exception $exception) {
+            $this->context->onAfterTest($exception);
+            $this->switchController($exception);
         }
     }
 
     /**
      * Generate an event with information about failed precondition method.
      *
-     * @param \Exception $e
+     * @param \Exception $exception
      *
-     * @return AbstractController
+     * @return SkipTestsController
      */
-    protected function preconditionFailed(\Exception $e)
+    protected function preconditionFailed(\Exception $exception)
     {
         $event = new MethodEvent();
         $event->setStatus(MethodEvent::METHOD_FAILED);
-        $event->parseException($e);
+        $event->parseException($exception);
         $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, $event);
         /** @var SkipTestsController $controller */
         $controller = $this->container->get('controller.skip');
@@ -201,11 +201,11 @@ class RunTestsController extends AbstractController
     /**
      * Switch controller to SkipTestsController.
      *
-     * @param \Exception $e
+     * @param \Exception $exception
      */
-    protected function switchController(\Exception $e)
+    protected function switchController(\Exception $exception)
     {
-        $controller = $this->preconditionFailed($e);
+        $controller = $this->preconditionFailed($exception);
         $this->runner->setController($controller);
     }
 
@@ -220,9 +220,9 @@ class RunTestsController extends AbstractController
     {
         try {
             $this->beforeTest($event);
-        } catch (\Exception $e) {
-            $this->context->onBeforeTest($e);
-            $controller = $this->preconditionFailed($e);
+        } catch (\Exception $exception) {
+            $this->context->onBeforeTest($exception);
+            $controller = $this->preconditionFailed($exception);
             $controller->test($test);
 
             return 1;
@@ -231,9 +231,9 @@ class RunTestsController extends AbstractController
             $this->started = microtime(true);
             $this->asserts = Assert::getAssertsCount();
             $statusCode = $this->convert($test, $event, $dataSet);
-        } catch (TestFailException $e) {
-            $this->finish($test, $event, MethodEvent::METHOD_FAILED, $e);
-            $statusCode = $this->context->onFailure($e);
+        } catch (TestFailException $exception) {
+            $this->finish($test, $event, MethodEvent::METHOD_FAILED, $exception);
+            $statusCode = $this->context->onFailure($exception);
         }
 
         return $statusCode;
