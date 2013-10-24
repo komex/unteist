@@ -224,7 +224,7 @@ class RunTestsController extends AbstractController
      *
      * @return int
      */
-    private function execute(TestMeta $test, MethodEvent $event, array $dataSet)
+    protected function execute(TestMeta $test, MethodEvent $event, array $dataSet)
     {
         try {
             $this->beforeTest($event);
@@ -242,6 +242,33 @@ class RunTestsController extends AbstractController
         } catch (TestFailException $exception) {
             $this->finish($test, $event, MethodEvent::METHOD_FAILED, $exception);
             $statusCode = $this->context->onFailure($exception);
+        }
+
+        return $statusCode;
+    }
+
+    /**
+     * Convert exceptions using context.
+     *
+     * @param TestMeta $test
+     * @param MethodEvent $event
+     * @param array $dataSet
+     *
+     * @return int Status code
+     */
+    protected function convert(TestMeta $test, MethodEvent $event, array $dataSet)
+    {
+        try {
+            $statusCode = $this->behavior($test, $dataSet);
+            $this->finish($test, $event, MethodEvent::METHOD_OK);
+        } catch (TestErrorException $exception) {
+            $statusCode = $this->context->onError($exception);
+            $this->finish($test, $event, MethodEvent::METHOD_FAILED, $exception);
+        } catch (IncompleteTestException $exception) {
+            $statusCode = $this->context->onIncomplete($exception);
+            $this->finish($test, $event, MethodEvent::METHOD_INCOMPLETE, $exception);
+        } catch (\Exception $exception) {
+            $statusCode = $this->exceptionControl($test, $event, $exception);
         }
 
         return $statusCode;
@@ -312,33 +339,6 @@ class RunTestsController extends AbstractController
             $this->afterTest($event);
         }
         parent::afterTest($event);
-    }
-
-    /**
-     * Convert exceptions using context.
-     *
-     * @param TestMeta $test
-     * @param MethodEvent $event
-     * @param array $dataSet
-     *
-     * @return int Status code
-     */
-    private function convert(TestMeta $test, MethodEvent $event, array $dataSet)
-    {
-        try {
-            $statusCode = $this->behavior($test, $dataSet);
-            $this->finish($test, $event, MethodEvent::METHOD_OK);
-        } catch (TestErrorException $exception) {
-            $statusCode = $this->context->onError($exception);
-            $this->finish($test, $event, MethodEvent::METHOD_FAILED, $exception);
-        } catch (IncompleteTestException $exception) {
-            $statusCode = $this->context->onIncomplete($exception);
-            $this->finish($test, $event, MethodEvent::METHOD_INCOMPLETE, $exception);
-        } catch (\Exception $exception) {
-            $statusCode = $this->exceptionControl($test, $event, $exception);
-        }
-
-        return $statusCode;
     }
 
     /**
