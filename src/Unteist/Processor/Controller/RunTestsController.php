@@ -199,6 +199,25 @@ class RunTestsController extends AbstractController
     }
 
     /**
+     * Controller behavior.
+     *
+     * @param TestMeta $test
+     * @param array $dataSet
+     *
+     * @throws TestFailException
+     * @return int Status code
+     */
+    protected function behavior(TestMeta $test, array $dataSet)
+    {
+        call_user_func_array([$this->runner->getTestCase(), $test->getMethod()], $dataSet);
+        if ($test->getExpectedException()) {
+            throw new TestFailException('Expected exception ' . $test->getExpectedException());
+        }
+
+        return 0;
+    }
+
+    /**
      * @param TestMeta $test
      * @param MethodEvent $event
      * @param array $dataSet
@@ -293,25 +312,6 @@ class RunTestsController extends AbstractController
             $this->afterTest($event);
         }
         parent::afterTest($event);
-    }
-
-    /**
-     * Controller behavior.
-     *
-     * @param TestMeta $test
-     * @param array $dataSet
-     *
-     * @throws TestFailException
-     * @return int Status code
-     */
-    private function behavior(TestMeta $test, array $dataSet)
-    {
-        call_user_func_array([$this->runner->getTestCase(), $test->getMethod()], $dataSet);
-        if ($test->getExpectedException()) {
-            throw new TestFailException('Expected exception ' . $test->getExpectedException());
-        }
-
-        return 0;
     }
 
     /**
