@@ -8,7 +8,6 @@
 namespace Unteist\Processor\Controller;
 
 use Psr\Log\LoggerInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Assert\Assert;
 use Unteist\Event\EventStorage;
@@ -50,18 +49,6 @@ class RunTestsController extends AbstractController
      * @var EventDispatcherInterface
      */
     protected $precondition;
-    /**
-     * @var ContainerInterface
-     */
-    protected $container;
-
-    /**
-     * @param ContainerInterface $container
-     */
-    public function setContainer(ContainerInterface $container)
-    {
-        $this->container = $container;
-    }
 
     /**
      * @param Context $context
@@ -124,7 +111,8 @@ class RunTestsController extends AbstractController
         $dataProvider = $this->runner->getDataSet($test->getDataProvider());
         $statusCode = 0;
         foreach ($dataProvider as $index => $dataSet) {
-            $event = new MethodEvent();
+            /** @var MethodEvent $event */
+            $event = $this->container->get('event.method');
             $event->configByTestMeta($test);
             if (count($dataProvider) > 1) {
                 $event->setDataSet($index + 1);
@@ -187,12 +175,14 @@ class RunTestsController extends AbstractController
      */
     protected function preconditionFailed(\Exception $exception)
     {
-        $event = new MethodEvent();
+        /** @var MethodEvent $event */
+        $event = $this->container->get('event.method');
         $event->setStatus(MethodEvent::METHOD_FAILED);
         $event->parseException($exception);
         $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, $event);
         /** @var SkipTestsController $controller */
         $controller = $this->container->get('controller.skip');
+        $controller->setContainer($this->container);
         $controller->setDepends($event->getMethod());
 
         return $controller;

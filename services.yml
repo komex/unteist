@@ -63,3 +63,6 @@ services:
         class: \Unteist\Processor\Controller\RunTestsController
         calls:
             - [ setContext, [ @context ] ]
+    event.method:
+        class: \Unteist\Event\MethodEvent
+        scope: prototype

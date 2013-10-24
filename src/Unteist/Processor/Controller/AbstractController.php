@@ -7,6 +7,7 @@
 
 namespace Unteist\Processor\Controller;
 
+use Symfony\Component\DependencyInjection\ContainerAware;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Event\EventStorage;
 use Unteist\Event\MethodEvent;
@@ -19,7 +20,7 @@ use Unteist\Meta\TestMeta;
  * @package Unteist\Processor\Controller
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-abstract class AbstractController
+abstract class AbstractController extends ContainerAware
 {
     /**
      * @var EventDispatcherInterface
