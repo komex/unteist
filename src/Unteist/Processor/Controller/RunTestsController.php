@@ -14,7 +14,6 @@ use Unteist\Event\EventStorage;
 use Unteist\Event\MethodEvent;
 use Unteist\Event\TestCaseEvent;
 use Unteist\Exception\IncompleteTestException;
-use Unteist\Exception\SkipTestException;
 use Unteist\Exception\TestErrorException;
 use Unteist\Exception\TestFailException;
 use Unteist\Meta\TestMeta;
@@ -88,42 +87,15 @@ class RunTestsController extends AbstractController
         $this->runner = $runner;
     }
 
-    /**
-     * Run test.
-     *
-     * @param TestMeta $test
-     *
-     * @return int
-     */
-    public function test(TestMeta $test)
+
+    public function needsResolvingDependencies()
     {
-        if ($test->getStatus() !== TestMeta::TEST_NEW && $test->getStatus() !== TestMeta::TEST_MARKED) {
-            return 0;
-        }
-        try {
-            $this->runner->resolveDependencies($test);
-        } catch (SkipTestException $e) {
-            /** @var AbstractController $controller */
-            $controller = $this->container->get('controller.skip');
+        return true;
+    }
 
-            return $controller->test($test);
-        }
-        $dataProvider = $this->runner->getDataSet($test->getDataProvider());
-        $statusCode = 0;
-        foreach ($dataProvider as $index => $dataSet) {
-            /** @var MethodEvent $event */
-            $event = $this->container->get('event.method');
-            $event->configByTestMeta($test);
-            if (count($dataProvider) > 1) {
-                $event->setDataSet($index + 1);
-            }
-            $code = $this->execute($test, $event, $dataSet);
-            if ($code > 0) {
-                $statusCode = $code;
-            }
-        }
-
-        return $statusCode;
+    public function getDataSet(TestMeta $test)
+    {
+        return $this->runner->getDataSet($test->getDataProvider());
     }
 
     /**
@@ -141,11 +113,32 @@ class RunTestsController extends AbstractController
     }
 
     /**
+     * @param TestMeta $test
+     * @param MethodEvent $event
+     * @param array $dataSet
+     *
+     * @return int
+     */
+    public function test(TestMeta $test, MethodEvent $event, array $dataSet)
+    {
+        try {
+            $this->started = microtime(true);
+            $this->asserts = Assert::getAssertsCount();
+            $statusCode = $this->convert($test, $event, $dataSet);
+        } catch (TestFailException $exception) {
+            $this->finish($test, $event, MethodEvent::METHOD_FAILED, $exception);
+            $statusCode = $this->context->onFailure($exception);
+        }
+
+        return $statusCode;
+    }
+
+    /**
      * Before running method.
      *
      * @param MethodEvent $event
      */
-    protected function beforeTest(MethodEvent $event)
+    public function beforeTest(MethodEvent $event)
     {
         parent::beforeTest($event);
         $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $event);
@@ -156,9 +149,10 @@ class RunTestsController extends AbstractController
      *
      * @param MethodEvent $event
      */
-    protected function afterTest(MethodEvent $event)
+    public function afterTest(MethodEvent $event)
     {
         try {
+            parent::afterTest($event);
             $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
         } catch (\Exception $exception) {
             $this->context->onAfterTest($exception);
@@ -218,36 +212,6 @@ class RunTestsController extends AbstractController
     }
 
     /**
-     * @param TestMeta $test
-     * @param MethodEvent $event
-     * @param array $dataSet
-     *
-     * @return int
-     */
-    protected function execute(TestMeta $test, MethodEvent $event, array $dataSet)
-    {
-        try {
-            $this->beforeTest($event);
-        } catch (\Exception $exception) {
-            $this->context->onBeforeTest($exception);
-            $controller = $this->preconditionFailed($exception);
-            $controller->test($test);
-
-            return 1;
-        }
-        try {
-            $this->started = microtime(true);
-            $this->asserts = Assert::getAssertsCount();
-            $statusCode = $this->convert($test, $event, $dataSet);
-        } catch (TestFailException $exception) {
-            $this->finish($test, $event, MethodEvent::METHOD_FAILED, $exception);
-            $statusCode = $this->context->onFailure($exception);
-        }
-
-        return $statusCode;
-    }
-
-    /**
      * Convert exceptions using context.
      *
      * @param TestMeta $test
@@ -281,15 +245,9 @@ class RunTestsController extends AbstractController
      * @param MethodEvent $event
      * @param int $status
      * @param \Exception $exception
-     * @param bool $sendEvent
      */
-    private function finish(
-        TestMeta $test,
-        MethodEvent $event,
-        $status,
-        \Exception $exception = null,
-        $sendEvent = true
-    ) {
+    private function finish(TestMeta $test, MethodEvent $event, $status, \Exception $exception = null)
+    {
         $event->setStatus($status);
         $event->setTime(floatval(microtime(true) - $this->started));
         $event->setAsserts(Assert::getAssertsCount() - $this->asserts);
@@ -335,10 +293,6 @@ class RunTestsController extends AbstractController
                     $this->precondition->dispatch(EventStorage::EV_METHOD_FAILED, $event);
             }
         }
-        if ($sendEvent) {
-            $this->afterTest($event);
-        }
-        parent::afterTest($event);
     }
 
     /**

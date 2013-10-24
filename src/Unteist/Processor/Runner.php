@@ -13,12 +13,14 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Unteist\Event\EventStorage;
+use Unteist\Event\MethodEvent;
 use Unteist\Event\TestCaseEvent;
 use Unteist\Exception\SkipTestException;
 use Unteist\Filter\MethodsFilter;
 use Unteist\Meta\TestMeta;
 use Unteist\Processor\Controller\AbstractController;
 use Unteist\Processor\Controller\RunTestsController;
+use Unteist\Processor\Controller\SkipTestsController;
 use Unteist\TestCase;
 
 /**
@@ -113,6 +115,26 @@ class Runner
         $this->controller = $controller;
     }
 
+    public function useRunTestsController()
+    {
+        /** @var RunTestsController $controller */
+        $controller = $this->container->get('controller.run');
+        $controller->setPrecondition($this->precondition);
+        $controller->setRunner($this);
+        $this->controller = $controller;
+
+        return $controller;
+    }
+
+    public function useSkipTestsController()
+    {
+        /** @var SkipTestsController $controller */
+        $controller = $this->container->get('controller.skip');
+        $this->controller = $controller;
+
+        return $controller;
+    }
+
     /**
      * Get using TestCase.
      *
@@ -152,18 +174,41 @@ class Runner
             return 1;
         }
         $statusCode = 0;
-        /** @var RunTestsController $controller */
-        $controller = $this->container->get('controller.run');
-        $controller->setPrecondition($this->precondition);
-        $controller->setRunner($this);
-        $this->setController($controller);
+        $controller = $this->useRunTestsController();
         $controller->beforeCase($this->testCaseEvent);
         foreach ($this->tests as $test) {
-            if ($this->controller->test($test)) {
+            if ($test->getStatus() !== TestMeta::TEST_NEW && $test->getStatus() !== TestMeta::TEST_MARKED) {
+                continue;
+            }
+            if ($this->testMethod($test)) {
                 $statusCode = 1;
             }
         }
         $this->controller->afterCase($this->testCaseEvent);
+
+        return $statusCode;
+    }
+
+    public function testMethod(TestMeta $test)
+    {
+        $statusCode = 0;
+        if ($this->controller->needsResolvingDependencies()) {
+            $this->resolveDependencies($test);
+        }
+        $dataProvider = $this->controller->getDataSet($test);
+        foreach ($dataProvider as $index => $dataSet) {
+            /** @var MethodEvent $event */
+            $event = $this->container->get('event.method');
+            $event->configByTestMeta($test);
+            if (count($dataProvider) > 1) {
+                $event->setDataSet($index + 1);
+            }
+            $this->controller->beforeTest($event);
+            if ($this->controller->test($test, $event, $dataSet)) {
+                $statusCode = 1;
+            }
+            $this->controller->afterTest($event);
+        }
 
         return $statusCode;
     }
@@ -186,38 +231,20 @@ class Runner
         $test->setStatus(TestMeta::TEST_MARKED);
         foreach ($depends as $depend) {
             $test = $this->getTestMethod($depend);
-            switch ($test->getStatus()) {
-                case TestMeta::TEST_NEW:
-                    try {
-                        $this->controller->test($test);
-                    } catch (\Exception $e) {
-                        throw new SkipTestException(
-                            sprintf('Unresolved dependencies in %s::%s()', $this->reflectionClass->getName(), $depend),
-                            0,
-                            $e
-                        );
-                    }
-                    break;
-                case TestMeta::TEST_MARKED:
-                    throw new \LogicException(
-                        sprintf(
-                            'Found infinitive loop in depends for test method "%s::%s()"',
-                            $this->reflectionClass->getName(),
-                            $depend
-                        )
-                    );
-                case TestMeta::TEST_SKIPPED:
-                    throw new SkipTestException(
-                        sprintf('Test method "%s::%s()" was skipped', $this->reflectionClass->getName(), $depend)
-                    );
-                case TestMeta::TEST_FAILED:
-                    throw new SkipTestException(
-                        sprintf('Test method "%s::%s()" was failed', $this->reflectionClass->getName(), $depend)
-                    );
-                case TestMeta::TEST_INCOMPLETE:
-                    throw new SkipTestException(
-                        sprintf('Test method "%s::%s()" was uncompleted', $this->reflectionClass->getName(), $depend)
-                    );
+            if ($test->getStatus() === TestMeta::TEST_NEW) {
+                if ($this->testMethod($test)) {
+                    $this->useSkipTestsController();
+                }
+            } elseif ($test->getStatus() === TestMeta::TEST_MARKED) {
+                throw new \LogicException(
+                    sprintf(
+                        'Found infinitive loop in depends for test method "%s::%s()"',
+                        $this->reflectionClass->getName(),
+                        $depend
+                    )
+                );
+            } else {
+                $this->useSkipTestsController();
             }
         }
     }

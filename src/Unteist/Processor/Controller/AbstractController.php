@@ -36,13 +36,11 @@ abstract class AbstractController extends ContainerAware
     }
 
     /**
-     * @param TestMeta $test
-     *
-     * @return TestMeta
+     * @return bool
      */
-    public function resolveDependencies(TestMeta $test)
+    public function needsResolvingDependencies()
     {
-
+        return false;
     }
 
     /**
