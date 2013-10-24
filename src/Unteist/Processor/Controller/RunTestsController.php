@@ -182,7 +182,6 @@ class RunTestsController extends AbstractController
         $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, $event);
         /** @var SkipTestsController $controller */
         $controller = $this->container->get('controller.skip');
-        $controller->setContainer($this->container);
         $controller->setDepends($event->getMethod());
 
         return $controller;

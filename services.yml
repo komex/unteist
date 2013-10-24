@@ -55,6 +55,7 @@ services:
         abstract: true
         calls:
             - [ setDispatcher, [ @dispatcher ] ]
+            - [ setContainer, [ @container ] ]
     controller.skip:
         parent: controller
         class: \Unteist\Processor\Controller\SkipTestsController

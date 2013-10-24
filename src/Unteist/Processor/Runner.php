@@ -156,7 +156,6 @@ class Runner
         $controller = $this->container->get('controller.run');
         $controller->setPrecondition($this->precondition);
         $controller->setRunner($this);
-        $controller->setContainer($this->container);
         $this->setController($controller);
         $controller->beforeCase($this->testCaseEvent);
         foreach ($this->tests as $test) {

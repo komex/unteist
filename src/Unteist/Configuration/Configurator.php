@@ -78,6 +78,7 @@ class Configurator
         if (empty($this->config)) {
             $this->processConfiguration();
         }
+        $this->container->set('container', $this->container);
         $this->registerReporter();
         $this->registerListeners($this->config['listeners']);
         $this->configureLogger();
