@@ -110,9 +110,6 @@ class Runner
      */
     public function setController(AbstractController $controller)
     {
-        $controller->setPrecondition($this->precondition);
-        $controller->setRunner($this);
-        $controller->setTestCaseEvent($this->testCaseEvent);
         $this->controller = $controller;
     }
 
@@ -155,13 +152,19 @@ class Runner
             return 1;
         }
         $statusCode = 0;
-        $this->controller->beforeCase();
+        /** @var RunTestsController $controller */
+        $controller = $this->container->get('controller.run');
+        $controller->setPrecondition($this->precondition);
+        $controller->setRunner($this);
+        $controller->setContainer($this->container);
+        $this->setController($controller);
+        $controller->beforeCase($this->testCaseEvent);
         foreach ($this->tests as $test) {
             if ($this->controller->test($test)) {
                 $statusCode = 1;
             }
         }
-        $this->controller->afterCase();
+        $this->controller->afterCase($this->testCaseEvent);
 
         return $statusCode;
     }
@@ -346,7 +349,6 @@ class Runner
         $this->reflectionClass = new \ReflectionClass($this->testCase);
         $this->testCaseEvent = new TestCaseEvent($this->reflectionClass->getName());
         $this->testCaseEvent->setAnnotations(self::getAnnotations($this->reflectionClass->getDocComment()));
-        $this->setController(new RunTestsController($this->container));
         if ($testCase instanceof EventSubscriberInterface) {
             $this->precondition->addSubscriber($testCase);
         }

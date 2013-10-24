@@ -63,4 +63,3 @@ services:
         class: \Unteist\Processor\Controller\RunTestsController
         calls:
             - [ setContext, [ @context ] ]
-            - [ setLogger, [ @logger ] ]
