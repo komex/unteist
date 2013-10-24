@@ -3,8 +3,11 @@ parameters:
     logger.handler.stream.level: DEBUG
     logger.name: unteist
     connector.events: []
+    report.dir: null
 
 services:
+    container:
+        synthetic: true
     logger:
         class: \Monolog\Logger
         arguments: [ %logger.name% ]
@@ -17,6 +20,9 @@ services:
     reporter:
         class: \Unteist\Report\Twig\TwigReport
         arguments: [ %report.dir% ]
+    reporter.cli:
+        class: \Unteist\Report\CLI\CliReport
+        synthetic: true
     strategy.fail:
         class: \Unteist\Strategy\TestFailStrategy
     strategy.continue:
@@ -34,6 +40,8 @@ services:
         synthetic: true
     dispatcher:
         class: \Symfony\Component\EventDispatcher\EventDispatcher
+        calls:
+            - [ addSubscriber, [ @reporter.cli ] ]
     storage.global:
         class: \ArrayObject
     connector:

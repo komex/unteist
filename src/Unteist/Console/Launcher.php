@@ -22,10 +22,8 @@ use Symfony\Component\DependencyInjection\Loader\IniFileLoader;
 use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
 use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Configuration\Configurator;
 use Unteist\Configuration\Extension;
-use Unteist\Report\CLI\CliReport;
 
 /**
  * Class Launcher
@@ -93,12 +91,8 @@ class Launcher extends Command
         $configurator->loadBootstrap();
         // Processor
         $processor = $configurator->getProcessor();
+        $this->configureCliReporter($output, $progress, $configurator->getFiles()->count());
         gc_collect_cycles();
-        // Register listeners
-        /** @var EventDispatcherInterface $dispatcher */
-        $dispatcher = $this->container->get('dispatcher');
-        // CLI report
-        $dispatcher->addSubscriber(new CliReport($output, $progress, $configurator->getFiles()->count()));
         // Run tests
         $status = $processor->run($configurator->getFiles());
         $configurator->loadCleanUp();
@@ -159,5 +153,23 @@ class Launcher extends Command
                 $this->container->setParameter($name, $value);
             }
         }
+    }
+
+    /**
+     * Configure Cli reporter definition.
+     *
+     * @param OutputInterface $output
+     * @param ProgressHelper $progress
+     * @param int $count
+     *
+     * @return \Symfony\Component\DependencyInjection\Definition
+     */
+    private function configureCliReporter(OutputInterface $output, ProgressHelper $progress, $count)
+    {
+        $definition = $this->container->getDefinition('reporter.cli');
+        $definition->setArguments([$output, $progress, $count]);
+        $definition->setSynthetic(false);
+
+        return $definition;
     }
 }
