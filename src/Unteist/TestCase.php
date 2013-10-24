@@ -7,6 +7,7 @@
 
 namespace Unteist;
 
+use Symfony\Component\DependencyInjection\ContainerAware;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Unteist\Exception\IncompleteTestException;
 use Unteist\Exception\SkipTestException;
@@ -18,12 +19,12 @@ use Unteist\Exception\TestFailException;
  * @package Unteist
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class TestCase
+class TestCase extends ContainerAware
 {
     /**
      * @var \ArrayObject
      */
-    protected $local_storage;
+    protected $localStorage;
     /**
      * @var ContainerBuilder
      */
@@ -34,7 +35,7 @@ class TestCase
      */
     public function __construct()
     {
-        $this->local_storage = new \ArrayObject();
+        $this->localStorage = new \ArrayObject();
     }
 
     /**
@@ -81,16 +82,6 @@ class TestCase
     public function getGlobalStorage()
     {
         return $this->container->get('storage.global');
-    }
-
-    /**
-     * Set configuration container.
-     *
-     * @param ContainerBuilder $container Project configuration
-     */
-    public function setContainer(ContainerBuilder $container)
-    {
-        $this->container = $container;
     }
 
     /**
