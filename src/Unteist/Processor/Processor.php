@@ -8,7 +8,7 @@
 namespace Unteist\Processor;
 
 use Psr\Log\LoggerInterface;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\ContainerAware;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Event\EventStorage;
 use Unteist\Exception\FilterException;
@@ -22,7 +22,7 @@ use Unteist\Filter\MethodsFilterInterface;
  * @package Unteist\Processor
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class Processor
+class Processor extends ContainerAware
 {
     /**
      * @var ClassFilterInterface[]
@@ -33,10 +33,6 @@ class Processor
      */
     protected $methodsFilters = [];
     /**
-     * @var ContainerBuilder
-     */
-    protected $container;
-    /**
      * @var LoggerInterface
      */
     protected $logger;
@@ -44,17 +40,6 @@ class Processor
      * @var array
      */
     protected $globals = [];
-
-    /**
-     * Create general processor.
-     *
-     * @param ContainerBuilder $container
-     */
-    public function __construct(ContainerBuilder $container)
-    {
-        $this->container = $container;
-        $this->logger = $this->container->get('logger');
-    }
 
     /**
      * Set error handler for specified error types.
@@ -112,6 +97,7 @@ class Processor
      */
     public function run(\ArrayObject $suites)
     {
+        $this->logger = $this->container->get('logger');
         /** @var EventDispatcherInterface $dispatcher */
         $dispatcher = $this->container->get('dispatcher');
         $dispatcher->dispatch(EventStorage::EV_APP_STARTED);

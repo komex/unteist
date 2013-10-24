@@ -46,9 +46,12 @@ services:
     processor:
         class: \Unteist\Processor\Processor
         synthetic: true
+        calls:
+            - [ setContainer, [ @container ] ]
     processor.multi:
         class: \Unteist\Processor\MultiProcessor
         calls:
+            - [ setContainer, [ @container ] ]
             - [ setConnector, [ @connector ] ]
         synthetic: true
     controller:
