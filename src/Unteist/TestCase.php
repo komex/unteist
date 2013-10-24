@@ -8,7 +8,6 @@
 namespace Unteist;
 
 use Symfony\Component\DependencyInjection\ContainerAware;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Unteist\Exception\IncompleteTestException;
 use Unteist\Exception\SkipTestException;
 use Unteist\Exception\TestFailException;
@@ -25,10 +24,6 @@ class TestCase extends ContainerAware
      * @var \ArrayObject
      */
     protected $localStorage;
-    /**
-     * @var ContainerBuilder
-     */
-    private $container;
 
     /**
      * Create a new TestCase.
@@ -94,16 +89,6 @@ class TestCase extends ContainerAware
     public function getParameter($name)
     {
         return $this->container->getParameter($name);
-    }
-
-    /**
-     * Get all parameters from global config.
-     *
-     * @return array
-     */
-    public function getParameters()
-    {
-        return $this->container->getParameterBag()->all();
     }
 
     /**
