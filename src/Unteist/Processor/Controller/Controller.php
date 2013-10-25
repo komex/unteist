@@ -40,11 +40,13 @@ class Controller implements ControllerParentInterface
         if (isset($this->controllers[$id])) {
             $this->current = $id;
         } else {
-            throw new \InvalidArgumentException(sprintf(
-                'Unknown controller id "%s". Allowed %s',
-                $id,
-                join(', ', array_keys($this->controllers))
-            ));
+            $message = sprintf('Unknown controller id "%s". ', $id);
+            if (empty($this->controllers)) {
+                $message .= 'Controllers list is empty.';
+            } else {
+                $message .= 'Allowed ' . join(', ', array_keys($this->controllers)) . '.';
+            }
+            throw new \InvalidArgumentException($message);
         }
     }
 
