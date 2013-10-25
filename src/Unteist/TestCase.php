@@ -92,6 +92,17 @@ class TestCase extends ContainerAware
     }
 
     /**
+     * Get all parameters.
+     *
+     * @return array
+     * @deprecated This method will be removed soon.
+     */
+    public function getParameters()
+    {
+        return $this->container->getParameterBag()->all();
+    }
+
+    /**
      * Get service by its name.
      *
      * @param string $name Service name
