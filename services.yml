@@ -47,37 +47,42 @@ services:
     connector:
         class: \Unteist\Event\Connector
         arguments: [ @dispatcher, %connector.events% ]
-    runner:
-        class: \Unteist\Processor\Runner
-        scope: prototype
-        synthetic: true
     processor:
         class: \Unteist\Processor\Processor
-        synthetic: true
         calls:
             - [ setContainer, [ @container ] ]
+        synthetic: true
     processor.multi:
         class: \Unteist\Processor\MultiProcessor
         calls:
             - [ setContainer, [ @container ] ]
             - [ setConnector, [ @connector ] ]
         synthetic: true
+    runner:
+        class: \Unteist\Processor\Runner
+        calls:
+            - [ setContainer, [ @container ] ]
+            - [ setLogger, [ @logger ] ]
+            - [ setController, [ @controller ] ]
+        scope: prototype
     controller:
         class: \Unteist\Processor\Controller\Controller
+        calls:
+            # todo: use tags
+            - [ add, [ @controller.run, controller.run ] ]
+            - [ add, [ @controller.skip, controller.skip ] ]
+            - [ add, [ @controller.skip.once, controller.skip.once ] ]
+            - [ switchTo, [ controller.run ] ]
     controller.run:
         class: \Unteist\Processor\Controller\Run
         calls:
             - [ setDispatcher, [ @dispatcher ] ]
             - [ setContext, [ @context ] ]
             - [ setContainer, [ @container ] ]
-        tags:
-            -  { name: processor.controller.behavior }
     controller.skip:
         class: \Unteist\Processor\Controller\Skip
         calls:
             - [ setDispatcher, [ @dispatcher ] ]
-        tags:
-            -  { name: processor.controller.behavior }
     controller.skip.once:
         class: \Unteist\Processor\Controller\SkipOnce
         parent: controller.skip

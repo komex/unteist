@@ -8,19 +8,16 @@
 namespace Unteist\Processor;
 
 use Psr\Log\LoggerInterface;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\ContainerAware;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Unteist\Event\EventStorage;
 use Unteist\Event\MethodEvent;
 use Unteist\Event\TestCaseEvent;
-use Unteist\Exception\SkipTestException;
 use Unteist\Filter\MethodsFilter;
 use Unteist\Meta\TestMeta;
-use Unteist\Processor\Controller\AbstractController;
-use Unteist\Processor\Controller\RunTestsController;
-use Unteist\Processor\Controller\SkipTestsController;
+use Unteist\Processor\Controller\ControllerParentInterface;
 use Unteist\TestCase;
 
 /**
@@ -29,7 +26,7 @@ use Unteist\TestCase;
  * @package Unteist\Processor
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class Runner
+class Runner extends ContainerAware
 {
     /**
      * @var TestCase
@@ -56,10 +53,6 @@ class Runner
      */
     protected $logger;
     /**
-     * @var ContainerBuilder
-     */
-    protected $container;
-    /**
      * @var \ArrayIterator[]
      */
     private $dataSets = [];
@@ -68,19 +61,15 @@ class Runner
      */
     private $reflectionClass;
     /**
-     * @var AbstractController
+     * @var ControllerParentInterface
      */
     private $controller;
 
     /**
-     * @param ContainerBuilder $container
-     *
      * @return Runner
      */
-    public function __construct(ContainerBuilder $container)
+    public function __construct()
     {
-        $this->container = $container;
-        $this->logger = $this->container->get('logger');
         $this->precondition = new EventDispatcher();
         $this->tests = new \ArrayObject();
     }
@@ -108,31 +97,21 @@ class Runner
     }
 
     /**
-     * @param AbstractController $controller
+     * @param LoggerInterface $logger
      */
-    public function setController(AbstractController $controller)
+    public function setLogger(LoggerInterface $logger)
     {
-        $this->controller = $controller;
+        $this->logger = $logger;
     }
 
-    public function useRunTestsController()
+    /**
+     * Get TestCase precondition event dispatcher.
+     *
+     * @return EventDispatcher
+     */
+    public function getPrecondition()
     {
-        /** @var RunTestsController $controller */
-        $controller = $this->container->get('controller.run');
-        $controller->setPrecondition($this->precondition);
-        $controller->setRunner($this);
-        $this->controller = $controller;
-
-        return $controller;
-    }
-
-    public function useSkipTestsController()
-    {
-        /** @var SkipTestsController $controller */
-        $controller = $this->container->get('controller.skip');
-        $this->controller = $controller;
-
-        return $controller;
+        return $this->precondition;
     }
 
     /**
@@ -156,6 +135,15 @@ class Runner
     }
 
     /**
+     * @param ControllerParentInterface $controller
+     */
+    public function setController(ControllerParentInterface $controller)
+    {
+        $controller->setRunner($this);
+        $this->controller = $controller;
+    }
+
+    /**
      * Run TestCase.
      *
      * @param TestCase $testCase
@@ -174,8 +162,7 @@ class Runner
             return 1;
         }
         $statusCode = 0;
-        $controller = $this->useRunTestsController();
-        $controller->beforeCase($this->testCaseEvent);
+        $this->controller->beforeCase($this->testCaseEvent);
         foreach ($this->tests as $test) {
             if ($test->getStatus() !== TestMeta::TEST_NEW && $test->getStatus() !== TestMeta::TEST_MARKED) {
                 continue;
@@ -189,12 +176,17 @@ class Runner
         return $statusCode;
     }
 
+    /**
+     * Method lifecycle.
+     *
+     * @param TestMeta $test
+     *
+     * @return int Status code
+     */
     public function testMethod(TestMeta $test)
     {
         $statusCode = 0;
-        if ($this->controller->needsResolvingDependencies()) {
-            $this->resolveDependencies($test);
-        }
+        $this->controller->resolveDependencies($test);
         $dataProvider = $this->controller->getDataSet($test);
         foreach ($dataProvider as $index => $dataSet) {
             /** @var MethodEvent $event */
@@ -218,9 +210,7 @@ class Runner
      *
      * @param TestMeta $test
      *
-     * @throws \LogicException If found infinitive depends loop.
-     * @throws SkipTestException
-     * @throws \InvalidArgumentException If depends methods not found.
+     * @throws \LogicException If found infinitive depends loop
      */
     public function resolveDependencies(TestMeta $test)
     {
@@ -233,7 +223,7 @@ class Runner
             $test = $this->getTestMethod($depend);
             if ($test->getStatus() === TestMeta::TEST_NEW) {
                 if ($this->testMethod($test)) {
-                    $this->useSkipTestsController();
+                    $this->controller->switchTo(ControllerParentInterface::CONTROLLER_SKIP_ONCE);
                 }
             } elseif ($test->getStatus() === TestMeta::TEST_MARKED) {
                 throw new \LogicException(
@@ -244,7 +234,7 @@ class Runner
                     )
                 );
             } else {
-                $this->useSkipTestsController();
+                $this->controller->switchTo(ControllerParentInterface::CONTROLLER_SKIP_ONCE);
             }
         }
     }

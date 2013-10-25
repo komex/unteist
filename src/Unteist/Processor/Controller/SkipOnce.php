@@ -25,6 +25,6 @@ class SkipOnce extends Skip
     public function afterTest(MethodEvent $event)
     {
         parent::afterTest($event);
-        $this->parent->switchTo('controller.run');
+        $this->parent->switchTo(ControllerParentInterface::CONTROLLER_RUN);
     }
 }

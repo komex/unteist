@@ -7,6 +7,8 @@
 
 namespace Unteist\Processor\Controller;
 
+use Unteist\Processor\Runner;
+
 /**
  * Interface ControllerParentInterface
  *
@@ -15,6 +17,19 @@ namespace Unteist\Processor\Controller;
  */
 interface ControllerParentInterface extends ControllerInterface
 {
+    /**
+     * Run test normally.
+     */
+    const CONTROLLER_RUN = 'controller.run';
+    /**
+     * Skip all tests in case.
+     */
+    const CONTROLLER_SKIP = 'controller.skip';
+    /**
+     * Skip only one test.
+     */
+    const CONTROLLER_SKIP_ONCE = 'controller.skip.once';
+
     /**
      * Use specified controller.
      *
@@ -29,4 +44,14 @@ interface ControllerParentInterface extends ControllerInterface
      * @param string $id
      */
     public function add(ControllerChildInterface $controller, $id);
+
+    /**
+     * @param Runner $runner
+     */
+    public function setRunner(Runner $runner);
+
+    /**
+     * @return Runner
+     */
+    public function getRunner();
 }

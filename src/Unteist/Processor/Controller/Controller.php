@@ -10,6 +10,7 @@ namespace Unteist\Processor\Controller;
 use Unteist\Event\TestCaseEvent;
 use Unteist\Meta\TestMeta;
 use Unteist\Event\MethodEvent;
+use Unteist\Processor\Runner;
 
 /**
  * Class Controller
@@ -27,6 +28,26 @@ class Controller implements ControllerParentInterface
      * @var string
      */
     protected $current;
+    /**
+     * @var Runner
+     */
+    protected $runner;
+
+    /**
+     * @return Runner
+     */
+    public function getRunner()
+    {
+        return $this->runner;
+    }
+
+    /**
+     * @param Runner $runner
+     */
+    public function setRunner(Runner $runner)
+    {
+        $this->runner = $runner;
+    }
 
     /**
      * Use specified controller.

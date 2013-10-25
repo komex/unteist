@@ -18,7 +18,6 @@ use Unteist\Exception\TestErrorException;
 use Unteist\Exception\TestFailException;
 use Unteist\Meta\TestMeta;
 use Unteist\Event\MethodEvent;
-use Unteist\Processor\Runner;
 use Unteist\Strategy\Context;
 
 /**
@@ -41,10 +40,6 @@ class Run extends ContainerAware implements ControllerChildInterface
      * @var Context
      */
     protected $context;
-    /**
-     * @var Runner
-     */
-    protected $runner;
     /**
      * @var float
      */
@@ -77,22 +72,6 @@ class Run extends ContainerAware implements ControllerChildInterface
     }
 
     /**
-     * @param EventDispatcherInterface $precondition
-     */
-    public function setPrecondition(EventDispatcherInterface $precondition)
-    {
-        $this->precondition = $precondition;
-    }
-
-    /**
-     * @param Runner $runner
-     */
-    public function setRunner(Runner $runner)
-    {
-        $this->runner = $runner;
-    }
-
-    /**
      * @param EventDispatcherInterface $dispatcher
      */
     public function setDispatcher(EventDispatcherInterface $dispatcher)
@@ -108,12 +87,13 @@ class Run extends ContainerAware implements ControllerChildInterface
     public function beforeCase(TestCaseEvent $event)
     {
         try {
+            $this->precondition = $this->parent->getRunner()->getPrecondition();
             $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $event);
             $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
         } catch (\Exception $exception) {
             $this->context->onBeforeCase($exception);
             $this->preconditionFailed($exception);
-            $this->parent->switchTo('controller.skip');
+            $this->parent->switchTo(ControllerParentInterface::CONTROLLER_SKIP);
         }
     }
 
@@ -124,7 +104,7 @@ class Run extends ContainerAware implements ControllerChildInterface
      */
     public function resolveDependencies(TestMeta $test)
     {
-        $this->runner->resolveDependencies($test);
+        $this->parent->getRunner()->resolveDependencies($test);
     }
 
     /**
@@ -136,7 +116,7 @@ class Run extends ContainerAware implements ControllerChildInterface
      */
     public function getDataSet(TestMeta $test)
     {
-        return $this->runner->getDataSet($test->getMethod());
+        return $this->parent->getRunner()->getDataSet($test->getDataProvider());
     }
 
     /**
@@ -152,7 +132,7 @@ class Run extends ContainerAware implements ControllerChildInterface
         } catch (\Exception $exception) {
             $this->context->onBeforeTest($exception);
             $this->preconditionFailed($exception);
-            $this->parent->switchTo('controller.skip.once');
+            $this->parent->switchTo(ControllerParentInterface::CONTROLLER_SKIP_ONCE);
         }
     }
 
@@ -192,7 +172,7 @@ class Run extends ContainerAware implements ControllerChildInterface
         } catch (\Exception $exception) {
             $this->context->onAfterTest($exception);
             $this->preconditionFailed($exception);
-            $this->parent->switchTo('controller.skip');
+            $this->parent->switchTo(ControllerParentInterface::CONTROLLER_SKIP);
         }
     }
 
@@ -243,7 +223,7 @@ class Run extends ContainerAware implements ControllerChildInterface
     {
         try {
             $statusCode = 0;
-            call_user_func_array([$this->runner->getTestCase(), $test->getMethod()], $dataSet);
+            call_user_func_array([$this->parent->getRunner()->getTestCase(), $test->getMethod()], $dataSet);
             if ($test->getExpectedException()) {
                 throw new TestFailException('Expected exception ' . $test->getExpectedException());
             }

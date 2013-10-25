@@ -83,13 +83,12 @@ class Configurator
         $this->registerListeners($this->config['listeners']);
         $this->configureLogger();
         $this->configureContext();
-        $this->getDefinition('runner');
         if (intval($this->config['processes'], 10) === 1) {
             $serviceID = 'processor';
-            $definition = $this->getDefinition($serviceID);
+            $definition = $this->container->getDefinition($serviceID);
         } else {
             $serviceID = 'processor.multi';
-            $definition = $this->getDefinition($serviceID);
+            $definition = $this->container->getDefinition($serviceID);
             $definition->addMethodCall('setProcesses', [$this->config['processes']]);
         }
         $definition->addMethodCall('setErrorHandler', [$this->config['context']['levels']]);
@@ -103,6 +102,7 @@ class Configurator
         foreach ($this->config['filters']['methods'] as $filterId) {
             $definition->addMethodCall('addMethodsFilter', [new Reference($filterId)]);
         }
+        $definition->setSynthetic(false);
         $this->container->compile();
 
 
@@ -155,18 +155,6 @@ class Configurator
         }
 
         return $files;
-    }
-
-    /**
-     * Get definition of processor.
-     */
-    private function getDefinition($name)
-    {
-        $definition = $this->container->getDefinition($name);
-        $definition->addArgument($this->container);
-        $definition->setSynthetic(false);
-
-        return $definition;
     }
 
     /**
