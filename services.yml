@@ -63,18 +63,24 @@ services:
             - [ setConnector, [ @connector ] ]
         synthetic: true
     controller:
-        abstract: true
+        class: \Unteist\Processor\Controller\Controller
+    controller.run:
+        class: \Unteist\Processor\Controller\Run
         calls:
             - [ setDispatcher, [ @dispatcher ] ]
-            - [ setContainer, [ @container ] ]
-    controller.skip:
-        parent: controller
-        class: \Unteist\Processor\Controller\SkipTestsController
-    controller.run:
-        parent: controller
-        class: \Unteist\Processor\Controller\RunTestsController
-        calls:
             - [ setContext, [ @context ] ]
+            - [ setContainer, [ @container ] ]
+        tags:
+            -  { name: processor.controller.behavior }
+    controller.skip:
+        class: \Unteist\Processor\Controller\Skip
+        calls:
+            - [ setDispatcher, [ @dispatcher ] ]
+        tags:
+            -  { name: processor.controller.behavior }
+    controller.skip.once:
+        class: \Unteist\Processor\Controller\SkipOnce
+        parent: controller.skip
     event.method:
         class: \Unteist\Event\MethodEvent
         scope: prototype
