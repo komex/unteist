@@ -62,7 +62,6 @@ services:
         class: \Unteist\Processor\Runner
         calls:
             - [ setContainer, [ @container ] ]
-            - [ setLogger, [ @logger ] ]
             - [ setController, [ @controller ] ]
         scope: prototype
     controller:
@@ -72,7 +71,6 @@ services:
             - [ add, [ @controller.run, controller.run ] ]
             - [ add, [ @controller.skip, controller.skip ] ]
             - [ add, [ @controller.skip.once, controller.skip.once ] ]
-            - [ switchTo, [ controller.run ] ]
     controller.run:
         class: \Unteist\Processor\Controller\Run
         calls:

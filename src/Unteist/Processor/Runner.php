@@ -49,10 +49,6 @@ class Runner extends ContainerAware
      */
     protected $precondition;
     /**
-     * @var LoggerInterface
-     */
-    protected $logger;
-    /**
      * @var \ArrayIterator[]
      */
     private $dataSets = [];
@@ -94,14 +90,6 @@ class Runner extends ContainerAware
 
             return $result;
         }
-    }
-
-    /**
-     * @param LoggerInterface $logger
-     */
-    public function setLogger(LoggerInterface $logger)
-    {
-        $this->logger = $logger;
     }
 
     /**
@@ -154,7 +142,7 @@ class Runner extends ContainerAware
     {
         $this->precondition($testCase);
         if ($this->tests->count() == 0) {
-            $this->logger->notice('Tests not found in TestCase', ['pid' => getmypid()]);
+            $this->container->get('logger')->notice('Tests not found in TestCase', ['pid' => getmypid()]);
             /** @var EventDispatcherInterface $dispatcher */
             $dispatcher = $this->container->get('dispatcher');
             $dispatcher->dispatch(EventStorage::EV_CASE_FILTERED);
@@ -162,6 +150,7 @@ class Runner extends ContainerAware
             return 1;
         }
         $statusCode = 0;
+        $this->controller->switchTo('controller.run');
         $this->controller->beforeCase($this->testCaseEvent);
         foreach ($this->tests as $test) {
             if ($test->getStatus() !== TestMeta::TEST_NEW && $test->getStatus() !== TestMeta::TEST_MARKED) {
@@ -338,7 +327,7 @@ class Runner extends ContainerAware
         foreach ($this->filters as $filter) {
             $filter->setAnnotations($annotations);
             if (!$filter->condition($method)) {
-                $this->logger->debug(
+                $this->container->get('logger')->debug(
                     'Method is not a test.',
                     [
                         'pid' => getmypid(),
@@ -396,7 +385,9 @@ class Runner extends ContainerAware
     {
         $className = $this->reflectionClass->getName();
         $methodName = $method->getName();
-        $this->tests[$methodName] = new TestMeta($className, $methodName, $annotations, $this->logger);
+        /** @var LoggerInterface $logger */
+        $logger = $this->container->get('logger');
+        $this->tests[$methodName] = new TestMeta($className, $methodName, $annotations, $logger);
 
         return $this->tests[$methodName];
     }
@@ -426,7 +417,7 @@ class Runner extends ContainerAware
                 $name = null;
         }
         if (!empty($name)) {
-            $this->logger->debug(
+            $this->container->get('logger')->debug(
                 'Register a new event listener',
                 ['pid' => getmypid(), 'event' => $event, 'method' => $listener]
             );
