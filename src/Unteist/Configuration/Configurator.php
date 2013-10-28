@@ -100,7 +100,10 @@ class Configurator
             $definition->addMethodCall('addClassFilter', [new Reference($filterId)]);
         }
         foreach ($this->config['filters']['methods'] as $filterId) {
-            $definition->addMethodCall('addMethodsFilter', [new Reference($filterId)]);
+            $runner = $this->container->getDefinition('runner');
+            $runner->addMethodCall('addMethodsFilter', [new Reference($filterId)]);
+            $filter = $this->container->getDefinition($filterId);
+            $filter->addMethodCall('setConfig', [$this->config]);
         }
         $definition->setSynthetic(false);
         $this->container->compile();

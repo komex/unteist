@@ -16,6 +16,7 @@ use Unteist\Event\EventStorage;
 use Unteist\Event\MethodEvent;
 use Unteist\Event\TestCaseEvent;
 use Unteist\Filter\MethodsFilter;
+use Unteist\Filter\MethodsFilterInterface;
 use Unteist\Meta\TestMeta;
 use Unteist\Processor\Controller\ControllerParentInterface;
 use Unteist\TestCase;
@@ -109,13 +110,13 @@ class Runner extends ContainerAware
     }
 
     /**
-     * Set test method filters.
+     * Add new methods filter or replace if its already exists.
      *
-     * @param \Unteist\Filter\MethodsFilterInterface[] $filters
+     * @param MethodsFilterInterface $filter
      */
-    public function setFilters(array $filters)
+    public function addMethodsFilter(MethodsFilterInterface $filter)
     {
-        $this->filters = $filters;
+        $this->filters[$filter->getName()] = $filter;
     }
 
     /**
