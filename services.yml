@@ -62,6 +62,8 @@ services:
         class: \Unteist\Processor\Runner
         calls:
             - [ setContainer, [ @container ] ]
+            - [ setController, [ @controller ] ]
+            - [ setLogger, [ @logger ] ]
         scope: prototype
     controller:
         class: \Unteist\Processor\Controller\Controller

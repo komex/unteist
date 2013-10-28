@@ -7,6 +7,7 @@
 
 namespace Unteist\Processor;
 
+use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerAware;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -27,7 +28,7 @@ use Unteist\TestCase;
  * @package Unteist\Processor
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class Runner extends ContainerAware
+class Runner extends ContainerAware implements LoggerAwareInterface
 {
     /**
      * @var TestCase
@@ -57,6 +58,10 @@ class Runner extends ContainerAware
      * @var ControllerParentInterface
      */
     private $controller;
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
 
     /**
      * @return Runner
@@ -90,6 +95,18 @@ class Runner extends ContainerAware
     }
 
     /**
+     * Sets a logger instance on the object
+     *
+     * @param LoggerInterface $logger
+     *
+     * @return null
+     */
+    public function setLogger(LoggerInterface $logger)
+    {
+        $this->logger = $logger;
+    }
+
+    /**
      * Get TestCase precondition event dispatcher.
      *
      * @return EventDispatcher
@@ -120,6 +137,16 @@ class Runner extends ContainerAware
     }
 
     /**
+     * @param ControllerParentInterface $controller
+     */
+    public function setController(ControllerParentInterface $controller)
+    {
+        $this->controller = $controller;
+        $this->controller->setRunner($this);
+        $this->controller->switchTo('controller.run');
+    }
+
+    /**
      * Run TestCase.
      *
      * @param TestCase $testCase
@@ -130,7 +157,7 @@ class Runner extends ContainerAware
     {
         $this->precondition($testCase);
         if ($this->tests->count() == 0) {
-            $this->container->get('logger')->notice('Tests not found in TestCase', ['pid' => getmypid()]);
+            $this->logger->notice('Tests not found in TestCase', ['pid' => getmypid()]);
             /** @var EventDispatcherInterface $dispatcher */
             $dispatcher = $this->container->get('dispatcher');
             $dispatcher->dispatch(EventStorage::EV_CASE_FILTERED);
@@ -140,9 +167,6 @@ class Runner extends ContainerAware
         $statusCode = 0;
         $testCaseEvent = new TestCaseEvent($this->reflectionClass->getName());
         $testCaseEvent->setAnnotations(self::getAnnotations($this->reflectionClass->getDocComment()));
-        $this->controller = $this->container->get('controller');
-        $this->controller->setRunner($this);
-        $this->controller->switchTo('controller.run');
         $this->controller->beforeCase($testCaseEvent);
         foreach ($this->tests as $test) {
             if ($test->getStatus() !== TestMeta::TEST_NEW && $test->getStatus() !== TestMeta::TEST_MARKED) {
@@ -319,7 +343,7 @@ class Runner extends ContainerAware
         foreach ($this->filters as $filter) {
             $filter->setAnnotations($annotations);
             if (!$filter->condition($method)) {
-                $this->container->get('logger')->debug(
+                $this->logger->debug(
                     'Method is not a test.',
                     [
                         'pid' => getmypid(),
@@ -375,9 +399,7 @@ class Runner extends ContainerAware
     {
         $className = $this->reflectionClass->getName();
         $methodName = $method->getName();
-        /** @var LoggerInterface $logger */
-        $logger = $this->container->get('logger');
-        $this->tests[$methodName] = new TestMeta($className, $methodName, $annotations, $logger);
+        $this->tests[$methodName] = new TestMeta($className, $methodName, $annotations, $this->logger);
 
         return $this->tests[$methodName];
     }
@@ -407,7 +429,7 @@ class Runner extends ContainerAware
                 $name = null;
         }
         if (!empty($name)) {
-            $this->container->get('logger')->debug(
+            $this->logger->debug(
                 'Register a new event listener',
                 ['pid' => getmypid(), 'event' => $event, 'method' => $listener]
             );
