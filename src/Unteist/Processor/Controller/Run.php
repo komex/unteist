@@ -8,27 +8,35 @@
 namespace Unteist\Processor\Controller;
 
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\ContainerAware;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Assert\Assert;
 use Unteist\Event\EventStorage;
-use Unteist\Event\MethodEvent;
 use Unteist\Event\TestCaseEvent;
 use Unteist\Exception\IncompleteTestException;
-use Unteist\Exception\SkipTestException;
 use Unteist\Exception\TestErrorException;
 use Unteist\Exception\TestFailException;
 use Unteist\Meta\TestMeta;
+use Unteist\Event\MethodEvent;
 use Unteist\Processor\Runner;
 use Unteist\Strategy\Context;
 
 /**
- * Class RunTestsController
+ * Class Run
  *
  * @package Unteist\Processor\Controller
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class RunTestsController extends AbstractController
+class Run extends ContainerAware implements ControllerChildConfigurableInterface
 {
+    /**
+     * @var EventDispatcherInterface
+     */
+    protected $dispatcher;
+    /**
+     * @var EventDispatcherInterface
+     */
+    protected $precondition;
     /**
      * @var Context
      */
@@ -42,20 +50,20 @@ class RunTestsController extends AbstractController
      */
     protected $asserts;
     /**
+     * @var ControllerParentInterface
+     */
+    protected $parent;
+    /**
      * @var Runner
      */
     protected $runner;
-    /**
-     * @var EventDispatcherInterface
-     */
-    protected $precondition;
 
     /**
-     * @param Context $context
+     * @param Runner $runner
      */
-    public function setContext(Context $context)
+    public function setRunner(Runner $runner)
     {
-        $this->context = $context;
+        $this->runner = $runner;
     }
 
     /**
@@ -67,102 +75,140 @@ class RunTestsController extends AbstractController
     }
 
     /**
-     * Before all tests.
+     * Set parent controller for behavior controller.
+     *
+     * @param ControllerParentInterface $parent
      */
-    public function beforeCase(TestCaseEvent $testCaseEvent)
+    public function setParent(ControllerParentInterface $parent)
+    {
+        $this->parent = $parent;
+    }
+
+    /**
+     * @param Context $context
+     */
+    public function setContext(Context $context)
+    {
+        $this->context = $context;
+    }
+
+    /**
+     * @param EventDispatcherInterface $dispatcher
+     */
+    public function setDispatcher(EventDispatcherInterface $dispatcher)
+    {
+        $this->dispatcher = $dispatcher;
+    }
+
+    /**
+     * Actions before each test.
+     *
+     * @param TestCaseEvent $event
+     */
+    public function beforeCase(TestCaseEvent $event)
     {
         try {
-            $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $testCaseEvent);
+            $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $event);
             $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
         } catch (\Exception $exception) {
             $this->context->onBeforeCase($exception);
-            $this->switchController($exception);
+            $this->preconditionFailed($exception);
+            $this->parent->switchTo(ControllerParentInterface::CONTROLLER_SKIP);
         }
     }
 
     /**
-     * @param Runner $runner
+     * Resolve test dependencies.
+     *
+     * @param TestMeta $test
      */
-    public function setRunner(Runner $runner)
+    public function resolveDependencies(TestMeta $test)
     {
-        $this->runner = $runner;
+        $this->runner->resolveDependencies($test);
     }
 
     /**
-     * Run test.
+     * Get test data set.
      *
      * @param TestMeta $test
      *
-     * @return int
+     * @return array[]
      */
-    public function test(TestMeta $test)
+    public function getDataSet(TestMeta $test)
     {
-        if ($test->getStatus() !== TestMeta::TEST_NEW && $test->getStatus() !== TestMeta::TEST_MARKED) {
-            return 0;
-        }
-        try {
-            $this->runner->resolveDependencies($test);
-        } catch (SkipTestException $e) {
-            /** @var AbstractController $controller */
-            $controller = $this->container->get('controller.skip');
+        return $this->runner->getDataSet($test->getDataProvider());
+    }
 
-            return $controller->test($test);
+    /**
+     * Actions before each test.
+     *
+     * @param MethodEvent $event
+     */
+    public function beforeTest(MethodEvent $event)
+    {
+        try {
+            $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $event);
+            $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $event);
+        } catch (\Exception $exception) {
+            $this->context->onBeforeTest($exception);
+            $this->preconditionFailed($exception);
+            $this->parent->switchTo(ControllerParentInterface::CONTROLLER_SKIP_ONCE);
         }
-        $dataProvider = $this->runner->getDataSet($test->getDataProvider());
-        $statusCode = 0;
-        foreach ($dataProvider as $index => $dataSet) {
-            /** @var MethodEvent $event */
-            $event = $this->container->get('event.method');
-            $event->configByTestMeta($test);
-            if (count($dataProvider) > 1) {
-                $event->setDataSet($index + 1);
-            }
-            $code = $this->execute($test, $event, $dataSet);
-            if ($code > 0) {
-                $statusCode = $code;
-            }
+    }
+
+    /**
+     * Run test method.
+     *
+     * @param TestMeta $test Meta information about test method
+     * @param MethodEvent $event Configured method event
+     * @param array $dataSet Arguments for test
+     *
+     * @return int Status code
+     */
+    public function test(TestMeta $test, MethodEvent $event, array $dataSet)
+    {
+        try {
+            $this->started = microtime(true);
+            $this->asserts = Assert::getAssertsCount();
+            $statusCode = $this->behavior($test, $event, $dataSet);
+        } catch (TestFailException $exception) {
+            $this->finish($test, $event, MethodEvent::METHOD_FAILED, $exception);
+            $statusCode = $this->context->onFailure($exception);
         }
 
         return $statusCode;
     }
 
     /**
-     * All tests done. Generate EV_AFTER_CASE event.
+     * Actions after each test.
+     *
+     * @param MethodEvent $event
      */
-    public function afterCase(TestCaseEvent $testCaseEvent)
+    public function afterTest(MethodEvent $event)
     {
         try {
-            $this->precondition->dispatch(EventStorage::EV_AFTER_CASE);
-            parent::afterCase($testCaseEvent);
+            $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
+            $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
         } catch (\Exception $exception) {
-            $this->context->onAfterCase($exception);
+            $this->context->onAfterTest($exception);
             $this->preconditionFailed($exception);
+            $this->parent->switchTo(ControllerParentInterface::CONTROLLER_SKIP);
         }
     }
 
     /**
-     * Before running method.
+     * Actions after each case.
      *
-     * @param MethodEvent $event
+     * @param TestCaseEvent $event
      */
-    protected function beforeTest(MethodEvent $event)
-    {
-        parent::beforeTest($event);
-        $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $event);
-    }
-
-    /**
-     * Test done. Generate EV_AFTER_TEST event.
-     *
-     * @param MethodEvent $event
-     */
-    protected function afterTest(MethodEvent $event)
+    public function afterCase(TestCaseEvent $event)
     {
         try {
-            $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
+            $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, $event);
+            $this->precondition->dispatch(EventStorage::EV_AFTER_CASE);
         } catch (\Exception $exception) {
-            $this->context->onAfterTest($exception);
-            $this->switchController($exception);
+            $this->context->onAfterCase($exception);
+            $this->preconditionFailed($exception);
         }
     }
 
@@ -171,7 +217,7 @@ class RunTestsController extends AbstractController
      *
      * @param \Exception $exception
      *
-     * @return SkipTestsController
+     * @return MethodEvent
      */
     protected function preconditionFailed(\Exception $exception)
     {
@@ -180,71 +226,8 @@ class RunTestsController extends AbstractController
         $event->setStatus(MethodEvent::METHOD_FAILED);
         $event->parseException($exception);
         $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, $event);
-        /** @var SkipTestsController $controller */
-        $controller = $this->container->get('controller.skip');
-        $controller->setDepends($event->getMethod());
 
-        return $controller;
-    }
-
-    /**
-     * Switch controller to SkipTestsController.
-     *
-     * @param \Exception $exception
-     */
-    protected function switchController(\Exception $exception)
-    {
-        $controller = $this->preconditionFailed($exception);
-        $this->runner->setController($controller);
-    }
-
-    /**
-     * Controller behavior.
-     *
-     * @param TestMeta $test
-     * @param array $dataSet
-     *
-     * @throws TestFailException
-     * @return int Status code
-     */
-    protected function behavior(TestMeta $test, array $dataSet)
-    {
-        call_user_func_array([$this->runner->getTestCase(), $test->getMethod()], $dataSet);
-        if ($test->getExpectedException()) {
-            throw new TestFailException('Expected exception ' . $test->getExpectedException());
-        }
-
-        return 0;
-    }
-
-    /**
-     * @param TestMeta $test
-     * @param MethodEvent $event
-     * @param array $dataSet
-     *
-     * @return int
-     */
-    protected function execute(TestMeta $test, MethodEvent $event, array $dataSet)
-    {
-        try {
-            $this->beforeTest($event);
-        } catch (\Exception $exception) {
-            $this->context->onBeforeTest($exception);
-            $controller = $this->preconditionFailed($exception);
-            $controller->test($test);
-
-            return 1;
-        }
-        try {
-            $this->started = microtime(true);
-            $this->asserts = Assert::getAssertsCount();
-            $statusCode = $this->convert($test, $event, $dataSet);
-        } catch (TestFailException $exception) {
-            $this->finish($test, $event, MethodEvent::METHOD_FAILED, $exception);
-            $statusCode = $this->context->onFailure($exception);
-        }
-
-        return $statusCode;
+        return $event;
     }
 
     /**
@@ -256,10 +239,14 @@ class RunTestsController extends AbstractController
      *
      * @return int Status code
      */
-    protected function convert(TestMeta $test, MethodEvent $event, array $dataSet)
+    protected function behavior(TestMeta $test, MethodEvent $event, array $dataSet)
     {
         try {
-            $statusCode = $this->behavior($test, $dataSet);
+            $statusCode = 0;
+            call_user_func_array([$this->runner->getTestCase(), $test->getMethod()], $dataSet);
+            if ($test->getExpectedException()) {
+                throw new TestFailException('Expected exception ' . $test->getExpectedException());
+            }
             $this->finish($test, $event, MethodEvent::METHOD_OK);
         } catch (TestErrorException $exception) {
             $statusCode = $this->context->onError($exception);
@@ -281,15 +268,9 @@ class RunTestsController extends AbstractController
      * @param MethodEvent $event
      * @param int $status
      * @param \Exception $exception
-     * @param bool $sendEvent
      */
-    private function finish(
-        TestMeta $test,
-        MethodEvent $event,
-        $status,
-        \Exception $exception = null,
-        $sendEvent = true
-    ) {
+    private function finish(TestMeta $test, MethodEvent $event, $status, \Exception $exception = null)
+    {
         $event->setStatus($status);
         $event->setTime(floatval(microtime(true) - $this->started));
         $event->setAsserts(Assert::getAssertsCount() - $this->asserts);
@@ -335,10 +316,6 @@ class RunTestsController extends AbstractController
                     $this->precondition->dispatch(EventStorage::EV_METHOD_FAILED, $event);
             }
         }
-        if ($sendEvent) {
-            $this->afterTest($event);
-        }
-        parent::afterTest($event);
     }
 
     /**

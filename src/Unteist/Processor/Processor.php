@@ -14,7 +14,6 @@ use Unteist\Event\EventStorage;
 use Unteist\Exception\FilterException;
 use Unteist\Exception\TestErrorException;
 use Unteist\Filter\ClassFilterInterface;
-use Unteist\Filter\MethodsFilterInterface;
 
 /**
  * Class Processor
@@ -28,10 +27,6 @@ class Processor extends ContainerAware
      * @var ClassFilterInterface[]
      */
     protected $classFilters = [];
-    /**
-     * @var MethodsFilterInterface[]
-     */
-    protected $methodsFilters = [];
     /**
      * @var LoggerInterface
      */
@@ -63,16 +58,6 @@ class Processor extends ContainerAware
     public function addClassFilter(ClassFilterInterface $filter)
     {
         $this->classFilters[$filter->getName()] = $filter;
-    }
-
-    /**
-     * Add new methods filter or replace if its already exists.
-     *
-     * @param MethodsFilterInterface $filter
-     */
-    public function addMethodsFilter(MethodsFilterInterface $filter)
-    {
-        $this->methodsFilters[$filter->getName()] = $filter;
     }
 
     /**
@@ -140,7 +125,6 @@ class Processor extends ContainerAware
             $class->setContainer($this->container);
             /** @var Runner $runner */
             $runner = $this->container->get('runner');
-            $runner->setFilters($this->methodsFilters);
 
             return $runner->run($class);
         } catch (FilterException $e) {

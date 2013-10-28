@@ -7,18 +7,19 @@
 
 namespace Unteist\Processor;
 
+use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\ContainerAware;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Unteist\Event\EventStorage;
+use Unteist\Event\MethodEvent;
 use Unteist\Event\TestCaseEvent;
-use Unteist\Exception\SkipTestException;
 use Unteist\Filter\MethodsFilter;
+use Unteist\Filter\MethodsFilterInterface;
 use Unteist\Meta\TestMeta;
-use Unteist\Processor\Controller\AbstractController;
-use Unteist\Processor\Controller\RunTestsController;
+use Unteist\Processor\Controller\ControllerParentInterface;
 use Unteist\TestCase;
 
 /**
@@ -27,16 +28,12 @@ use Unteist\TestCase;
  * @package Unteist\Processor
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class Runner
+class Runner extends ContainerAware implements LoggerAwareInterface
 {
     /**
      * @var TestCase
      */
     protected $testCase;
-    /**
-     * @var TestCaseEvent
-     */
-    protected $testCaseEvent;
     /**
      * @var TestMeta[]|\ArrayObject
      */
@@ -50,14 +47,6 @@ class Runner
      */
     protected $precondition;
     /**
-     * @var LoggerInterface
-     */
-    protected $logger;
-    /**
-     * @var ContainerBuilder
-     */
-    protected $container;
-    /**
      * @var \ArrayIterator[]
      */
     private $dataSets = [];
@@ -66,19 +55,19 @@ class Runner
      */
     private $reflectionClass;
     /**
-     * @var AbstractController
+     * @var ControllerParentInterface
      */
     private $controller;
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
 
     /**
-     * @param ContainerBuilder $container
-     *
      * @return Runner
      */
-    public function __construct(ContainerBuilder $container)
+    public function __construct()
     {
-        $this->container = $container;
-        $this->logger = $this->container->get('logger');
         $this->precondition = new EventDispatcher();
         $this->tests = new \ArrayObject();
     }
@@ -106,11 +95,25 @@ class Runner
     }
 
     /**
-     * @param AbstractController $controller
+     * Sets a logger instance on the object
+     *
+     * @param LoggerInterface $logger
+     *
+     * @return null
      */
-    public function setController(AbstractController $controller)
+    public function setLogger(LoggerInterface $logger)
     {
-        $this->controller = $controller;
+        $this->logger = $logger;
+    }
+
+    /**
+     * Get TestCase precondition event dispatcher.
+     *
+     * @return EventDispatcher
+     */
+    public function getPrecondition()
+    {
+        return $this->precondition;
     }
 
     /**
@@ -124,13 +127,23 @@ class Runner
     }
 
     /**
-     * Set test method filters.
+     * Add new methods filter or replace if its already exists.
      *
-     * @param \Unteist\Filter\MethodsFilterInterface[] $filters
+     * @param MethodsFilterInterface $filter
      */
-    public function setFilters(array $filters)
+    public function addMethodsFilter(MethodsFilterInterface $filter)
     {
-        $this->filters = $filters;
+        $this->filters[$filter->getName()] = $filter;
+    }
+
+    /**
+     * @param ControllerParentInterface $controller
+     */
+    public function setController(ControllerParentInterface $controller)
+    {
+        $this->controller = $controller;
+        $this->controller->setRunner($this);
+        $this->controller->switchTo('controller.run');
     }
 
     /**
@@ -152,18 +165,47 @@ class Runner
             return 1;
         }
         $statusCode = 0;
-        /** @var RunTestsController $controller */
-        $controller = $this->container->get('controller.run');
-        $controller->setPrecondition($this->precondition);
-        $controller->setRunner($this);
-        $this->setController($controller);
-        $controller->beforeCase($this->testCaseEvent);
+        $testCaseEvent = new TestCaseEvent($this->reflectionClass->getName());
+        $testCaseEvent->setAnnotations(self::getAnnotations($this->reflectionClass->getDocComment()));
+        $this->controller->beforeCase($testCaseEvent);
         foreach ($this->tests as $test) {
-            if ($this->controller->test($test)) {
+            if ($test->getStatus() !== TestMeta::TEST_NEW && $test->getStatus() !== TestMeta::TEST_MARKED) {
+                continue;
+            }
+            if ($this->testMethod($test)) {
                 $statusCode = 1;
             }
         }
-        $this->controller->afterCase($this->testCaseEvent);
+        $this->controller->afterCase($testCaseEvent);
+
+        return $statusCode;
+    }
+
+    /**
+     * Method lifecycle.
+     *
+     * @param TestMeta $test
+     *
+     * @return int Status code
+     */
+    public function testMethod(TestMeta $test)
+    {
+        $statusCode = 0;
+        $this->controller->resolveDependencies($test);
+        $dataProvider = $this->controller->getDataSet($test);
+        foreach ($dataProvider as $index => $dataSet) {
+            /** @var MethodEvent $event */
+            $event = $this->container->get('event.method');
+            $event->configByTestMeta($test);
+            if (count($dataProvider) > 1) {
+                $event->setDataSet($index + 1);
+            }
+            $this->controller->beforeTest($event);
+            if ($this->controller->test($test, $event, $dataSet)) {
+                $statusCode = 1;
+            }
+            $this->controller->afterTest($event);
+        }
 
         return $statusCode;
     }
@@ -173,9 +215,7 @@ class Runner
      *
      * @param TestMeta $test
      *
-     * @throws \LogicException If found infinitive depends loop.
-     * @throws SkipTestException
-     * @throws \InvalidArgumentException If depends methods not found.
+     * @throws \LogicException If found infinitive depends loop
      */
     public function resolveDependencies(TestMeta $test)
     {
@@ -186,38 +226,20 @@ class Runner
         $test->setStatus(TestMeta::TEST_MARKED);
         foreach ($depends as $depend) {
             $test = $this->getTestMethod($depend);
-            switch ($test->getStatus()) {
-                case TestMeta::TEST_NEW:
-                    try {
-                        $this->controller->test($test);
-                    } catch (\Exception $e) {
-                        throw new SkipTestException(
-                            sprintf('Unresolved dependencies in %s::%s()', $this->reflectionClass->getName(), $depend),
-                            0,
-                            $e
-                        );
-                    }
-                    break;
-                case TestMeta::TEST_MARKED:
-                    throw new \LogicException(
-                        sprintf(
-                            'Found infinitive loop in depends for test method "%s::%s()"',
-                            $this->reflectionClass->getName(),
-                            $depend
-                        )
-                    );
-                case TestMeta::TEST_SKIPPED:
-                    throw new SkipTestException(
-                        sprintf('Test method "%s::%s()" was skipped', $this->reflectionClass->getName(), $depend)
-                    );
-                case TestMeta::TEST_FAILED:
-                    throw new SkipTestException(
-                        sprintf('Test method "%s::%s()" was failed', $this->reflectionClass->getName(), $depend)
-                    );
-                case TestMeta::TEST_INCOMPLETE:
-                    throw new SkipTestException(
-                        sprintf('Test method "%s::%s()" was uncompleted', $this->reflectionClass->getName(), $depend)
-                    );
+            if ($test->getStatus() === TestMeta::TEST_NEW) {
+                if ($this->testMethod($test)) {
+                    $this->controller->switchTo(ControllerParentInterface::CONTROLLER_SKIP_ONCE);
+                }
+            } elseif ($test->getStatus() === TestMeta::TEST_MARKED) {
+                throw new \LogicException(
+                    sprintf(
+                        'Found infinitive loop in depends for test method "%s::%s()"',
+                        $this->reflectionClass->getName(),
+                        $depend
+                    )
+                );
+            } else {
+                $this->controller->switchTo(ControllerParentInterface::CONTROLLER_SKIP_ONCE);
             }
         }
     }
@@ -346,8 +368,6 @@ class Runner
     {
         $this->testCase = $testCase;
         $this->reflectionClass = new \ReflectionClass($this->testCase);
-        $this->testCaseEvent = new TestCaseEvent($this->reflectionClass->getName());
-        $this->testCaseEvent->setAnnotations(self::getAnnotations($this->reflectionClass->getDocComment()));
         if ($testCase instanceof EventSubscriberInterface) {
             $this->precondition->addSubscriber($testCase);
         }
