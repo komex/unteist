@@ -33,10 +33,6 @@ class Runner extends ContainerAware
      */
     protected $testCase;
     /**
-     * @var TestCaseEvent
-     */
-    protected $testCaseEvent;
-    /**
      * @var TestMeta[]|\ArrayObject
      */
     protected $tests;
@@ -150,8 +146,10 @@ class Runner extends ContainerAware
             return 1;
         }
         $statusCode = 0;
+        $testCaseEvent = new TestCaseEvent($this->reflectionClass->getName());
+        $testCaseEvent->setAnnotations(self::getAnnotations($this->reflectionClass->getDocComment()));
         $this->controller->switchTo('controller.run');
-        $this->controller->beforeCase($this->testCaseEvent);
+        $this->controller->beforeCase($testCaseEvent);
         foreach ($this->tests as $test) {
             if ($test->getStatus() !== TestMeta::TEST_NEW && $test->getStatus() !== TestMeta::TEST_MARKED) {
                 continue;
@@ -160,7 +158,7 @@ class Runner extends ContainerAware
                 $statusCode = 1;
             }
         }
-        $this->controller->afterCase($this->testCaseEvent);
+        $this->controller->afterCase($testCaseEvent);
 
         return $statusCode;
     }
@@ -352,8 +350,6 @@ class Runner extends ContainerAware
     {
         $this->testCase = $testCase;
         $this->reflectionClass = new \ReflectionClass($this->testCase);
-        $this->testCaseEvent = new TestCaseEvent($this->reflectionClass->getName());
-        $this->testCaseEvent->setAnnotations(self::getAnnotations($this->reflectionClass->getDocComment()));
         if ($testCase instanceof EventSubscriberInterface) {
             $this->precondition->addSubscriber($testCase);
         }
