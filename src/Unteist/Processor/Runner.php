@@ -7,9 +7,8 @@
 
 namespace Unteist\Processor;
 
-use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\DependencyInjection\ContainerAware;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -29,8 +28,12 @@ use Unteist\TestCase;
  * @package Unteist\Processor
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class Runner extends ContainerAware implements LoggerAwareInterface
+class Runner
 {
+    /**
+     * @var ContainerInterface
+     */
+    protected $container;
     /**
      * @var TestCase
      */
@@ -65,12 +68,19 @@ class Runner extends ContainerAware implements LoggerAwareInterface
     private $logger;
 
     /**
+     * @param ContainerInterface $container
+     *
      * @return Runner
      */
-    public function __construct()
+    public function __construct(ContainerInterface $container)
     {
         $this->precondition = new EventDispatcher();
         $this->tests = new \ArrayObject();
+        $this->container = $container;
+        $this->logger = $container->get('logger');
+        $this->controller = $container->get('controller');
+        $this->controller->setRunner($this);
+        $this->controller->switchTo(ControllerParentInterface::CONTROLLER_RUN);
     }
 
     /**
@@ -93,18 +103,6 @@ class Runner extends ContainerAware implements LoggerAwareInterface
 
             return $result;
         }
-    }
-
-    /**
-     * Sets a logger instance on the object
-     *
-     * @param LoggerInterface $logger
-     *
-     * @return null
-     */
-    public function setLogger(LoggerInterface $logger)
-    {
-        $this->logger = $logger;
     }
 
     /**
@@ -135,16 +133,6 @@ class Runner extends ContainerAware implements LoggerAwareInterface
     public function addMethodsFilter(MethodsFilterInterface $filter)
     {
         $this->filters[$filter->getName()] = $filter;
-    }
-
-    /**
-     * @param ControllerParentInterface $controller
-     */
-    public function setController(ControllerParentInterface $controller)
-    {
-        $this->controller = $controller;
-        $this->controller->setRunner($this);
-        $this->controller->switchTo(ControllerParentInterface::CONTROLLER_RUN);
     }
 
     /**

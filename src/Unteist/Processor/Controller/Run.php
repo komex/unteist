@@ -8,7 +8,7 @@
 namespace Unteist\Processor\Controller;
 
 use Psr\Log\LoggerInterface;
-use Symfony\Component\DependencyInjection\ContainerAware;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Assert\Assert;
 use Unteist\Event\EventStorage;
@@ -27,8 +27,12 @@ use Unteist\Strategy\Context;
  * @package Unteist\Processor\Controller
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class Run extends ContainerAware implements ControllerChildConfigurableInterface
+class Run implements ControllerChildConfigurableInterface
 {
+    /**
+     * @var ContainerInterface
+     */
+    protected $container;
     /**
      * @var EventDispatcherInterface
      */
@@ -59,6 +63,16 @@ class Run extends ContainerAware implements ControllerChildConfigurableInterface
     protected $runner;
 
     /**
+     * @param ContainerInterface $container
+     */
+    public function __construct(ContainerInterface $container)
+    {
+        $this->container = $container;
+        $this->dispatcher = $container->get('dispatcher');
+        $this->context = $container->get('context');
+    }
+
+    /**
      * @param Runner $runner
      */
     public function setRunner(Runner $runner)
@@ -82,22 +96,6 @@ class Run extends ContainerAware implements ControllerChildConfigurableInterface
     public function setParent(ControllerParentInterface $parent)
     {
         $this->parent = $parent;
-    }
-
-    /**
-     * @param Context $context
-     */
-    public function setContext(Context $context)
-    {
-        $this->context = $context;
-    }
-
-    /**
-     * @param EventDispatcherInterface $dispatcher
-     */
-    public function setDispatcher(EventDispatcherInterface $dispatcher)
-    {
-        $this->dispatcher = $dispatcher;
     }
 
     /**

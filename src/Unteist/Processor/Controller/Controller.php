@@ -7,7 +7,7 @@
 
 namespace Unteist\Processor\Controller;
 
-use Symfony\Component\DependencyInjection\ContainerAware;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Unteist\Event\TestCaseEvent;
 use Unteist\Meta\TestMeta;
 use Unteist\Event\MethodEvent;
@@ -19,8 +19,12 @@ use Unteist\Processor\Runner;
  * @package Unteist\Processor\Controller
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class Controller extends ContainerAware implements ControllerParentInterface
+class Controller implements ControllerParentInterface
 {
+    /**
+     * @var ContainerInterface
+     */
+    protected $container;
     /**
      * @var ControllerChildInterface
      */
@@ -31,11 +35,11 @@ class Controller extends ContainerAware implements ControllerParentInterface
     protected $runner;
 
     /**
-     * @return Runner
+     * @param ContainerInterface $container
      */
-    public function getRunner()
+    public function __construct(ContainerInterface $container)
     {
-        return $this->runner;
+        $this->container = $container;
     }
 
     /**

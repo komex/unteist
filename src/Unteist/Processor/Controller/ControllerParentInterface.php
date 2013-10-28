@@ -44,9 +44,4 @@ interface ControllerParentInterface extends ControllerInterface
      * @param Runner $runner
      */
     public function setRunner(Runner $runner);
-
-    /**
-     * @return Runner
-     */
-    public function getRunner();
 }

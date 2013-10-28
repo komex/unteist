@@ -60,21 +60,14 @@ services:
         synthetic: true
     runner:
         class: \Unteist\Processor\Runner
-        calls:
-            - [ setContainer, [ @container ] ]
-            - [ setController, [ @controller ] ]
-            - [ setLogger, [ @logger ] ]
+        arguments: [ @container ]
         scope: prototype
     controller:
         class: \Unteist\Processor\Controller\Controller
-        calls:
-            - [ setContainer, [ @container ] ]
+        arguments: [ @container ]
     controller.run:
         class: \Unteist\Processor\Controller\Run
-        calls:
-            - [ setDispatcher, [ @dispatcher ] ]
-            - [ setContext, [ @context ] ]
-            - [ setContainer, [ @container ] ]
+        arguments: [ @container ]
         configurator: [ @controller, configurator ]
     controller.skip:
         class: \Unteist\Processor\Controller\Skip
