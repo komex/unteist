@@ -62,21 +62,18 @@ services:
         class: \Unteist\Processor\Runner
         calls:
             - [ setContainer, [ @container ] ]
-            - [ setController, [ @controller ] ]
         scope: prototype
     controller:
         class: \Unteist\Processor\Controller\Controller
         calls:
-            # todo: use tags
-            - [ add, [ @controller.run, controller.run ] ]
-            - [ add, [ @controller.skip, controller.skip ] ]
-            - [ add, [ @controller.skip.once, controller.skip.once ] ]
+            - [ setContainer, [ @container ] ]
     controller.run:
         class: \Unteist\Processor\Controller\Run
         calls:
             - [ setDispatcher, [ @dispatcher ] ]
             - [ setContext, [ @context ] ]
             - [ setContainer, [ @container ] ]
+        configurator: [ @controller, configurator ]
     controller.skip:
         class: \Unteist\Processor\Controller\Skip
         calls:

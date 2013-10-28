@@ -18,6 +18,7 @@ use Unteist\Exception\TestErrorException;
 use Unteist\Exception\TestFailException;
 use Unteist\Meta\TestMeta;
 use Unteist\Event\MethodEvent;
+use Unteist\Processor\Runner;
 use Unteist\Strategy\Context;
 
 /**
@@ -26,7 +27,7 @@ use Unteist\Strategy\Context;
  * @package Unteist\Processor\Controller
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class Run extends ContainerAware implements ControllerChildInterface
+class Run extends ContainerAware implements ControllerChildConfigurableInterface
 {
     /**
      * @var EventDispatcherInterface
@@ -52,6 +53,26 @@ class Run extends ContainerAware implements ControllerChildInterface
      * @var ControllerParentInterface
      */
     protected $parent;
+    /**
+     * @var Runner
+     */
+    protected $runner;
+
+    /**
+     * @param Runner $runner
+     */
+    public function setRunner(Runner $runner)
+    {
+        $this->runner = $runner;
+    }
+
+    /**
+     * @param EventDispatcherInterface $precondition
+     */
+    public function setPrecondition(EventDispatcherInterface $precondition)
+    {
+        $this->precondition = $precondition;
+    }
 
     /**
      * Set parent controller for behavior controller.
@@ -87,7 +108,6 @@ class Run extends ContainerAware implements ControllerChildInterface
     public function beforeCase(TestCaseEvent $event)
     {
         try {
-            $this->precondition = $this->parent->getRunner()->getPrecondition();
             $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $event);
             $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
         } catch (\Exception $exception) {
@@ -104,7 +124,7 @@ class Run extends ContainerAware implements ControllerChildInterface
      */
     public function resolveDependencies(TestMeta $test)
     {
-        $this->parent->getRunner()->resolveDependencies($test);
+        $this->runner->resolveDependencies($test);
     }
 
     /**
@@ -116,7 +136,7 @@ class Run extends ContainerAware implements ControllerChildInterface
      */
     public function getDataSet(TestMeta $test)
     {
-        return $this->parent->getRunner()->getDataSet($test->getDataProvider());
+        return $this->runner->getDataSet($test->getDataProvider());
     }
 
     /**
@@ -223,7 +243,7 @@ class Run extends ContainerAware implements ControllerChildInterface
     {
         try {
             $statusCode = 0;
-            call_user_func_array([$this->parent->getRunner()->getTestCase(), $test->getMethod()], $dataSet);
+            call_user_func_array([$this->runner->getTestCase(), $test->getMethod()], $dataSet);
             if ($test->getExpectedException()) {
                 throw new TestFailException('Expected exception ' . $test->getExpectedException());
             }

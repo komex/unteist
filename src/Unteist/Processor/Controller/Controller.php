@@ -7,6 +7,7 @@
 
 namespace Unteist\Processor\Controller;
 
+use Symfony\Component\DependencyInjection\ContainerAware;
 use Unteist\Event\TestCaseEvent;
 use Unteist\Meta\TestMeta;
 use Unteist\Event\MethodEvent;
@@ -18,14 +19,10 @@ use Unteist\Processor\Runner;
  * @package Unteist\Processor\Controller
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class Controller implements ControllerParentInterface
+class Controller extends ContainerAware implements ControllerParentInterface
 {
     /**
-     * @var ControllerInterface[]
-     */
-    protected $controllers;
-    /**
-     * @var string
+     * @var ControllerChildInterface
      */
     protected $current;
     /**
@@ -58,27 +55,23 @@ class Controller implements ControllerParentInterface
      */
     public function switchTo($id)
     {
-        if (isset($this->controllers[$id])) {
-            $this->current = $id;
+        if ($this->container->has($id)) {
+            $this->current = $this->container->get($id);
+            $this->current->setParent($this);
         } else {
-            $message = sprintf('Unknown controller id "%s". ', $id);
-            if (empty($this->controllers)) {
-                $message .= 'Controllers list is empty.';
-            } else {
-                $message .= 'Allowed ' . join(', ', array_keys($this->controllers)) . '.';
-            }
-            throw new \InvalidArgumentException($message);
+            throw new \InvalidArgumentException(sprintf('Unknown controller id "%s".', $id));
         }
     }
 
     /**
-     * @param ControllerChildInterface $controller
-     * @param string $id
+     * Configure Controller.
+     *
+     * @param ControllerChildConfigurableInterface $controller
      */
-    public function add(ControllerChildInterface $controller, $id)
+    public function configurator(ControllerChildConfigurableInterface $controller)
     {
-        $controller->setParent($this);
-        $this->controllers[$id] = $controller;
+        $controller->setRunner($this->runner);
+        $controller->setPrecondition($this->runner->getPrecondition());
     }
 
     /**
@@ -88,7 +81,7 @@ class Controller implements ControllerParentInterface
      */
     public function beforeCase(TestCaseEvent $event)
     {
-        $this->controllers[$this->current]->beforeCase($event);
+        $this->current->beforeCase($event);
     }
 
     /**
@@ -98,7 +91,7 @@ class Controller implements ControllerParentInterface
      */
     public function resolveDependencies(TestMeta $test)
     {
-        $this->controllers[$this->current]->resolveDependencies($test);
+        $this->current->resolveDependencies($test);
     }
 
     /**
@@ -110,7 +103,7 @@ class Controller implements ControllerParentInterface
      */
     public function getDataSet(TestMeta $test)
     {
-        return $this->controllers[$this->current]->getDataSet($test);
+        return $this->current->getDataSet($test);
     }
 
     /**
@@ -120,7 +113,7 @@ class Controller implements ControllerParentInterface
      */
     public function beforeTest(MethodEvent $event)
     {
-        $this->controllers[$this->current]->beforeTest($event);
+        $this->current->beforeTest($event);
     }
 
     /**
@@ -134,7 +127,7 @@ class Controller implements ControllerParentInterface
      */
     public function test(TestMeta $test, MethodEvent $event, array $dataSet)
     {
-        return $this->controllers[$this->current]->test($test, $event, $dataSet);
+        return $this->current->test($test, $event, $dataSet);
     }
 
     /**
@@ -144,7 +137,7 @@ class Controller implements ControllerParentInterface
      */
     public function afterTest(MethodEvent $event)
     {
-        $this->controllers[$this->current]->afterTest($event);
+        $this->current->afterTest($event);
     }
 
     /**
@@ -154,6 +147,6 @@ class Controller implements ControllerParentInterface
      */
     public function afterCase(TestCaseEvent $event)
     {
-        $this->controllers[$this->current]->afterCase($event);
+        $this->current->afterCase($event);
     }
 }

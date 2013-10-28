@@ -40,12 +40,6 @@ interface ControllerParentInterface extends ControllerInterface
     public function switchTo($id);
 
     /**
-     * @param ControllerChildInterface $controller
-     * @param string $id
-     */
-    public function add(ControllerChildInterface $controller, $id);
-
-    /**
      * @param Runner $runner
      */
     public function setRunner(Runner $runner);

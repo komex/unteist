@@ -120,15 +120,6 @@ class Runner extends ContainerAware
     }
 
     /**
-     * @param ControllerParentInterface $controller
-     */
-    public function setController(ControllerParentInterface $controller)
-    {
-        $controller->setRunner($this);
-        $this->controller = $controller;
-    }
-
-    /**
      * Run TestCase.
      *
      * @param TestCase $testCase
@@ -149,6 +140,8 @@ class Runner extends ContainerAware
         $statusCode = 0;
         $testCaseEvent = new TestCaseEvent($this->reflectionClass->getName());
         $testCaseEvent->setAnnotations(self::getAnnotations($this->reflectionClass->getDocComment()));
+        $this->controller = $this->container->get('controller');
+        $this->controller->setRunner($this);
         $this->controller->switchTo('controller.run');
         $this->controller->beforeCase($testCaseEvent);
         foreach ($this->tests as $test) {
