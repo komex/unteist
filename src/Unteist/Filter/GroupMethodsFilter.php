@@ -76,7 +76,7 @@ class GroupMethodsFilter implements MethodsFilterInterface
         if (empty($config['groups']) or !is_array($config['groups'])) {
             throw new \InvalidArgumentException('The list of needed groups does not specified in configuration.');
         } else {
-            $this->$neededGroups = $config['groups'];
+            $this->neededGroups = $config['groups'];
         }
     }
 }
