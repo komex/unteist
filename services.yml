@@ -49,8 +49,7 @@ services:
         arguments: [ @dispatcher, %connector.events% ]
     processor:
         class: \Unteist\Processor\Processor
-        calls:
-            - [ setContainer, [ @container ] ]
+        arguments: [ @container ]
         synthetic: true
     processor.multi:
         class: \Unteist\Processor\MultiProcessor

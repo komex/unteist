@@ -8,7 +8,7 @@
 namespace Unteist\Processor;
 
 use Psr\Log\LoggerInterface;
-use Symfony\Component\DependencyInjection\ContainerAware;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Unteist\Event\EventStorage;
 use Unteist\Exception\FilterException;
@@ -21,8 +21,12 @@ use Unteist\Filter\ClassFilterInterface;
  * @package Unteist\Processor
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class Processor extends ContainerAware
+class Processor
 {
+    /**
+     * @var ContainerInterface
+     */
+    protected $container;
     /**
      * @var ClassFilterInterface[]
      */
@@ -35,6 +39,19 @@ class Processor extends ContainerAware
      * @var array
      */
     protected $globals = [];
+    /**
+     * @var EventDispatcherInterface
+     */
+    protected $dispatcher;
+
+    /**
+     * @param ContainerInterface $container
+     */
+    public function __construct(ContainerInterface $container)
+    {
+        $this->container = $container;
+        $this->logger = $container->get('logger');
+    }
 
     /**
      * Set error handler for specified error types.
@@ -82,10 +99,8 @@ class Processor extends ContainerAware
      */
     public function run(\ArrayObject $suites)
     {
-        $this->logger = $this->container->get('logger');
-        /** @var EventDispatcherInterface $dispatcher */
-        $dispatcher = $this->container->get('dispatcher');
-        $dispatcher->dispatch(EventStorage::EV_APP_STARTED);
+        $this->dispatcher = $this->container->get('dispatcher');
+        $this->dispatcher->dispatch(EventStorage::EV_APP_STARTED);
         $this->logger->info('Run TestCases in single process.', ['pid' => getmypid()]);
         $this->backupGlobals();
         $exitCode = 0;
@@ -97,7 +112,7 @@ class Processor extends ContainerAware
             $this->restoreGlobals();
         }
         $this->logger->info('All tests done.', ['pid' => getmypid(), 'exitCode' => $exitCode]);
-        $dispatcher->dispatch(EventStorage::EV_APP_FINISHED);
+        $this->dispatcher->dispatch(EventStorage::EV_APP_FINISHED);
 
         return $exitCode;
     }
@@ -129,9 +144,7 @@ class Processor extends ContainerAware
             return $runner->run($class);
         } catch (FilterException $e) {
             $this->logger->notice('File was filtered', ['pid' => getmypid(), 'filter' => $e]);
-            /** @var EventDispatcherInterface $dispatcher */
-            $dispatcher = $this->container->get('dispatcher');
-            $dispatcher->dispatch(EventStorage::EV_CASE_FILTERED);
+            $this->dispatcher->dispatch(EventStorage::EV_CASE_FILTERED);
 
             return 1;
         }
