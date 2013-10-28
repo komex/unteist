@@ -20,6 +20,7 @@ use Unteist\Filter\MethodsFilter;
 use Unteist\Filter\MethodsFilterInterface;
 use Unteist\Meta\TestMeta;
 use Unteist\Processor\Controller\ControllerParentInterface;
+use Unteist\Processor\Controller\SkipOnce;
 use Unteist\TestCase;
 
 /**
@@ -143,7 +144,7 @@ class Runner extends ContainerAware implements LoggerAwareInterface
     {
         $this->controller = $controller;
         $this->controller->setRunner($this);
-        $this->controller->switchTo('controller.run');
+        $this->controller->switchTo(ControllerParentInterface::CONTROLLER_RUN);
     }
 
     /**
@@ -228,7 +229,9 @@ class Runner extends ContainerAware implements LoggerAwareInterface
             $test = $this->getTestMethod($depend);
             if ($test->getStatus() === TestMeta::TEST_NEW) {
                 if ($this->testMethod($test)) {
-                    $this->controller->switchTo(ControllerParentInterface::CONTROLLER_SKIP_ONCE);
+                    /** @var SkipOnce $controller */
+                    $controller = $this->controller->switchTo(ControllerParentInterface::CONTROLLER_SKIP_ONCE);
+                    $controller->setDepends(null);
                 }
             } elseif ($test->getStatus() === TestMeta::TEST_MARKED) {
                 throw new \LogicException(
@@ -239,7 +242,9 @@ class Runner extends ContainerAware implements LoggerAwareInterface
                     )
                 );
             } else {
-                $this->controller->switchTo(ControllerParentInterface::CONTROLLER_SKIP_ONCE);
+                /** @var SkipOnce $controller */
+                $controller = $this->controller->switchTo(ControllerParentInterface::CONTROLLER_SKIP_ONCE);
+                $controller->setDepends(null);
             }
         }
     }

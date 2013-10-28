@@ -35,6 +35,7 @@ interface ControllerParentInterface extends ControllerInterface
      *
      * @param string $id
      *
+     * @return ControllerChildInterface
      * @throws \InvalidArgumentException
      */
     public function switchTo($id);

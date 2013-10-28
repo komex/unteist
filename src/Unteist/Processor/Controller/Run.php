@@ -112,8 +112,10 @@ class Run extends ContainerAware implements ControllerChildConfigurableInterface
             $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
         } catch (\Exception $exception) {
             $this->context->onBeforeCase($exception);
-            $this->preconditionFailed($exception);
-            $this->parent->switchTo(ControllerParentInterface::CONTROLLER_SKIP);
+            $event = $this->preconditionFailed($exception);
+            /** @var Skip $controller */
+            $controller = $this->parent->switchTo(ControllerParentInterface::CONTROLLER_SKIP);
+            $controller->setDepends($event->getMethod());
         }
     }
 
@@ -151,8 +153,10 @@ class Run extends ContainerAware implements ControllerChildConfigurableInterface
             $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $event);
         } catch (\Exception $exception) {
             $this->context->onBeforeTest($exception);
-            $this->preconditionFailed($exception);
-            $this->parent->switchTo(ControllerParentInterface::CONTROLLER_SKIP_ONCE);
+            $event = $this->preconditionFailed($exception);
+            /** @var Skip $controller */
+            $controller = $this->parent->switchTo(ControllerParentInterface::CONTROLLER_SKIP_ONCE);
+            $controller->setDepends($event->getMethod());
         }
     }
 
@@ -191,8 +195,10 @@ class Run extends ContainerAware implements ControllerChildConfigurableInterface
             $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
         } catch (\Exception $exception) {
             $this->context->onAfterTest($exception);
-            $this->preconditionFailed($exception);
-            $this->parent->switchTo(ControllerParentInterface::CONTROLLER_SKIP);
+            $event = $this->preconditionFailed($exception);
+            /** @var Skip $controller */
+            $controller = $this->parent->switchTo(ControllerParentInterface::CONTROLLER_SKIP);
+            $controller->setDepends($event->getMethod());
         }
     }
 

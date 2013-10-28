@@ -51,6 +51,7 @@ class Controller extends ContainerAware implements ControllerParentInterface
      *
      * @param string $id
      *
+     * @return ControllerChildInterface
      * @throws \InvalidArgumentException
      */
     public function switchTo($id)
@@ -58,6 +59,8 @@ class Controller extends ContainerAware implements ControllerParentInterface
         if ($this->container->has($id)) {
             $this->current = $this->container->get($id);
             $this->current->setParent($this);
+
+            return $this->current;
         } else {
             throw new \InvalidArgumentException(sprintf('Unknown controller id "%s".', $id));
         }
