@@ -229,7 +229,7 @@ class Runner
                         $depend
                     )
                 );
-            } else {
+            } elseif ($test->getStatus() !== TestMeta::TEST_DONE) {
                 /** @var SkipOnce $controller */
                 $controller = $this->controller->switchTo(ControllerParentInterface::CONTROLLER_SKIP_ONCE);
                 $controller->setDepends(null);
