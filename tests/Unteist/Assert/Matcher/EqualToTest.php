@@ -74,4 +74,32 @@ class EqualToTest extends \PHPUnit_Framework_TestCase
         $class = new EqualTo($expected);
         $class->match($actual);
     }
+
+    /**
+     * @return array
+     */
+    public function dpFormatter()
+    {
+        return [
+            ['str', "(string) 'str'"],
+            [-34, '(integer) -34'],
+            [.054, '(double) 0.054'],
+            [false, '(boolean) false'],
+            [$this, '(object) Tests\\Unteist\\Assert\\Matcher\\EqualToTest'],
+            [null, '(NULL) NULL'],
+        ];
+    }
+
+    /**
+     * @param mixed $variable
+     * @param string $expected
+     *
+     * @dataProvider dpFormatter
+     */
+    public function testFormatter($variable, $expected)
+    {
+        $method = new \ReflectionMethod('Unteist\\Assert\\Matcher\\EqualTo', 'formatter');
+        $method->setAccessible(true);
+        $this->assertSame($expected, $method->invoke(new EqualTo(null), $variable), 'Invalid assertion output.');
+    }
 }

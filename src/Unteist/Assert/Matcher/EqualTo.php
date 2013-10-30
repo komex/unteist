@@ -47,16 +47,12 @@ class EqualTo extends AbstractMatcher
      */
     protected function formatter($variable)
     {
-        if (is_string($variable)) {
-            return sprintf('(string) "%s"', $variable);
-        } elseif (is_null($variable)) {
-            return 'NULL';
-        } elseif (is_resource($variable)) {
+        if (is_resource($variable)) {
             return '<resource>';
         } elseif (is_object($variable)) {
             return '(object) ' . get_class($variable);
         } else {
-            return sprintf('(%s) %s', gettype($variable), $variable);
+            return sprintf('(%s) %s', gettype($variable), var_export($variable, true));
         }
     }
 
