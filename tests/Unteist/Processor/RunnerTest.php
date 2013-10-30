@@ -9,6 +9,7 @@ namespace Tests\Unteist\Processor;
 
 use Delusion\Configurator;
 use Delusion\Suggestible;
+use Monolog\Logger;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Unteist\Processor\Controller\Controller;
 use Unteist\Processor\Runner;
@@ -22,27 +23,52 @@ use Unteist\Processor\Runner;
 class RunnerTest extends \PHPUnit_Framework_TestCase
 {
     /**
-     * Test constructor behavior.
+     * @var Runner
      */
-    public function testConstructor()
+    protected $runner;
+    /**
+     * @var Suggestible
+     */
+    protected $controller;
+    /**
+     * @var Suggestible
+     */
+    protected $logger;
+
+    /**
+     * Prepare tests.
+     */
+    public function setUp()
     {
         $container = new ContainerBuilder;
-        $container->register('logger', 'ArrayObject');
         /** @var Suggestible $controller */
         $controller = new Controller($container);
         Configurator::setCustomBehavior($controller, 'setRunner', null);
         Configurator::setCustomBehavior($controller, 'switchTo', null);
         Configurator::storeInvokes($controller, true);
         $container->set('controller', $controller);
-        $runner = new Runner($container);
+        /** @var Suggestible $logger */
+        $logger = new Logger('test');
+        Configurator::setCustomBehavior($logger, 'debug', null);
+        Configurator::storeInvokes($logger, true);
+        $container->set('logger', $logger);
+        $this->runner = new Runner($container);
+        $this->controller = $controller;
+        $this->logger = $logger;
+    }
 
-        $this->assertCount(2, Configurator::getAllInvokes($controller));
+    /**
+     * Test constructor behavior.
+     */
+    public function testConstructor()
+    {
+        $this->assertCount(2, Configurator::getAllInvokes($this->controller));
 
-        $invokes = Configurator::getInvokes($controller, 'setRunner');
+        $invokes = Configurator::getInvokes($this->controller, 'setRunner');
         $this->assertCount(1, $invokes);
-        $this->assertSame([$runner], $invokes[0]);
+        $this->assertSame([$this->runner], $invokes[0]);
 
-        $invokes = Configurator::getInvokes($controller, 'switchTo');
+        $invokes = Configurator::getInvokes($this->controller, 'switchTo');
         $this->assertCount(1, $invokes);
         $this->assertSame(['controller.run'], $invokes[0]);
     }
@@ -83,6 +109,19 @@ class RunnerTest extends \PHPUnit_Framework_TestCase
     public function testGetAnnotations($comments, array $expected)
     {
         $this->assertSame($expected, Runner::getAnnotations($comments), 'Error while parsing annotations.');
+    }
+
+    /**
+     * Test finter invalid event listeners.
+     */
+    public function testRegisterInvalidEventListener()
+    {
+        $method = new \ReflectionMethod($this->runner, 'registerEventListener');
+        $method->setAccessible(true);
+        $method->invoke($this->runner, 'invalid.event', 'precondition');
+
+        $this->assertCount(0, $this->runner->getPrecondition()->getListeners());
+        $this->assertCount(0, Configurator::getAllInvokes($this->logger));
     }
 
     /**
