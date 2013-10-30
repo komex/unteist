@@ -91,6 +91,8 @@ class EqualToTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * Test formatter output.
+     *
      * @param mixed $variable
      * @param string $expected
      *
@@ -101,5 +103,54 @@ class EqualToTest extends \PHPUnit_Framework_TestCase
         $method = new \ReflectionMethod('Unteist\\Assert\\Matcher\\EqualTo', 'formatter');
         $method->setAccessible(true);
         $this->assertSame($expected, $method->invoke(new EqualTo(null), $variable), 'Invalid assertion output.');
+    }
+
+    /**
+     * Test diff output without arrays.
+     */
+    public function testGetDiffWithoutArray()
+    {
+        $object = new EqualTo(null);
+        $class = new \ReflectionClass('Unteist\\Assert\\Matcher\\EqualTo');
+        $property = $class->getProperty('expected');
+        $property->setAccessible(true);
+        $property->setValue($object, 'expected');
+        $method = $class->getMethod('getDiff');
+        $method->setAccessible(true);
+        $this->assertSame(
+            "expected (string) 'expected', but given (string) 'actual'",
+            $method->invoke($object, 'actual'),
+            'Invalid variables diff output.'
+        );
+    }
+
+    /**
+     * @return array
+     */
+    public function dpGetDiffWithArray()
+    {
+        return [
+            ['expected', ['key' => 'value']],
+            [['key' => 'value'], 'actual'],
+        ];
+    }
+
+    /**
+     * @param mixed $expected
+     * @param mixed $actual
+     *
+     * @dataProvider dpGetDiffWithArray
+     */
+    public function testGetDiffWithArray($expected, $actual)
+    {
+        $object = new EqualTo($expected);
+        $class = new \ReflectionClass('Unteist\\Assert\\Matcher\\EqualTo');
+        $method = $class->getMethod('getDiff');
+        $method->setAccessible(true);
+        $this->assertStringStartsWith(
+            '--- Expected' . PHP_EOL . '+++ Actual',
+            $method->invoke($object, $actual),
+            'getDiff() must use Diff object if there is an array.'
+        );
     }
 }
