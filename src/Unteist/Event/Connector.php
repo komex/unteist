@@ -7,7 +7,6 @@
 
 namespace Unteist\Event;
 
-
 use Symfony\Component\EventDispatcher\Event;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
@@ -50,13 +49,13 @@ class Connector
 
     /**
      * @param EventDispatcherInterface $dispatcher
-     * @param array $custom_events Custom events to proxy to parent process.
+     * @param array $customEvents Custom events to proxy to parent process.
      */
-    public function __construct(EventDispatcherInterface $dispatcher, array $custom_events = [])
+    public function __construct(EventDispatcherInterface $dispatcher, array $customEvents = [])
     {
         $this->dispatcher = $dispatcher;
         $class = new \ReflectionClass('\\Unteist\\Event\\EventStorage');
-        $this->events = array_unique(array_values($class->getConstants() + $custom_events));
+        $this->events = array_unique(array_values($class->getConstants() + $customEvents));
         $this->parentPID = getmypid();
         $this->queue = msg_get_queue(ftok(__FILE__, 'U'));
     }
@@ -126,8 +125,8 @@ class Connector
     public function onEvent(Event $event)
     {
         $serialized = serialize($event);
-        $send_data = pack('N', strlen($serialized)) . $serialized;
-        if (fwrite($this->parentSocket, $send_data) === false) {
+        $sendData = pack('N', strlen($serialized)) . $serialized;
+        if (fwrite($this->parentSocket, $sendData) === false) {
             throw new \RuntimeException('Could not write event to socket.');
         }
         msg_send($this->queue, 1, getmypid(), false);
@@ -145,8 +144,8 @@ class Connector
             if (feof($socket)) {
                 continue;
             }
-            $packed_len = stream_get_contents($socket, 4);
-            $info = unpack('Nlen', $packed_len);
+            $packedLen = stream_get_contents($socket, 4);
+            $info = unpack('Nlen', $packedLen);
             $data = stream_get_contents($socket, $info['len']);
             /** @var Event $event */
             $event = unserialize($data);
