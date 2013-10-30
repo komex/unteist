@@ -53,8 +53,8 @@ services:
         synthetic: true
     processor.multi:
         class: \Unteist\Processor\MultiProcessor
+        arguments: [ @container ]
         calls:
-            - [ setContainer, [ @container ] ]
             - [ setConnector, [ @connector ] ]
         synthetic: true
     runner:

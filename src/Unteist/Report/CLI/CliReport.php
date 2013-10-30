@@ -64,18 +64,24 @@ class CliReport implements EventSubscriberInterface
     private $case_count = 0;
 
     /**
-     * @param OutputInterface $output
      * @param ProgressHelper $progress
-     * @param int $count The number of founded files
+     * @param OutputInterface $output
      */
-    public function __construct(OutputInterface $output, ProgressHelper $progress, $count)
+    public function __construct(ProgressHelper $progress, OutputInterface $output)
     {
         $this->output = $output;
         $this->progress = $progress;
         $this->failed = new \ArrayObject();
         $this->skipped = new \ArrayObject();
         $this->incomplete = new \ArrayObject();
-        $this->progress->start($output, $count);
+    }
+
+    /**
+     * @param int $count The number of founded files
+     */
+    public function start($count)
+    {
+        $this->progress->start($this->output, $count);
         $this->progress->display();
         $this->started = microtime(true);
     }

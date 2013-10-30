@@ -9,7 +9,9 @@ namespace Unteist\Configuration;
 
 use Symfony\Component\Config\Definition\Processor as DefinitionProcessor;
 use Symfony\Component\Config\FileLocator;
+use Symfony\Component\Console\Helper\ProgressHelper;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
@@ -41,6 +43,10 @@ class Configurator
      * @var array
      */
     private $configs = [];
+    /**
+     * @var \ArrayObject
+     */
+    private $files;
 
     /**
      * Prepare configuration loader.
@@ -69,16 +75,30 @@ class Configurator
     }
 
     /**
+     * Configure Cli reporter.
+     *
+     * @param ProgressHelper $progress
+     * @param OutputInterface $output
+     *
+     * @return \Symfony\Component\DependencyInjection\Definition
+     */
+    public function configureCliReporter(ProgressHelper $progress, OutputInterface $output)
+    {
+        $definition = $this->container->getDefinition('reporter.cli');
+        $definition->setArguments([$progress, $output]);
+        $definition->addMethodCall('start', [$this->getFiles()->count()]);
+        $definition->setSynthetic(false);
+
+        return $definition;
+    }
+
+    /**
      * Get configured tests processor.
      *
      * @return Processor
      */
     public function getProcessor()
     {
-        if (empty($this->config)) {
-            $this->processConfiguration();
-        }
-        $this->container->set('container', $this->container);
         $this->registerReporter();
         $this->registerListeners($this->config['listeners']);
         $this->configureLogger();
@@ -135,50 +155,39 @@ class Configurator
      */
     public function getFiles()
     {
-        $files = new \ArrayObject();
-        foreach ($this->config['source'] as $source) {
-            $finder = new Finder();
-            $finder->ignoreUnreadableDirs()->files();
-            $finder->in($source['in'])->name($source['name']);
-            if (!empty($source['notName'])) {
-                foreach ($source['notName'] as $name) {
-                    $finder->notName($name);
+        if ($this->files === null) {
+            $files = new \ArrayObject();
+            foreach ($this->config['source'] as $source) {
+                $finder = new Finder();
+                $finder->ignoreUnreadableDirs()->files();
+                $finder->in($source['in'])->name($source['name']);
+                if (!empty($source['notName'])) {
+                    foreach ($source['notName'] as $name) {
+                        $finder->notName($name);
+                    }
+                }
+                if (!empty($source['exclude'])) {
+                    $finder->exclude($source['exclude']);
+                }
+                /** @var \SplFileInfo $file */
+                foreach ($finder as $file) {
+                    $realPath = $file->getRealPath();
+                    if (!$files->offsetExists($realPath) && substr($file->getFilename(), -8) === 'Test.php') {
+                        $files[$realPath] = $file;
+                    }
                 }
             }
-            if (!empty($source['exclude'])) {
-                $finder->exclude($source['exclude']);
-            }
-            /** @var \SplFileInfo $file */
-            foreach ($finder as $file) {
-                $realPath = $file->getRealPath();
-                if (!$files->offsetExists($realPath) && substr($file->getFilename(), -8) === 'Test.php') {
-                    $files[$realPath] = $file;
-                }
-            }
+            $this->files = $files;
         }
 
-        return $files;
-    }
 
-    /**
-     * Include file by path in config file.
-     *
-     * @param string $name Parameter name
-     */
-    private function includeFile($name)
-    {
-        if ($this->container->hasParameter($name)) {
-            $file = $this->container->getParameter($name);
-            if (file_exists($file)) {
-                include($file);
-            }
-        }
+        return $this->files;
     }
 
     /**
      * Process all configuration.
      */
-    private function processConfiguration()
+    public function processConfiguration()
     {
         $processor = new DefinitionProcessor();
         $config = $processor->processConfiguration(new ConfigurationValidator(), $this->configs);
@@ -197,6 +206,21 @@ class Configurator
             $config['groups'] = $groups;
         }
         $this->config = $config;
+    }
+
+    /**
+     * Include file by path in config file.
+     *
+     * @param string $name Parameter name
+     */
+    private function includeFile($name)
+    {
+        if ($this->container->hasParameter($name)) {
+            $file = $this->container->getParameter($name);
+            if (file_exists($file)) {
+                include($file);
+            }
+        }
     }
 
     /**

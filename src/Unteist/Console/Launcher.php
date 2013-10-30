@@ -44,6 +44,7 @@ class Launcher extends Command
     public function __construct()
     {
         $this->container = new ContainerBuilder();
+        $this->container->set('container', $this->container);
         parent::__construct();
     }
 
@@ -88,10 +89,11 @@ class Launcher extends Command
         $configurator = new Configurator($this->container, $input);
         $this->loadConfig($configurator);
         $this->overwriteParams($input);
+        $configurator->processConfiguration();
+        $configurator->configureCliReporter($progress, $output);
         $configurator->loadBootstrap();
         // Processor
         $processor = $configurator->getProcessor();
-        $this->configureCliReporter($output, $progress, $configurator->getFiles()->count());
         gc_collect_cycles();
         // Run tests
         $status = $processor->run($configurator->getFiles());
@@ -153,23 +155,5 @@ class Launcher extends Command
                 $this->container->setParameter($name, $value);
             }
         }
-    }
-
-    /**
-     * Configure Cli reporter definition.
-     *
-     * @param OutputInterface $output
-     * @param ProgressHelper $progress
-     * @param int $count
-     *
-     * @return \Symfony\Component\DependencyInjection\Definition
-     */
-    private function configureCliReporter(OutputInterface $output, ProgressHelper $progress, $count)
-    {
-        $definition = $this->container->getDefinition('reporter.cli');
-        $definition->setArguments([$output, $progress, $count]);
-        $definition->setSynthetic(false);
-
-        return $definition;
     }
 }
