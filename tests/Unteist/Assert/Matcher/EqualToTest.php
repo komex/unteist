@@ -110,12 +110,8 @@ class EqualToTest extends \PHPUnit_Framework_TestCase
      */
     public function testGetDiffWithoutArray()
     {
-        $object = new EqualTo(null);
-        $class = new \ReflectionClass('Unteist\\Assert\\Matcher\\EqualTo');
-        $property = $class->getProperty('expected');
-        $property->setAccessible(true);
-        $property->setValue($object, 'expected');
-        $method = $class->getMethod('getDiff');
+        $object = new EqualTo('expected');
+        $method = new \ReflectionMethod('Unteist\\Assert\\Matcher\\EqualTo', 'getDiff');
         $method->setAccessible(true);
         $this->assertSame(
             "expected (string) 'expected', but given (string) 'actual'",
@@ -144,8 +140,7 @@ class EqualToTest extends \PHPUnit_Framework_TestCase
     public function testGetDiffWithArray($expected, $actual)
     {
         $object = new EqualTo($expected);
-        $class = new \ReflectionClass('Unteist\\Assert\\Matcher\\EqualTo');
-        $method = $class->getMethod('getDiff');
+        $method = new \ReflectionMethod('Unteist\\Assert\\Matcher\\EqualTo', 'getDiff');
         $method->setAccessible(true);
         $this->assertStringStartsWith(
             '--- Expected' . PHP_EOL . '+++ Actual',
