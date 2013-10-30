@@ -67,7 +67,6 @@ services:
     controller.run:
         class: \Unteist\Processor\Controller\Run
         arguments: [ @container ]
-        configurator: [ @controller, configurator ]
     controller.skip:
         class: \Unteist\Processor\Controller\Skip
         calls:

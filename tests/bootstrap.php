@@ -7,5 +7,4 @@
 
 require 'vendor/autoload.php';
 $delusion = \Delusion\Delusion::injection();
-$delusion->setStrategy($delusion::STRATEGY_DENY);
-$delusion->addToWhiteList('Symfony\\Component\\Console\\Input\\');
+$delusion->addToBlackList('PHPUnit');

@@ -33,16 +33,16 @@ class TestCaseLoader
         if (!$file->isReadable()) {
             throw new FilterException(sprintf('Cannot open file "%s"', $file->getRealPath()));
         }
-        $loaded_classes = get_declared_classes();
+        $loadedClasses = get_declared_classes();
         include_once $file;
-        $loaded_classes = array_reverse(
+        $loadedClasses = array_reverse(
             array_values(
-                array_diff(get_declared_classes(), $loaded_classes)
+                array_diff(get_declared_classes(), $loadedClasses)
             )
         );
         $name = $file->getBasename('.php');
         /** @var TestCase $class */
-        foreach ($loaded_classes as $class) {
+        foreach ($loadedClasses as $class) {
             if (preg_match('{^([\w\\\]+\\\)?' . $name . '$}', $class)) {
                 if (is_subclass_of($class, '\\Unteist\\TestCase')) {
                     return new $class;

@@ -63,22 +63,15 @@ class Controller implements ControllerParentInterface
         if ($this->container->has($id)) {
             $this->current = $this->container->get($id);
             $this->current->setParent($this);
+            if ($this->current instanceof ControllerChildConfigurableInterface) {
+                $this->current->setRunner($this->runner);
+                $this->current->setPrecondition($this->runner->getPrecondition());
+            }
 
             return $this->current;
         } else {
             throw new \InvalidArgumentException(sprintf('Unknown controller id "%s".', $id));
         }
-    }
-
-    /**
-     * Configure Controller.
-     *
-     * @param ControllerChildConfigurableInterface $controller
-     */
-    public function configurator(ControllerChildConfigurableInterface $controller)
-    {
-        $controller->setRunner($this->runner);
-        $controller->setPrecondition($this->runner->getPrecondition());
     }
 
     /**
