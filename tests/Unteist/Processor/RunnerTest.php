@@ -11,6 +11,7 @@ use Delusion\Configurator;
 use Delusion\Suggestible;
 use Monolog\Logger;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Unteist\Event\EventStorage;
 use Unteist\Processor\Controller\Controller;
 use Unteist\Processor\Runner;
 
@@ -34,28 +35,6 @@ class RunnerTest extends \PHPUnit_Framework_TestCase
      * @var Suggestible
      */
     protected $logger;
-
-    /**
-     * Prepare tests.
-     */
-    public function setUp()
-    {
-        $container = new ContainerBuilder;
-        /** @var Suggestible $controller */
-        $controller = new Controller($container);
-        Configurator::setCustomBehavior($controller, 'setRunner', null);
-        Configurator::setCustomBehavior($controller, 'switchTo', null);
-        Configurator::storeInvokes($controller, true);
-        $container->set('controller', $controller);
-        /** @var Suggestible $logger */
-        $logger = new Logger('test');
-        Configurator::setCustomBehavior($logger, 'debug', null);
-        Configurator::storeInvokes($logger, true);
-        $container->set('logger', $logger);
-        $this->runner = new Runner($container);
-        $this->controller = $controller;
-        $this->logger = $logger;
-    }
 
     /**
      * Test constructor behavior.
@@ -122,6 +101,61 @@ class RunnerTest extends \PHPUnit_Framework_TestCase
 
         $this->assertCount(0, $this->runner->getPrecondition()->getListeners());
         $this->assertCount(0, Configurator::getAllInvokes($this->logger));
+    }
+
+    /**
+     * @return array
+     */
+    public function dpRegisterEventListener()
+    {
+        return [
+            ['beforeTest', EventStorage::EV_BEFORE_TEST],
+            ['afterTest', EventStorage::EV_AFTER_TEST],
+            ['beforeCase', EventStorage::EV_BEFORE_CASE],
+            ['afterCase', EventStorage::EV_AFTER_CASE],
+        ];
+    }
+
+    /**
+     * Test filter invalid event listeners.
+     *
+     * @param $annotation
+     * @param $event
+     *
+     * @dataProvider dpRegisterEventListener
+     */
+    public function testRegisterEventListener($annotation, $event)
+    {
+        $method = new \ReflectionMethod($this->runner, 'registerEventListener');
+        $method->setAccessible(true);
+        $method->invoke($this->runner, $annotation, 'precondition');
+
+        $listeners = $this->runner->getPrecondition()->getListeners();
+        $this->assertCount(1, Configurator::getAllInvokes($this->logger));
+        $this->assertCount(1, $listeners);
+        $this->assertArrayHasKey($event, $listeners);
+    }
+
+    /**
+     * Prepare tests.
+     */
+    protected function setUp()
+    {
+        $container = new ContainerBuilder;
+        /** @var Suggestible $controller */
+        $controller = new Controller($container);
+        Configurator::setCustomBehavior($controller, 'setRunner', null);
+        Configurator::setCustomBehavior($controller, 'switchTo', null);
+        Configurator::storeInvokes($controller, true);
+        $container->set('controller', $controller);
+        /** @var Suggestible $logger */
+        $logger = new Logger('test');
+        Configurator::setCustomBehavior($logger, 'debug', null);
+        Configurator::storeInvokes($logger, true);
+        $container->set('logger', $logger);
+        $this->runner = new Runner($container);
+        $this->controller = $controller;
+        $this->logger = $logger;
     }
 
     /**
