@@ -95,10 +95,11 @@ class Runner
         if (empty($comments) or !is_string($comments)) {
             return [];
         } else {
-            preg_match_all('{\*\s*@([a-z]+)\b(?:[\t ]+([^\n]+))?[\r\n]*(?!\*)}i', $comments, $matches, PREG_SET_ORDER);
+            $regexp = '{\*\s*@([a-z]+)\b(?:[\t ]+([^\n\r]+))?[\r\n]*(?!\*)}i';
+            preg_match_all($regexp, $comments, $matches, PREG_SET_ORDER);
             $result = [];
             foreach ($matches as $match) {
-                $result[$match[1]] = count($match) === 2 ? null : $match[2];
+                $result[$match[1]] = count($match) === 2 ? null : trim($match[2]);
             }
 
             return $result;
