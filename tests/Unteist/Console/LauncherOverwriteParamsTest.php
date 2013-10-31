@@ -39,7 +39,33 @@ class LauncherOverwriteParamsTest extends \PHPUnit_Framework_TestCase
         self::$launcher = new Launcher();
     }
 
-    public function setUp()
+    /**
+     * @return array
+     */
+    public function dpParseOptions()
+    {
+        return [
+            [['some string'], ['some string' => '']],
+            [['any!chars#in key=value'], ['any!chars#in key' => 'value']],
+            [['a=b=value'], ['a' => 'b=value']],
+            [['a[b]=c&a[]=d'], ['a' => ['b' => 'c', 'd']]],
+            [['a = b = value', ' a [] = c d '], ['a' => ['c d']]],
+        ];
+    }
+
+    /**
+     * @dataProvider dpParseOptions
+     */
+    public function testParseOptions(array $arguments, array $expected)
+    {
+        /** @var \Delusion\Suggestible $input */
+        $input = new ArgvInput();
+        Configurator::setCustomBehavior($input, 'getOption', $arguments);
+        $this->method->invoke(self::$launcher, $input);
+        $this->assertSame($expected, $this->params->all());
+    }
+
+    protected function setUp()
     {
         $this->method = new \ReflectionMethod(self::$launcher, 'overwriteParams');
         $this->method->setAccessible(true);
@@ -53,45 +79,8 @@ class LauncherOverwriteParamsTest extends \PHPUnit_Framework_TestCase
         $this->assertEmpty($this->params->all());
     }
 
-    public function tearDown()
+    protected function tearDown()
     {
         $this->params->clear();
-    }
-
-    /**
-     * @return array
-     */
-    public function dpParseOptionsWithReplaceChars()
-    {
-        return [
-            ['some string'],
-            ['some.string'],
-            ['some_string'],
-            ['some+string'],
-        ];
-    }
-
-    /**
-     * @param string $actual
-     *
-     * @dataProvider dpParseOptionsWithReplaceChars
-     */
-    public function testParseOptionsWithReplaceChars($actual)
-    {
-        /** @var \Delusion\Suggestible $input */
-        $input = new ArgvInput();
-        Configurator::setCustomBehavior($input, 'getOption', [$actual]);
-        $this->method->invoke(self::$launcher, $input);
-        $this->assertEquals(['some.string' => ''], $this->params->all());
-    }
-
-    public function testParseOptions()
-    {
-        $this->params->add(['a' => ['ok']]);
-        /** @var \Delusion\Suggestible $input */
-        $input = new ArgvInput();
-        Configurator::setCustomBehavior($input, 'getOption', ['test=ok1', 'test=ok2', 'a[]=ok1', 'a[]=ok2']);
-        $this->method->invoke(self::$launcher, $input);
-        $this->assertEquals(['test' => 'ok2', 'a' => ['ok1', 'ok2']], $this->params->all());
     }
 }

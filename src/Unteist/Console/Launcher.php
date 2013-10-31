@@ -148,12 +148,27 @@ class Launcher extends Command
     protected function overwriteParams(InputInterface $input)
     {
         $parameters = $input->getOption('parameter');
-        if (!empty($parameters)) {
-            parse_str(join('&', $parameters), $params);
-            foreach ($params as $name => $value) {
-                $name = str_replace('_', '.', $name);
-                $this->container->setParameter($name, $value);
+        $source = preg_replace_callback(
+            '/(^|(?<=&))[^=[]+/',
+            function ($key) {
+                return urlencode(base64_encode(urldecode($key[0])));
+            },
+            join('&', $parameters)
+        );
+        parse_str($source, $parameters);
+        foreach ($parameters as $key => $value) {
+            if (is_array($value)) {
+                array_walk_recursive(
+                    $value,
+                    function (&$v, &$k) {
+                        $v = trim($v);
+                        $k = trim($k);
+                    }
+                );
+            } elseif (is_string($value)) {
+                $value = trim($value);
             }
+            $this->container->setParameter(trim(base64_decode($key)), $value);
         }
     }
 }
