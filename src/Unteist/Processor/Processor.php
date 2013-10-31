@@ -102,9 +102,9 @@ class Processor
         $this->dispatcher = $this->container->get('dispatcher');
         $this->dispatcher->dispatch(EventStorage::EV_APP_STARTED);
         $this->logger->info('Run TestCases in single process.', ['pid' => getmypid()]);
-        $this->backupGlobals();
         $exitCode = 0;
         foreach ($suites as $suite) {
+            $this->backupGlobals();
             if ($this->executor($suite)) {
                 $exitCode = 1;
             }
