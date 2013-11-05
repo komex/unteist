@@ -106,7 +106,7 @@ class Run implements ControllerChildConfigurableInterface
     public function beforeCase(TestCaseEvent $event)
     {
         try {
-            $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, $event);
+            $this->dispatcher->dispatch(EventStorage::EV_BEFORE_CASE, clone $event);
             $this->precondition->dispatch(EventStorage::EV_BEFORE_CASE);
         } catch (\Exception $exception) {
             $this->context->onBeforeCase($exception);
@@ -147,8 +147,8 @@ class Run implements ControllerChildConfigurableInterface
     public function beforeTest(MethodEvent $event)
     {
         try {
-            $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $event);
-            $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, $event);
+            $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, clone $event);
+            $this->precondition->dispatch(EventStorage::EV_BEFORE_TEST, clone $event);
         } catch (\Exception $exception) {
             $this->context->onBeforeTest($exception);
             $event = $this->preconditionFailed($exception);
@@ -189,8 +189,8 @@ class Run implements ControllerChildConfigurableInterface
     public function afterTest(MethodEvent $event)
     {
         try {
-            $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
-            $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, $event);
+            $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, clone $event);
+            $this->precondition->dispatch(EventStorage::EV_AFTER_TEST, clone $event);
         } catch (\Exception $exception) {
             $this->context->onAfterTest($exception);
             $event = $this->preconditionFailed($exception);
@@ -208,7 +208,7 @@ class Run implements ControllerChildConfigurableInterface
     public function afterCase(TestCaseEvent $event)
     {
         try {
-            $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, $event);
+            $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, clone $event);
             $this->precondition->dispatch(EventStorage::EV_AFTER_CASE);
         } catch (\Exception $exception) {
             $this->context->onAfterCase($exception);
@@ -229,7 +229,7 @@ class Run implements ControllerChildConfigurableInterface
         $event = $this->container->get('event.method');
         $event->setStatus(MethodEvent::METHOD_FAILED);
         $event->parseException($exception);
-        $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, $event);
+        $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, clone $event);
 
         return $event;
     }
@@ -281,8 +281,8 @@ class Run implements ControllerChildConfigurableInterface
         $this->asserts = Assert::getAssertsCount();
         if ($status === MethodEvent::METHOD_OK) {
             $test->setStatus(TestMeta::TEST_DONE);
-            $this->dispatcher->dispatch(EventStorage::EV_METHOD_DONE, $event);
-            $this->precondition->dispatch(EventStorage::EV_METHOD_DONE, $event);
+            $this->dispatcher->dispatch(EventStorage::EV_METHOD_DONE, clone $event);
+            $this->precondition->dispatch(EventStorage::EV_METHOD_DONE, clone $event);
         } else {
             $event->parseException($exception);
             $context = [
@@ -298,26 +298,26 @@ class Run implements ControllerChildConfigurableInterface
                     $test->setStatus(TestMeta::TEST_SKIPPED);
                     $event->setTime(0);
                     $logger->debug('The test was skipped.', $context);
-                    $this->dispatcher->dispatch(EventStorage::EV_METHOD_SKIPPED, $event);
-                    $this->precondition->dispatch(EventStorage::EV_METHOD_SKIPPED, $event);
+                    $this->dispatcher->dispatch(EventStorage::EV_METHOD_SKIPPED, clone $event);
+                    $this->precondition->dispatch(EventStorage::EV_METHOD_SKIPPED, clone $event);
                     break;
                 case MethodEvent::METHOD_FAILED:
                     $test->setStatus(TestMeta::TEST_FAILED);
                     $logger->debug('Assert fail.', $context);
-                    $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, $event);
-                    $this->precondition->dispatch(EventStorage::EV_METHOD_FAILED, $event);
+                    $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, clone $event);
+                    $this->precondition->dispatch(EventStorage::EV_METHOD_FAILED, clone $event);
                     break;
                 case MethodEvent::METHOD_INCOMPLETE:
                     $test->setStatus(TestMeta::TEST_INCOMPLETE);
                     $logger->debug('Test incomplete.', $context);
-                    $this->dispatcher->dispatch(EventStorage::EV_METHOD_INCOMPLETE, $event);
-                    $this->precondition->dispatch(EventStorage::EV_METHOD_INCOMPLETE, $event);
+                    $this->dispatcher->dispatch(EventStorage::EV_METHOD_INCOMPLETE, clone $event);
+                    $this->precondition->dispatch(EventStorage::EV_METHOD_INCOMPLETE, clone $event);
                     break;
                 default:
                     $test->setStatus(TestMeta::TEST_FAILED);
                     $logger->critical('Unexpected exception.', $context);
-                    $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, $event);
-                    $this->precondition->dispatch(EventStorage::EV_METHOD_FAILED, $event);
+                    $this->dispatcher->dispatch(EventStorage::EV_METHOD_FAILED, clone $event);
+                    $this->precondition->dispatch(EventStorage::EV_METHOD_FAILED, clone $event);
             }
         }
     }

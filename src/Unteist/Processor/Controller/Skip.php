@@ -101,7 +101,7 @@ class Skip implements ControllerChildInterface
      */
     public function beforeTest(MethodEvent $event)
     {
-        $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, $event);
+        $this->dispatcher->dispatch(EventStorage::EV_BEFORE_TEST, clone $event);
     }
 
     /**
@@ -120,7 +120,7 @@ class Skip implements ControllerChildInterface
         if ($this->depends !== null) {
             $event->addDepend($this->depends);
         }
-        $this->dispatcher->dispatch(EventStorage::EV_METHOD_SKIPPED, $event);
+        $this->dispatcher->dispatch(EventStorage::EV_METHOD_SKIPPED, clone $event);
 
         return 1;
     }
@@ -132,7 +132,7 @@ class Skip implements ControllerChildInterface
      */
     public function afterTest(MethodEvent $event)
     {
-        $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, $event);
+        $this->dispatcher->dispatch(EventStorage::EV_AFTER_TEST, clone $event);
     }
 
     /**
@@ -142,6 +142,6 @@ class Skip implements ControllerChildInterface
      */
     public function afterCase(TestCaseEvent $event)
     {
-        $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, $event);
+        $this->dispatcher->dispatch(EventStorage::EV_AFTER_CASE, clone $event);
     }
 }
