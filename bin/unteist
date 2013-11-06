@@ -8,5 +8,5 @@
 
 require 'vendor/autoload.php';
 
-$app = new \Unteist\Console\Unteist('Unteist launcher', '1.0.0');
+$app = new \Unteist\Console\Unteist('Unteist launcher');
 $app->run();

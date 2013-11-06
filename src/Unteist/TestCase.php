@@ -7,8 +7,7 @@
 
 namespace Unteist;
 
-use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\DependencyInjection\ContainerAware;
 use Unteist\Exception\IncompleteTestException;
 use Unteist\Exception\SkipTestException;
 use Unteist\Exception\TestFailException;
@@ -19,31 +18,19 @@ use Unteist\Exception\TestFailException;
  * @package Unteist
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class TestCase
+class TestCase extends ContainerAware
 {
     /**
      * @var \ArrayObject
      */
-    protected $local_storage;
-    /**
-     * @var EventDispatcherInterface
-     */
-    protected $dispatcher;
-    /**
-     * @var ContainerBuilder
-     */
-    private $config;
-    /**
-     * @var \ArrayObject
-     */
-    private $global_storage;
+    protected $localStorage;
 
     /**
      * Create a new TestCase.
      */
     public function __construct()
     {
-        $this->local_storage = new \ArrayObject();
+        $this->localStorage = new \ArrayObject();
     }
 
     /**
@@ -83,41 +70,13 @@ class TestCase
     }
 
     /**
-     * @param EventDispatcherInterface $dispatcher
-     */
-    public function setDispatcher(EventDispatcherInterface $dispatcher)
-    {
-        $this->dispatcher = $dispatcher;
-    }
-
-    /**
      * Get global storage.
      *
      * @return \ArrayObject
      */
     public function getGlobalStorage()
     {
-        return $this->global_storage;
-    }
-
-    /**
-     * Set global storage for variables.
-     *
-     * @param \ArrayObject $global_storage Global variables
-     */
-    public function setGlobalStorage(\ArrayObject $global_storage)
-    {
-        $this->global_storage = $global_storage;
-    }
-
-    /**
-     * Set project configuration.
-     *
-     * @param ContainerBuilder $config Project configuration
-     */
-    public function setConfig(ContainerBuilder $config)
-    {
-        $this->config = $config;
+        return $this->container->get('storage.global');
     }
 
     /**
@@ -129,17 +88,18 @@ class TestCase
      */
     public function getParameter($name)
     {
-        return $this->config->getParameter($name);
+        return $this->container->getParameter($name);
     }
 
     /**
-     * Get all parameters from global config.
+     * Get all parameters.
      *
      * @return array
+     * @deprecated This method will be removed soon.
      */
     public function getParameters()
     {
-        return $this->config->getParameterBag()->all();
+        return $this->container->getParameterBag()->all();
     }
 
     /**
@@ -151,6 +111,6 @@ class TestCase
      */
     public function getService($name)
     {
-        return $this->config->get($name);
+        return $this->container->get($name);
     }
 }

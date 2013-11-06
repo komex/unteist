@@ -7,7 +7,7 @@
 
 namespace Unteist\Filter;
 
-use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Unteist\Exception\FilterException;
 
 /**
  * Class ClassFilterInterface
@@ -22,7 +22,7 @@ interface ClassFilterInterface
      *
      * @param \ReflectionClass $class Class to filter.
      *
-     * @return bool Can we use this class?
+     * @throws FilterException
      */
     public function filter(\ReflectionClass $class);
 
@@ -32,11 +32,4 @@ interface ClassFilterInterface
      * @return string
      */
     public function getName();
-
-    /**
-     * Get tests parameters.
-     *
-     * @param array $config
-     */
-    public function setParams(array $config);
 }

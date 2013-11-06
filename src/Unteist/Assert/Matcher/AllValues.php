@@ -42,8 +42,10 @@ class AllValues extends AbstractMatcher
      */
     protected function condition($actual)
     {
-        if (!(is_array($actual) || ($actual instanceof \Traversable))) {
-            throw new \InvalidArgumentException('Actual variable must be an array or instance of Traversable.');
+        if (!(is_array($actual) || ($actual instanceof \Traversable)) || count($actual) === 0) {
+            throw new \InvalidArgumentException(
+                'Actual variable must be a not empty array or instance of Traversable.'
+            );
         }
         foreach ($actual as $number => $value) {
             $this->number = $number;

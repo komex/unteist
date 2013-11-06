@@ -11,19 +11,19 @@
         {% if loop.last %}
             <li class="active">{{ element }}</li>
         {% else %}
-            <li><a href="javascript:">{{ element }}</a> <span class="divider">/</span></li>
+            <li><a href="javascript:">{{ element }}</a></li>
         {% endif %}
     {% endfor %}
 {% endmacro %}
 
-{% macro test_style(test) %}
+{% macro style(method) %}
     {% spaceless %}
-        {% if test.isSuccess() %}
+        {% if method.isSuccess() %}
             success
-        {% elseif test.isFailed() %}
-            error
-        {% elseif test.isIncomplete() %}
-            info
+        {% elseif method.isFailed() %}
+            danger
+        {% elseif method.isIncomplete() %}
+            active
         {% else %}
             warning
         {% endif %}
@@ -32,31 +32,30 @@
 
 {% macro progress(statistics) %}
     <div class="progress">
-        <div class="bar bar-success" style="width: {{ testPercent(statistics, 'success') }}%;"
-             title="Success: {{ statistics.success }}/{{ statistics|length }}"></div>
-        <div class="bar bar-warning" style="width: {{ testPercent(statistics, 'skipped') }}%;"
-             title="Skipped: {{ statistics.skipped|length }}/{{ statistics|length }}"></div>
-        <div class="bar bar-danger"
-             style="width: {{ testPercent(statistics, 'fail') + testPercent(statistics, 'error') }}%;"
-             title="Failed: {{ statistics.fail|length }}/{{ statistics|length }}"></div>
-        <div class="bar bar-info" style="width: {{ testPercent(statistics, 'incomplete') }}%;"
-             title="Incomplete: {{ statistics.incomplete|length }}/{{ statistics|length }}"></div>
+        <div class="progress-bar progress-bar-success" style="width: {{ getTestPercent(statistics.passed, statistics|length) }}%;"
+             title="Success: {{ statistics.passed }}/{{ statistics|length }}"></div>
+        <div class="progress-bar progress-bar-warning" style="width: {{ getTestPercent(statistics.skipped, statistics|length) }}%;"
+             title="Skipped: {{ statistics.skipped }}/{{ statistics|length }}"></div>
+        <div class="progress-bar progress-bar-danger" style="width: {{ getTestPercent(statistics.failed, statistics|length) }}%;"
+             title="Failed: {{ statistics.failed }}/{{ statistics|length }}"></div>
+        <div class="progress-bar progress-bar-info" style="width: {{ getTestPercent(statistics.incomplete, statistics|length) }}%;"
+             title="Incomplete: {{ statistics.incomplete }}/{{ statistics|length }}"></div>
     </div>
 {% endmacro %}
 
 {% macro total(statistics) %}
-    <div class="row-fluid">
-        <div class="span3">
-            <span class="label label-success">Success</span>: <b>{{ statistics.success }}</b>
+    <div class="row">
+        <div class="col-md-3">
+            <span class="label label-success">Success</span>: <b>{{ statistics.passed }}</b>
         </div>
-        <div class="span3">
-            <span class="label label-warning">Skipped</span>: <b>{{ statistics.skipped|length }}</b>
+        <div class="col-md-3">
+            <span class="label label-warning">Skipped</span>: <b>{{ statistics.skipped }}</b>
         </div>
-        <div class="span3">
-            <span class="label label-important">Failed</span>: <b>{{ statistics.fail|length }}</b>
+        <div class="col-md-3">
+            <span class="label label-danger">Failed</span>: <b>{{ statistics.failed }}</b>
         </div>
-        <div class="span3">
-            <span class="label label-info">Incomplete</span>: <b>{{ statistics.incomplete|length }}</b>
+        <div class="col-md-3">
+            <span class="label label-info">Incomplete</span>: <b>{{ statistics.incomplete }}</b>
         </div>
     </div>
 {% endmacro %}

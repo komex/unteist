@@ -8,7 +8,6 @@
 namespace Unteist\Event;
 
 use Symfony\Component\EventDispatcher\Event;
-use Unteist\Meta\TestMeta;
 
 /**
  * Class TestCaseEvent
@@ -23,9 +22,9 @@ class TestCaseEvent extends Event
      */
     protected $class;
     /**
-     * @var TestEvent[]
+     * @var array
      */
-    protected $test_events = [];
+    protected $annotations;
 
     /**
      * @param string $class Test case class
@@ -46,22 +45,22 @@ class TestCaseEvent extends Event
     }
 
     /**
-     * Get test's events.
+     * Get class annotations.
      *
-     * @return TestEvent[]
+     * @return array
      */
-    public function getTestEvents()
+    public function getAnnotations()
     {
-        return $this->test_events;
+        return $this->annotations;
     }
 
     /**
-     * Add a new event to TestCase.
+     * Set class annotations.
      *
-     * @param TestEvent $event
+     * @param array $annotations
      */
-    public function addTestEvent(TestEvent $event)
+    public function setAnnotations(array $annotations)
     {
-        array_push($this->test_events, $event);
+        $this->annotations = $annotations;
     }
 }

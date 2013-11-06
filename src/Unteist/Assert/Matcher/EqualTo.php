@@ -39,6 +39,24 @@ class EqualTo extends AbstractMatcher
     }
 
     /**
+     * Format variable for output.
+     *
+     * @param mixed $variable
+     *
+     * @return string
+     */
+    protected function formatter($variable)
+    {
+        if (is_resource($variable)) {
+            return '<resource>';
+        } elseif (is_object($variable)) {
+            return '(object) ' . get_class($variable);
+        } else {
+            return sprintf('(%s) %s', gettype($variable), var_export($variable, true));
+        }
+    }
+
+    /**
      * Get difference of two variables.
      *
      * @param mixed $actual
@@ -47,16 +65,13 @@ class EqualTo extends AbstractMatcher
      */
     protected function getDiff($actual)
     {
-        $actual_type = gettype($actual);
-        $expected_type = gettype($this->expected);
-        if ($actual_type !== $expected_type) {
-            return sprintf('expected %s type, but given %s', $expected_type, $actual_type);
-        }
-        $diff = new Diff('--- Expected' . PHP_EOL . '+++ Actual' . PHP_EOL);
-        if (is_array($actual) || is_string($actual)) {
-            return trim($diff->diff($this->expected, $actual));
+        if (is_array($actual) or is_array($this->expected)) {
+            $diff = new Diff('--- Expected' . PHP_EOL . '+++ Actual' . PHP_EOL);
+
+            // @todo Remove Diff class, make normal diff instrument.
+            return $diff->diff(var_export($this->expected, true), var_export($actual, true));
         } else {
-            return trim($diff->diff(var_export($this->expected, true), var_export($actual, true)));
+            return 'expected ' . $this->formatter($this->expected) . ', but given ' . $this->formatter($actual);
         }
     }
 

@@ -8,12 +8,12 @@
 namespace Unteist\Strategy;
 
 /**
- * Class DoNothingStrategy
+ * Class ContinueStrategy
  *
  * @package Unteist\Strategy
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class DoNothingStrategy implements StrategyInterface
+class ContinueStrategy implements StrategyInterface
 {
     /**
      * Generate new specified exception or do nothing.

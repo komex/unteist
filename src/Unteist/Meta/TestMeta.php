@@ -62,67 +62,48 @@ class TestMeta
      */
     protected $method;
     /**
+     * @var array
+     */
+    protected $annotations;
+    /**
      * @var LoggerInterface
      */
     protected $logger;
     /**
      * @var string
      */
-    protected $expected_exception;
+    protected $expectedException;
     /**
      * @var string
      */
-    protected $expected_exception_message;
+    protected $expectedExceptionMessage;
     /**
      * @var int
      */
-    protected $expected_exception_code;
+    protected $expectedExceptionCode;
 
     /**
      * @param string $class TestCase name
      * @param string $method Test name
-     * @param array $modifiers
+     * @param array $annotations
      * @param LoggerInterface $logger
      */
-    public function __construct($class, $method, array $modifiers, LoggerInterface $logger)
+    public function __construct($class, $method, array $annotations, LoggerInterface $logger)
     {
         $this->class = $class;
         $this->method = $method;
+        $this->annotations = $annotations;
         $this->logger = $logger;
         $this->logger->debug(
             'Registering a new test method.',
-            ['pid' => getmypid(), 'method' => $method, 'modifiers' => $modifiers]
+            ['pid' => getmypid(), 'method' => $method, 'annotations' => $annotations]
         );
         // Depends
-        if (!empty($modifiers['depends']) && $modifiers['depends'] !== true) {
-            $depends = preg_replace('{[^\w,]}i', '', $modifiers['depends']);
-            $depends = array_unique(explode(',', $depends));
-            $position = array_search($method, $depends);
-            if ($position !== false) {
-                array_splice($depends, $position, 1);
-            }
-            $this->logger->debug(
-                'The test has dependencies.',
-                ['pid' => getmypid(), 'test' => $method, 'depends' => $depends]
-            );
-            $this->dependencies = $depends;
-        }
+        $this->setDependencies($annotations);
         // DataProvider
-        if (!empty($modifiers['dataProvider']) && !in_array($modifiers['dataProvider'], [$method, true], true)) {
-            $this->dataProvider = $modifiers['dataProvider'];
-        }
+        $this->setDataProvider($annotations);
         // Exceptions
-        if (!empty($modifiers['expectedException']) && $modifiers['expectedException'] !== true) {
-            $this->expected_exception = $modifiers['expectedException'];
-            // Exception message
-            if (!empty($modifiers['expectedExceptionMessage']) && $modifiers['expectedExceptionMessage'] !== true) {
-                $this->expected_exception_message = $modifiers['expectedExceptionMessage'];
-            }
-            // Exception code
-            if (!empty($modifiers['expectedExceptionCode']) && $modifiers['expectedExceptionCode'] !== true) {
-                $this->expected_exception_code = intval($modifiers['expectedExceptionCode'], 10);
-            }
-        }
+        $this->setExpectedException($annotations);
     }
 
     /**
@@ -132,7 +113,7 @@ class TestMeta
      */
     public function getExpectedException()
     {
-        return $this->expected_exception;
+        return $this->expectedException;
     }
 
     /**
@@ -142,7 +123,7 @@ class TestMeta
      */
     public function getExpectedExceptionCode()
     {
-        return $this->expected_exception_code;
+        return $this->expectedExceptionCode;
     }
 
     /**
@@ -152,7 +133,7 @@ class TestMeta
      */
     public function getExpectedExceptionMessage()
     {
-        return $this->expected_exception_message;
+        return $this->expectedExceptionMessage;
     }
 
     /**
@@ -221,5 +202,72 @@ class TestMeta
     public function __toString()
     {
         return $this->class . '::' . $this->method;
+    }
+
+    /**
+     * Get the full list of raw annotations.
+     *
+     * @return array
+     */
+    public function getAnnotations()
+    {
+        return $this->annotations;
+    }
+
+    /**
+     * Set meta information about expected exception.
+     *
+     * @param array $annotations
+     */
+    private function setExpectedException(array $annotations)
+    {
+        if (!empty($annotations['expectedException'])) {
+            $this->expectedException = $annotations['expectedException'];
+            // Exception message
+            if (!empty($annotations['expectedExceptionMessage'])) {
+                $this->expectedExceptionMessage = $annotations['expectedExceptionMessage'];
+            }
+            // Exception code
+            if (!empty($annotations['expectedExceptionCode'])) {
+                $this->expectedExceptionCode = intval($annotations['expectedExceptionCode'], 10);
+            }
+        }
+    }
+
+    /**
+     * Set meta information about data provider for test.
+     *
+     * @param array $annotations
+     */
+    private function setDataProvider(array $annotations)
+    {
+        if (!empty($annotations['dataProvider']) and $annotations['dataProvider'] != $this->method) {
+            $this->dataProvider = $annotations['dataProvider'];
+        }
+    }
+
+    /**
+     * Set meta information about test dependencies.
+     *
+     * @param array $annotations
+     */
+    private function setDependencies(array $annotations)
+    {
+        if (!empty($annotations['depends'])) {
+            $depends = trim(preg_replace('{[^\w,]}i', '', $annotations['depends']));
+            if (!empty($depends)) {
+                $depends = array_unique(explode(',', $depends));
+                /** @var int $position */
+                $position = array_search($this->method, $depends);
+                if ($position !== false) {
+                    array_splice($depends, $position, 1);
+                }
+                $this->logger->debug(
+                    'The test has dependencies.',
+                    ['pid' => getmypid(), 'test' => $this->method, 'depends' => $depends]
+                );
+                $this->dependencies = $depends;
+            }
+        }
     }
 }

@@ -29,6 +29,7 @@ class ConfigurationValidator implements ConfigurationInterface
     {
         $treeBuilder = new TreeBuilder();
         $rootNode = $treeBuilder->root('unteist');
+        $rootNode->addDefaultsIfNotSet();
         $this->configProcessesSection($rootNode);
         $this->configReportDirSection($rootNode);
         $this->configListenerSection($rootNode);
@@ -68,7 +69,8 @@ class ConfigurationValidator implements ConfigurationInterface
      */
     private function configListenerSection(ArrayNodeDefinition $rootNode)
     {
-        $rootNode->children()->arrayNode('listeners')->requiresAtLeastOneElement()->prototype('scalar')->isRequired();
+        $rootNode->children()->arrayNode('listeners')
+            ->requiresAtLeastOneElement()->prototype('scalar')->cannotBeEmpty();
     }
 
     /**
@@ -78,7 +80,8 @@ class ConfigurationValidator implements ConfigurationInterface
      */
     private function configGroupSection(ArrayNodeDefinition $rootNode)
     {
-        $rootNode->children()->arrayNode('groups')->prototype('scalar')->cannotBeEmpty();
+        $rootNode->children()->arrayNode('groups')
+            ->requiresAtLeastOneElement()->prototype('scalar')->cannotBeEmpty();
     }
 
     /**
@@ -91,8 +94,8 @@ class ConfigurationValidator implements ConfigurationInterface
         $builder = new TreeBuilder;
         $section = $builder->root('logger')->canBeEnabled();
         $definition = $section->children()->arrayNode('handlers');
-        $definition->requiresAtLeastOneElement()->cannotBeEmpty()->defaultValue(['logger.handler.stream']);
-        $definition->prototype('scalar');
+        $definition->requiresAtLeastOneElement()->defaultValue(['logger.handler.stream']);
+        $definition->prototype('scalar')->cannotBeEmpty();
 
         return $section;
     }
@@ -113,12 +116,11 @@ class ConfigurationValidator implements ConfigurationInterface
         }
 
         $definition = $section->children()->arrayNode('class');
-        $definition->requiresAtLeastOneElement()->cannotBeEmpty()->defaultValue(['filter.class.base']);
-        $definition->prototype('scalar');
+        $definition->requiresAtLeastOneElement()->defaultValue(['filter.class.base']);
+        $definition->prototype('scalar')->cannotBeEmpty();
 
         $definition = $section->children()->arrayNode('methods');
-        $definition->requiresAtLeastOneElement()->cannotBeEmpty()->defaultValue([]);
-        $definition->prototype('scalar');
+        $definition->prototype('scalar')->cannotBeEmpty();
 
         return $section;
     }
@@ -143,17 +145,42 @@ class ConfigurationValidator implements ConfigurationInterface
         $definition->cannotBeEmpty()->defaultValue('strategy.fail');
 
         $definition = $section->children()->enumNode('failure');
-        $definition->values(['strategy.fail', 'strategy.continue']);
-        $definition->cannotBeEmpty()->defaultValue('strategy.fail');
+        $definition->values(['strategy.exception', 'strategy.continue']);
+        $definition->cannotBeEmpty()->defaultValue('strategy.continue');
 
         $definition = $section->children()->enumNode('incomplete');
-        $definition->values(['strategy.fail', 'strategy.incomplete', 'strategy.continue']);
-        $definition->cannotBeEmpty()->defaultValue('strategy.incomplete');
+        $definition->values(['strategy.exception', 'strategy.continue']);
+        $definition->cannotBeEmpty()->defaultValue('strategy.continue');
 
-        $definition = $section->children()->arrayNode('associations')->requiresAtLeastOneElement();
+        $definition = $section->children()->enumNode('beforeCase');
+        $definition->values(['strategy.exception', 'strategy.continue']);
+        $definition->cannotBeEmpty()->defaultValue('strategy.continue');
+
+        $definition = $section->children()->enumNode('beforeTest');
+        $definition->values(['strategy.exception', 'strategy.continue']);
+        $definition->cannotBeEmpty()->defaultValue('strategy.continue');
+
+        $definition = $section->children()->enumNode('afterTest');
+        $definition->values(['strategy.exception', 'strategy.continue']);
+        $definition->cannotBeEmpty()->defaultValue('strategy.exception');
+
+        $definition = $section->children()->enumNode('afterCase');
+        $definition->values(['strategy.exception', 'strategy.continue']);
+        $definition->cannotBeEmpty()->defaultValue('strategy.exception');
+
+        $definition = $section->children()->arrayNode('associations');
+        $definition->requiresAtLeastOneElement()->useAttributeAsKey('name');
         /** @var EnumNodeDefinition $associations */
         $associations = $definition->prototype('enum');
         $associations->values(['strategy.fail', 'strategy.incomplete', 'strategy.continue']);
+
+        $definition = $section->children()->arrayNode('levels')->requiresAtLeastOneElement();
+        $definition->defaultValue(['E_ALL']);
+        /** @var EnumNodeDefinition $associations */
+        $associations = $definition->prototype('enum');
+        $associations->values(
+            ['E_ERROR', 'E_WARNING', 'E_PARSE', 'E_NOTICE', 'E_USER_ERROR', 'E_USER_WARNING', 'E_USER_NOTICE', 'E_ALL']
+        );
 
         return $section;
     }
@@ -172,7 +199,10 @@ class ConfigurationValidator implements ConfigurationInterface
 
         $definition->children()->scalarNode('in')->cannotBeEmpty()->defaultValue('.');
         $definition->children()->scalarNode('name')->cannotBeEmpty()->defaultValue('*Test.php');
-        $definition->children()->scalarNode('notName')->cannotBeEmpty();
+
+        $exclude = $definition->children()->arrayNode('notName');
+        $exclude->requiresAtLeastOneElement();
+        $exclude->prototype('scalar')->cannotBeEmpty();
 
         $exclude = $definition->children()->arrayNode('exclude');
         $exclude->requiresAtLeastOneElement();

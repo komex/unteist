@@ -18,7 +18,7 @@ final class MethodsFilter implements MethodsFilterInterface
     /**
      * @var bool
      */
-    private $annotation_test = false;
+    private $isTest = false;
 
     /**
      * @inheritdoc
@@ -26,7 +26,7 @@ final class MethodsFilter implements MethodsFilterInterface
     public function condition(\ReflectionMethod $method)
     {
         if ($method->isPublic() && !($method->isAbstract() || $method->isConstructor() || $method->isDestructor())) {
-            if ($this->annotation_test || (strlen($method->name) > 4 && substr($method->name, 0, 4) === 'test')) {
+            if ($this->isTest || (strlen($method->name) > 4 && substr($method->name, 0, 4) === 'test')) {
                 return true;
             }
         }
@@ -35,12 +35,23 @@ final class MethodsFilter implements MethodsFilterInterface
     }
 
     /**
-     * Set
-     * @param array $modifiers
+     * Set method's annotations to filter.
+     *
+     * @param array $annotations
      */
-    public function setModifiers(array $modifiers)
+    public function setAnnotations(array $annotations)
     {
-        $this->annotation_test = isset($modifiers['test']);
+        $this->isTest = array_key_exists('test', $annotations);
+    }
+
+    /**
+     * Set global configuration.
+     *
+     * @param array $config
+     */
+    public function setConfig(array $config)
+    {
+
     }
 
     /**
@@ -51,14 +62,5 @@ final class MethodsFilter implements MethodsFilterInterface
     public function getName()
     {
         return 'named';
-    }
-
-    /**
-     * Get tests parameters.
-     *
-     * @param array $config
-     */
-    public function setParams(array $config)
-    {
     }
 }
