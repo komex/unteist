@@ -61,6 +61,8 @@ class GroupMethodsFilter implements MethodsFilterInterface
     {
         if (isset($annotations['groups'])) {
             $this->methodGroups = $annotations['groups'];
+        } else {
+            $this->methodGroups = null;
         }
     }
 
