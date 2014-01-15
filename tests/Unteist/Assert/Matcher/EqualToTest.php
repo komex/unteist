@@ -83,7 +83,7 @@ class EqualToTest extends \PHPUnit_Framework_TestCase
         return [
             ['str', "(string) 'str'"],
             [-34, '(integer) -34'],
-            [.054, '(double) 0.054'],
+            [.0545, '(double) 0.0545'],
             [false, '(boolean) false'],
             [$this, '(object) Tests\\Unteist\\Assert\\Matcher\\EqualToTest'],
             [null, '(NULL) NULL'],
