@@ -56,8 +56,8 @@ class Assert
      */
     public static function that($actual, AbstractMatcher $matcher, $message = '')
     {
-        $matcher->match($actual, $message);
         self::$count++;
+        $matcher->match($actual, $message);
     }
 
     /**

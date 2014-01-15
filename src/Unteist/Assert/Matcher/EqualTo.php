@@ -66,9 +66,8 @@ class EqualTo extends AbstractMatcher
     protected function getDiff($actual)
     {
         if (is_array($actual) or is_array($this->expected)) {
-            $diff = new Diff('--- Expected' . PHP_EOL . '+++ Actual' . PHP_EOL);
+            $diff = new Diff\Differ('--- Expected' . PHP_EOL . '+++ Actual' . PHP_EOL);
 
-            // @todo Remove Diff class, make normal diff instrument.
             return $diff->diff(var_export($this->expected, true), var_export($actual, true));
         } else {
             return 'expected ' . $this->formatter($this->expected) . ', but given ' . $this->formatter($actual);
