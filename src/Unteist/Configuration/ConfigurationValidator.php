@@ -27,39 +27,43 @@ class ConfigurationValidator implements ConfigurationInterface
      */
     public function getConfigTreeBuilder()
     {
-        $treeBuilder = new TreeBuilder();
-        $rootNode = $treeBuilder->root('unteist');
-        $rootNode->addDefaultsIfNotSet();
-        $this->configProcessesSection($rootNode);
-        $this->configReportDirSection($rootNode);
-        $this->configListenerSection($rootNode);
-        $this->configGroupSection($rootNode);
-        $rootNode->append($this->getContextSection());
-        $rootNode->append($this->getFiltersSection());
-        $rootNode->append($this->getLoggerSection());
-        $rootNode->append($this->getSuitesSection());
+        $tree = new TreeBuilder();
+        $root = $tree->root('unteist');
+        $this->configProcessesSection($root)->defaultValue(1);
+        $this->configReportDirSection($root)->defaultNull();
+        $this->configListenerSection($root);
+        $this->configGroupSection($root);
+        $this->configLoggerSection($root)->defaultValue(['logger.handler.null']);
+        $root->append($this->getContextSection()->addDefaultsIfNotSet());
+        $root->append($this->getFiltersSection()->addDefaultsIfNotSet());
+        $root->append($this->getSuitesSection());
+        $root->append($this->getSourceSection());
 
-        return $treeBuilder;
+        return $tree;
     }
 
     /**
      * Get definition of processes number.
      *
      * @param ArrayNodeDefinition $rootNode
+     *
+     * @return \Symfony\Component\Config\Definition\Builder\NumericNodeDefinition
      */
     private function configProcessesSection(ArrayNodeDefinition $rootNode)
     {
-        $rootNode->children()->integerNode('processes')->min(1)->max(10)->defaultValue(1);
+        return $rootNode->children()->integerNode('processes')->min(1)->max(10);
     }
 
     /**
      * Get definition of report directory.
      *
      * @param ArrayNodeDefinition $rootNode
+     *
+     * @return \Symfony\Component\Config\Definition\Builder\ScalarNodeDefinition
      */
     private function configReportDirSection(ArrayNodeDefinition $rootNode)
     {
-        $rootNode->children()->scalarNode('report_dir')->defaultNull()->cannotBeEmpty();
+        return $rootNode->children()->scalarNode('report_dir')->cannotBeEmpty();
     }
 
     /**
@@ -69,8 +73,8 @@ class ConfigurationValidator implements ConfigurationInterface
      */
     private function configListenerSection(ArrayNodeDefinition $rootNode)
     {
-        $rootNode->children()->arrayNode('listeners')
-            ->requiresAtLeastOneElement()->prototype('scalar')->cannotBeEmpty();
+        $listeners = $rootNode->children()->arrayNode('listeners')->requiresAtLeastOneElement()->canBeUnset();
+        $listeners->prototype('scalar')->cannotBeEmpty();
     }
 
     /**
@@ -80,40 +84,32 @@ class ConfigurationValidator implements ConfigurationInterface
      */
     private function configGroupSection(ArrayNodeDefinition $rootNode)
     {
-        $rootNode->children()->arrayNode('groups')
-            ->requiresAtLeastOneElement()->prototype('scalar')->cannotBeEmpty();
+        $groups = $rootNode->children()->arrayNode('groups')->requiresAtLeastOneElement();
+        $groups->prototype('scalar')->cannotBeEmpty();
     }
 
     /**
-     * Get section for logger.
+     * @param ArrayNodeDefinition $rootNode
      *
-     * @return ArrayNodeDefinition
+     * @return \Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition
      */
-    private function getLoggerSection()
+    private function configLoggerSection(ArrayNodeDefinition $rootNode)
     {
-        $builder = new TreeBuilder;
-        $section = $builder->root('logger')->canBeEnabled();
-        $definition = $section->children()->arrayNode('handlers');
-        $definition->requiresAtLeastOneElement()->defaultValue(['logger.handler.stream']);
-        $definition->prototype('scalar')->cannotBeEmpty();
+        $logger = $rootNode->children()->arrayNode('logger')->requiresAtLeastOneElement();
+        $logger->prototype('scalar')->cannotBeEmpty();
 
-        return $section;
+        return $logger;
     }
 
     /**
      * Get section for filters.
      *
-     * @param bool $defaults Use defaults if sections is not set.
-     *
      * @return ArrayNodeDefinition
      */
-    private function getFiltersSection($defaults = true)
+    private function getFiltersSection()
     {
         $builder = new TreeBuilder;
         $section = $builder->root('filters');
-        if ($defaults) {
-            $section->addDefaultsIfNotSet();
-        }
 
         $definition = $section->children()->arrayNode('class');
         $definition->requiresAtLeastOneElement()->defaultValue(['filter.class.base']);
@@ -128,17 +124,12 @@ class ConfigurationValidator implements ConfigurationInterface
     /**
      * Get section for context.
      *
-     * @param bool $defaults Use defaults if sections is not set.
-     *
      * @return ArrayNodeDefinition
      */
-    private function getContextSection($defaults = true)
+    private function getContextSection()
     {
         $builder = new TreeBuilder;
         $section = $builder->root('context');
-        if ($defaults) {
-            $section->addDefaultsIfNotSet();
-        }
 
         $definition = $section->children()->enumNode('error');
         $definition->values(['strategy.fail', 'strategy.continue']);
@@ -223,11 +214,25 @@ class ConfigurationValidator implements ConfigurationInterface
         $section->requiresAtLeastOneElement();
         /** @var ArrayNodeDefinition $prototype */
         $prototype = $section->prototype('array');
+        $this->configProcessesSection($prototype);
         $this->configReportDirSection($prototype);
+        $this->configListenerSection($prototype);
         $this->configGroupSection($prototype);
-        $prototype->append($this->getContextSection(false));
-        $prototype->append($this->getFiltersSection(false));
-        $prototype->append($this->getSourceSection());
+        $this->configLoggerSection($prototype);
+        $prototype->append($this->getContextSection());
+        $prototype->append($this->getFiltersSection());
+        $prototype->append($this->getSourceSection()->isRequired());
+        $prototype->validate()->always(
+            function (array $list) {
+                foreach (['listeners', 'groups', 'logger'] as $key) {
+                    if (empty($list[$key])) {
+                        unset($list[$key]);
+                    }
+                }
+
+                return $list;
+            }
+        );
 
         return $section;
     }
