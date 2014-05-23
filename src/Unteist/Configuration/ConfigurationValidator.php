@@ -34,10 +34,12 @@ class ConfigurationValidator implements ConfigurationInterface
         $this->configListenerSection($root);
         $this->configGroupSection($root);
         $this->configLoggerSection($root)->defaultValue(['logger.handler.null']);
+        $this->configIncludeFile($root, 'bootstrap');
+        $this->configIncludeFile($root, 'cleanup');
         $root->append($this->getContextSection()->addDefaultsIfNotSet());
         $root->append($this->getFiltersSection()->addDefaultsIfNotSet());
         $root->append($this->getSuitesSection());
-        $root->append($this->getSourceSection());
+        $root->append($this->getSourceSection()->addDefaultChildrenIfNoneSet());
 
         return $tree;
     }
@@ -75,6 +77,17 @@ class ConfigurationValidator implements ConfigurationInterface
     {
         $listeners = $rootNode->children()->arrayNode('listeners')->requiresAtLeastOneElement()->canBeUnset();
         $listeners->prototype('scalar')->cannotBeEmpty();
+    }
+
+    /**
+     * Get definition of listeners.
+     *
+     * @param ArrayNodeDefinition $rootNode
+     * @param string $name
+     */
+    private function configIncludeFile(ArrayNodeDefinition $rootNode, $name)
+    {
+        $rootNode->children()->scalarNode($name)->cannotBeEmpty();
     }
 
     /**
@@ -188,7 +201,7 @@ class ConfigurationValidator implements ConfigurationInterface
         /** @var ArrayNodeDefinition $definition */
         $definition = $section->prototype('array');
 
-        $definition->children()->scalarNode('in')->cannotBeEmpty()->defaultValue('.');
+        $definition->children()->scalarNode('in')->cannotBeEmpty()->defaultValue('./tests');
         $definition->children()->scalarNode('name')->cannotBeEmpty()->defaultValue('*Test.php');
 
         $exclude = $definition->children()->arrayNode('notName');
@@ -219,12 +232,14 @@ class ConfigurationValidator implements ConfigurationInterface
         $this->configListenerSection($prototype);
         $this->configGroupSection($prototype);
         $this->configLoggerSection($prototype);
+        $this->configIncludeFile($prototype, 'bootstrap');
+        $this->configIncludeFile($prototype, 'cleanup');
         $prototype->append($this->getContextSection());
         $prototype->append($this->getFiltersSection());
-        $prototype->append($this->getSourceSection()->isRequired());
+        $prototype->append($this->getSourceSection());
         $prototype->validate()->always(
             function (array $list) {
-                foreach (['listeners', 'groups', 'logger'] as $key) {
+                foreach (['listeners', 'groups', 'logger', 'source'] as $key) {
                     if (empty($list[$key])) {
                         unset($list[$key]);
                     }
