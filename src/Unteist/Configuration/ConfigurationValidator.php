@@ -30,8 +30,6 @@ class ConfigurationValidator implements ConfigurationInterface
         $tree = new TreeBuilder();
         $root = $tree->root('unteist');
         $this->configProcessesSection($root)->defaultValue(1);
-        $this->configReportDirSection($root)->defaultNull();
-        $this->configListenerSection($root);
         $this->configGroupSection($root);
         $this->configLoggerSection($root)->defaultValue(['logger.handler.null']);
         $this->configIncludeFile($root, 'bootstrap');
@@ -54,29 +52,6 @@ class ConfigurationValidator implements ConfigurationInterface
     private function configProcessesSection(ArrayNodeDefinition $rootNode)
     {
         return $rootNode->children()->integerNode('processes')->min(1)->max(10);
-    }
-
-    /**
-     * Get definition of report directory.
-     *
-     * @param ArrayNodeDefinition $rootNode
-     *
-     * @return \Symfony\Component\Config\Definition\Builder\ScalarNodeDefinition
-     */
-    private function configReportDirSection(ArrayNodeDefinition $rootNode)
-    {
-        return $rootNode->children()->scalarNode('report_dir')->cannotBeEmpty();
-    }
-
-    /**
-     * Get definition of listeners.
-     *
-     * @param ArrayNodeDefinition $rootNode
-     */
-    private function configListenerSection(ArrayNodeDefinition $rootNode)
-    {
-        $listeners = $rootNode->children()->arrayNode('listeners')->requiresAtLeastOneElement()->canBeUnset();
-        $listeners->prototype('scalar')->cannotBeEmpty();
     }
 
     /**
@@ -228,8 +203,6 @@ class ConfigurationValidator implements ConfigurationInterface
         /** @var ArrayNodeDefinition $prototype */
         $prototype = $section->prototype('array');
         $this->configProcessesSection($prototype);
-        $this->configReportDirSection($prototype);
-        $this->configListenerSection($prototype);
         $this->configGroupSection($prototype);
         $this->configLoggerSection($prototype);
         $this->configIncludeFile($prototype, 'bootstrap');
