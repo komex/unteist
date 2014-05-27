@@ -26,9 +26,9 @@ class LauncherOverwriteParamsTest extends \PHPUnit_Framework_TestCase
      */
     protected static $launcher;
     /**
-     * @var ParameterBagInterface
+     * @var ContainerBuilder
      */
-    protected $params;
+    protected $container;
     /**
      * @var \ReflectionMethod
      */
@@ -53,34 +53,25 @@ class LauncherOverwriteParamsTest extends \PHPUnit_Framework_TestCase
         ];
     }
 
+    public function testIgnoreEmptyParameters()
+    {
+        $this->method->invoke(self::$launcher, $this->container, []);
+        $this->assertCount(0, $this->container->getParameterBag()->all());
+    }
+
     /**
      * @dataProvider dpParseOptions
      */
     public function testParseOptions(array $arguments, array $expected)
     {
-        /** @var \Delusion\Suggestible $input */
-        $input = new ArgvInput();
-        Configurator::setCustomBehavior($input, 'getOption', $arguments);
-        $this->method->invoke(self::$launcher, $input);
-        $this->assertSame($expected, $this->params->all());
+        $this->method->invoke(self::$launcher, $this->container, $arguments);
+        $this->assertSame($expected, $this->container->getParameterBag()->all());
     }
 
     protected function setUp()
     {
-        $this->method = new \ReflectionMethod(self::$launcher, 'overwriteParams');
+        $this->container = new ContainerBuilder();
+        $this->method = new \ReflectionMethod(self::$launcher, 'overwriteParameters');
         $this->method->setAccessible(true);
-        $property = new \ReflectionProperty(self::$launcher, 'container');
-        $property->setAccessible(true);
-        /** @var ContainerBuilder $container */
-        $container = $property->getValue(self::$launcher);
-        $this->params = $container->getParameterBag();
-
-        $this->assertInternalType('array', $this->params->all());
-        $this->assertEmpty($this->params->all());
-    }
-
-    protected function tearDown()
-    {
-        $this->params->clear();
     }
 }
