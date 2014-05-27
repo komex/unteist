@@ -1,26 +1,26 @@
 parameters:
   logger.handler.stream.output: unteist.log
   logger.handler.stream.level: DEBUG
-  logger.name: unteist
   connector.events: []
-  report.dir: null
 
 services:
   logger:
     class: Monolog\Logger
-    arguments: [ %logger.name% ]
-    synthetic: true
+    arguments: [ unteist ]
   logger.handler.stream:
     class: Monolog\Handler\StreamHandler
     arguments: [ %logger.handler.stream.output%, %logger.handler.stream.level% ]
+    public: false
   logger.handler.null:
     class: Monolog\Handler\NullHandler
-  reporter:
-    class: Unteist\Report\Twig\TwigReport
-    arguments: [ %report.dir% ]
+    public: false
+
   reporter.cli:
-    class: Unteist\Report\CLI\CliReport
-    synthetic: true
+    class: Unteist\Report\CLI\CliReporter
+    calls:
+      - [ setContainer, [ @service_container ] ]
+    tags:
+      - { name: listener }
   strategy.fail:
     class: Unteist\Strategy\TestFailStrategy
   strategy.continue:
@@ -35,36 +35,32 @@ services:
     class: Unteist\Filter\GroupMethodsFilter
   context:
     class: Unteist\Strategy\Context
-    synthetic: true
   dispatcher:
     class: Symfony\Component\EventDispatcher\EventDispatcher
-    calls:
-      - [ addSubscriber, [ @reporter.cli ] ]
   storage.global:
     class: ArrayObject
   connector:
     class: Unteist\Event\Connector
     arguments: [ @dispatcher, %connector.events% ]
-  processor:
+  processor.single:
     class: Unteist\Processor\Processor
-    arguments: [ @container ]
-    synthetic: true
+    arguments: [ @service_container ]
   processor.multi:
     class: Unteist\Processor\MultiProcessor
-    arguments: [ @container ]
+    parent: processor.single
     calls:
       - [ setConnector, [ @connector ] ]
-    synthetic: true
+      - [ setProcesses, [ %processes% ] ]
   runner:
     class: Unteist\Processor\Runner
-    arguments: [ @container ]
+    arguments: [ @service_container ]
     scope: prototype
   controller:
     class: Unteist\Processor\Controller\Controller
-    arguments: [ @container ]
+    arguments: [ @service_container ]
   controller.run:
     class: Unteist\Processor\Controller\Run
-    arguments: [ @container ]
+    arguments: [ @service_container ]
   controller.skip:
     class: Unteist\Processor\Controller\Skip
     calls:

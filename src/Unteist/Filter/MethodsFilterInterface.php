@@ -37,11 +37,4 @@ interface MethodsFilterInterface
      * @param array $annotations
      */
     public function setAnnotations(array $annotations);
-
-    /**
-     * Set global configuration.
-     *
-     * @param array $config
-     */
-    public function setConfig(array $config);
 }
