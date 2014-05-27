@@ -10,6 +10,7 @@ namespace Unteist\Report\CLI;
 use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Helper\ProgressHelper;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\DependencyInjection\ContainerAware;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Unteist\Event\EventStorage;
 use Unteist\Event\MethodEvent;
@@ -20,7 +21,7 @@ use Unteist\Event\MethodEvent;
  * @package Unteist\Console
  * @author Andrey Kolchenko <andrey@kolchenko.me>
  */
-class CliReport implements EventSubscriberInterface
+class CliReporter extends ContainerAware implements EventSubscriberInterface
 {
     /**
      * @var OutputInterface
@@ -63,27 +64,13 @@ class CliReport implements EventSubscriberInterface
      */
     private $case_count = 0;
 
-    /**
-     * @param ProgressHelper $progress
-     * @param OutputInterface $output
-     */
-    public function __construct(ProgressHelper $progress, OutputInterface $output)
+    public function __construct()
     {
-        $this->output = $output;
-        $this->progress = $progress;
+        $this->progress = new ProgressHelper();
+        $this->progress->setFormat(' %percent%% [%bar%] Elapsed: %elapsed%');
         $this->failed = new \ArrayObject();
         $this->skipped = new \ArrayObject();
         $this->incomplete = new \ArrayObject();
-    }
-
-    /**
-     * @param int $count The number of founded files
-     */
-    public function start($count)
-    {
-        $this->progress->start($this->output, $count);
-        $this->progress->display();
-        $this->started = microtime(true);
     }
 
     /**
@@ -109,6 +96,7 @@ class CliReport implements EventSubscriberInterface
     public static function getSubscribedEvents()
     {
         return [
+            EventStorage::EV_APP_STARTED => 'start',
             EventStorage::EV_METHOD_DONE => 'methodDone',
             EventStorage::EV_METHOD_FAILED => 'methodFailed',
             EventStorage::EV_METHOD_SKIPPED => 'methodSkipped',
@@ -117,6 +105,27 @@ class CliReport implements EventSubscriberInterface
             EventStorage::EV_AFTER_CASE => 'afterCase',
             EventStorage::EV_APP_FINISHED => 'finish',
         ];
+    }
+
+    /**
+     * @return ProgressHelper
+     */
+    public function getProgress()
+    {
+        return $this->progress;
+    }
+
+    /**
+     * Start reporter.
+     */
+    public function start()
+    {
+        /** @var OutputInterface $output */
+        $output = $this->container->get('cli.output');;
+        $this->output = $output;
+        $this->progress->start($output, count($this->container->getParameter('suites')));
+        $this->progress->display();
+        $this->started = microtime(true);
     }
 
     /**

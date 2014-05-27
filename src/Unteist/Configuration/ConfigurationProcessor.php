@@ -20,20 +20,20 @@ use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
 class ConfigurationProcessor implements ExtensionInterface
 {
     /**
-     * @var string
+     * @var array
      */
-    private $suite;
+    private $suites;
     /**
      * @var array
      */
     private $config = [];
 
     /**
-     * @param string $suite
+     * @param array $suites
      */
-    public function __construct($suite)
+    public function __construct(array $suites)
     {
-        $this->suite = $suite;
+        $this->suites = $suites;
     }
 
     /**
@@ -70,11 +70,17 @@ class ConfigurationProcessor implements ExtensionInterface
     {
         $processor = new Processor();
         $config = $processor->processConfiguration(new ConfigurationValidator(), $config);
-        if ($this->suite !== null) {
-            if (isset($config['suites'][$this->suite])) {
-                $config = array_merge($config, $config['suites'][$this->suite]);
+        if (count($this->suites) === 1) {
+            $suite = array_shift($this->suites);
+            if (isset($config['suites'][$suite])) {
+                $config = array_merge($config, $config['suites'][$suite]);
             } else {
-                $config['source'] = [$this->getTestsSource(new \SplFileInfo($this->suite))];
+                $config['source'] = [$this->getTestsSource(new \SplFileInfo($this->suites))];
+            }
+        } elseif (count($this->suites) > 1) {
+            $config['source'] = [];
+            foreach ($this->suites as $suite) {
+                array_push($config['source'], $this->getTestsSource(new \SplFileInfo($suite)));
             }
         }
         unset($config['suites']);

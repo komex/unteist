@@ -61,7 +61,7 @@ class UnteistCompilerPass implements CompilerPassInterface
                 }
             }
         }
-        $container->setParameter('testCases', $files);
+        $container->setParameter('suites', $files);
     }
 
     /**
