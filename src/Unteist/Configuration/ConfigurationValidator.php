@@ -33,7 +33,6 @@ class ConfigurationValidator implements ConfigurationInterface
         $this->configGroupSection($root);
         $this->configLoggerSection($root)->defaultValue(['logger.handler.null']);
         $this->configIncludeFile($root, 'bootstrap');
-        $this->configIncludeFile($root, 'cleanup');
         $root->append($this->getContextSection()->addDefaultsIfNotSet());
         $root->append($this->getFiltersSection()->addDefaultsIfNotSet());
         $root->append($this->getSuitesSection());
@@ -206,7 +205,6 @@ class ConfigurationValidator implements ConfigurationInterface
         $this->configGroupSection($prototype);
         $this->configLoggerSection($prototype);
         $this->configIncludeFile($prototype, 'bootstrap');
-        $this->configIncludeFile($prototype, 'cleanup');
         $prototype->append($this->getContextSection());
         $prototype->append($this->getFiltersSection());
         $prototype->append($this->getSourceSection());
