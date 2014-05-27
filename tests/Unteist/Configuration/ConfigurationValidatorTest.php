@@ -7,7 +7,9 @@
 
 namespace Tests\Unteist\Configuration;
 
+use Symfony\Component\Config\Definition\ArrayNode;
 use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
+use Symfony\Component\Config\Definition\NodeInterface;
 use Symfony\Component\Config\Definition\Processor;
 use Unteist\Configuration\ConfigurationValidator;
 
@@ -65,6 +67,8 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
         $this->assertSame(['E_ALL'], $defaults['levels']);
         $this->assertInternalType('array', $defaults['associations']);
         $this->assertEmpty($defaults['associations']);
+        $this->assertTrue($node->hasDefaultValue());
+        $this->assertFalse($node->isRequired());
     }
 
     /**
@@ -128,25 +132,24 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
      */
     public function testGetConfigTreeBuilder()
     {
+        /** @var ArrayNode $node */
         $node = self::$validator->getConfigTreeBuilder()->buildTree();
         $this->assertEquals('unteist', $node->getName());
-        $this->assertTrue($node->hasDefaultValue());
+        $this->assertFalse($node->hasDefaultValue());
         $this->assertFalse($node->isRequired());
-        /** @var array $defaults */
-        $defaults = $node->getDefaultValue();
-        $this->assertCount(8, $defaults);
-        $this->assertArrayHasKey('processes', $defaults);
-        $this->assertArrayHasKey('report_dir', $defaults);
-        $this->assertArrayHasKey('listeners', $defaults);
-        $this->assertArrayHasKey('groups', $defaults);
-        $this->assertArrayHasKey('context', $defaults);
-        $this->assertArrayHasKey('filters', $defaults);
-        $this->assertArrayHasKey('logger', $defaults);
-        $this->assertArrayHasKey('suites', $defaults);
-        $this->assertSame(1, $defaults['processes']);
-        $this->assertNull($defaults['report_dir'], 'By default report generation is switched off.');
-        $this->assertSame([], $defaults['listeners'], 'By default additional listeners does not exists.');
-        $this->assertSame([], $defaults['groups'], 'By default group filter is switched off.');
+        /** @var NodeInterface[] $children */
+        $children = $node->getChildren();
+        $this->assertCount(8, $children);
+        $this->assertArrayHasKey('processes', $children);
+        $this->assertArrayHasKey('groups', $children);
+        $this->assertArrayHasKey('context', $children);
+        $this->assertArrayHasKey('filters', $children);
+        $this->assertArrayHasKey('logger', $children);
+        $this->assertArrayHasKey('suites', $children);
+        $this->assertArrayHasKey('bootstrap', $children);
+        $this->assertArrayHasKey('source', $children);
+        $this->assertSame(1, $children['processes']->getDefaultValue());
+        $this->assertSame([], $children['groups']->getDefaultValue(), 'By default group filter is switched off.');
     }
 
     /**
@@ -299,8 +302,6 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
         $section = $method->invoke(self::$validator);
         $node = $section->getNode(true);
         $this->assertEquals($name, $node->getName());
-        $this->assertTrue($node->hasDefaultValue());
-        $this->assertFalse($node->isRequired());
 
         return $node;
     }

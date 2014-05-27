@@ -210,7 +210,7 @@ class ConfigurationValidator implements ConfigurationInterface
         $prototype->append($this->getSourceSection());
         $prototype->validate()->always(
             function (array $list) {
-                foreach (['listeners', 'groups', 'logger', 'source'] as $key) {
+                foreach (['groups', 'logger', 'source'] as $key) {
                     if (empty($list[$key])) {
                         unset($list[$key]);
                     }

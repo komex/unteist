@@ -75,7 +75,7 @@ class ConfigurationProcessor implements ExtensionInterface
             if (isset($config['suites'][$suite])) {
                 $config = array_merge($config, $config['suites'][$suite]);
             } else {
-                $config['source'] = [$this->getTestsSource(new \SplFileInfo($this->suites))];
+                $config['source'] = [$this->getTestsSource(new \SplFileInfo($suite))];
             }
         } elseif (count($this->suites) > 1) {
             $config['source'] = [];
