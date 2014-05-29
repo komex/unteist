@@ -121,7 +121,7 @@ class CliReporter extends ContainerAware implements EventSubscriberInterface
     public function start()
     {
         /** @var OutputInterface $output */
-        $output = $this->container->get('cli.output');;
+        $output = $this->container->get('cli.output');
         $this->output = $output;
         $this->progress->start($output, count($this->container->getParameter('suites')));
         $this->progress->display();
