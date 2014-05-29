@@ -91,6 +91,7 @@ class ProcessorTest extends \PHPUnit_Framework_TestCase
     {
         /** @var Suggestible|ContainerBuilder $container */
         $container = new ContainerBuilder();
+        $container->setParameter('suites', $suites);
         /** @var Suggestible $logger */
         $logger = new Logger('test');
         Configurator::setCustomBehavior($logger, 'info', null);
@@ -103,7 +104,7 @@ class ProcessorTest extends \PHPUnit_Framework_TestCase
         $processor = new Processor($container);
         Configurator::storeInvokes($processor, true);
         Configurator::setCustomBehavior($processor, 'executor', $executor);
-        $this->assertSame($statusCode, $processor->run($suites));
+        $this->assertSame($statusCode, $processor->run());
 
         $this->assertSame(
             [[EventStorage::EV_APP_STARTED], [EventStorage::EV_APP_FINISHED]],
