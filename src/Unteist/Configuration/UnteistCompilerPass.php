@@ -105,7 +105,8 @@ class UnteistCompilerPass implements CompilerPassInterface
      */
     private function configureGroups(ContainerBuilder $container)
     {
-        if (!empty($container->getParameter('groups'))) {
+        $groups = $container->getParameter('groups');
+        if (!empty($groups)) {
             $definition = $container->getDefinition('filter.methods.group');
             $definition->setArguments([$container->getParameter('groups')]);
             $filters = $container->getParameter('filters');
