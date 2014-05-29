@@ -33,10 +33,10 @@ class ConfigurationValidator implements ConfigurationInterface
         $this->configGroupSection($root);
         $this->configLoggerSection($root)->defaultValue(['logger.handler.null']);
         $this->configIncludeFile($root, 'bootstrap');
-        $root->append($this->getContextSection()->addDefaultsIfNotSet());
-        $root->append($this->getFiltersSection()->addDefaultsIfNotSet());
-        $root->append($this->getSuitesSection());
-        $root->append($this->getSourceSection()->addDefaultChildrenIfNoneSet());
+        $this->configContextSection($root)->addDefaultsIfNotSet();
+        $this->configFiltersSection($root)->addDefaultsIfNotSet();
+        $this->configSuitesSection($root);
+        $this->configSourceSection($root)->addDefaultChildrenIfNoneSet();
 
         return $tree;
     }
@@ -78,7 +78,7 @@ class ConfigurationValidator implements ConfigurationInterface
     /**
      * @param ArrayNodeDefinition $rootNode
      *
-     * @return \Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition
+     * @return ArrayNodeDefinition
      */
     private function configLoggerSection(ArrayNodeDefinition $rootNode)
     {
@@ -91,12 +91,13 @@ class ConfigurationValidator implements ConfigurationInterface
     /**
      * Get section for filters.
      *
+     * @param ArrayNodeDefinition $root
+     *
      * @return ArrayNodeDefinition
      */
-    private function getFiltersSection()
+    private function configFiltersSection(ArrayNodeDefinition $root)
     {
-        $builder = new TreeBuilder;
-        $section = $builder->root('filters');
+        $section = $root->children()->arrayNode('filters');
 
         $definition = $section->children()->arrayNode('class');
         $definition->requiresAtLeastOneElement()->defaultValue(['filter.class.base']);
@@ -111,12 +112,13 @@ class ConfigurationValidator implements ConfigurationInterface
     /**
      * Get section for context.
      *
+     * @param ArrayNodeDefinition $root
+     *
      * @return ArrayNodeDefinition
      */
-    private function getContextSection()
+    private function configContextSection(ArrayNodeDefinition $root)
     {
-        $builder = new TreeBuilder;
-        $section = $builder->root('context');
+        $section = $root->children()->arrayNode('context');
 
         $definition = $section->children()->enumNode('error');
         $definition->values(['strategy.fail', 'strategy.continue']);
@@ -166,12 +168,13 @@ class ConfigurationValidator implements ConfigurationInterface
     /**
      * Get section for source.
      *
+     * @param ArrayNodeDefinition $root
+     *
      * @return ArrayNodeDefinition
      */
-    private function getSourceSection()
+    private function configSourceSection(ArrayNodeDefinition $root)
     {
-        $builder = new TreeBuilder;
-        $section = $builder->root('source')->requiresAtLeastOneElement();
+        $section = $root->children()->arrayNode('source')->requiresAtLeastOneElement();
         /** @var ArrayNodeDefinition $definition */
         $definition = $section->prototype('array');
 
@@ -192,12 +195,13 @@ class ConfigurationValidator implements ConfigurationInterface
     /**
      * Get section for suites.
      *
+     * @param ArrayNodeDefinition $root
+     *
      * @return ArrayNodeDefinition
      */
-    private function getSuitesSection()
+    private function configSuitesSection(ArrayNodeDefinition $root)
     {
-        $builder = new TreeBuilder;
-        $section = $builder->root('suites');
+        $section = $root->children()->arrayNode('suites');
         $section->requiresAtLeastOneElement();
         /** @var ArrayNodeDefinition $prototype */
         $prototype = $section->prototype('array');
@@ -205,9 +209,9 @@ class ConfigurationValidator implements ConfigurationInterface
         $this->configGroupSection($prototype);
         $this->configLoggerSection($prototype);
         $this->configIncludeFile($prototype, 'bootstrap');
-        $prototype->append($this->getContextSection());
-        $prototype->append($this->getFiltersSection());
-        $prototype->append($this->getSourceSection());
+        $this->configContextSection($prototype);
+        $this->configFiltersSection($prototype);
+        $this->configSourceSection($prototype);
         $prototype->validate()->always(
             function (array $list) {
                 foreach (['groups', 'logger', 'source'] as $key) {

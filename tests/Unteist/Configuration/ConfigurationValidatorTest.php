@@ -44,7 +44,16 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
      */
     public function testContextSection()
     {
-        $node = $this->getNode('getContextSection', 'context');
+        $section = $this->getSection('configContextSection');
+        $node = $section->getNode(true);
+        $this->assertSame('context', $node->getName());
+        $this->assertFalse($node->hasDefaultValue());
+        $this->assertFalse($node->isRequired());
+
+        $section->addDefaultsIfNotSet();
+        $node = $section->getNode(true);
+        $this->assertTrue($node->hasDefaultValue());
+        $this->assertFalse($node->isRequired());
         /** @var array $defaults */
         $defaults = $node->getDefaultValue();
         $this->assertCount(9, $defaults);
@@ -67,8 +76,6 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
         $this->assertSame(['E_ALL'], $defaults['levels']);
         $this->assertInternalType('array', $defaults['associations']);
         $this->assertEmpty($defaults['associations']);
-        $this->assertTrue($node->hasDefaultValue());
-        $this->assertFalse($node->isRequired());
     }
 
     /**
@@ -76,7 +83,17 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
      */
     public function testFilterSection()
     {
-        $node = $this->getNode('getFiltersSection', 'filters');
+        $section = $this->getSection('configFiltersSection');
+        $node = $section->getNode(true);
+        $this->assertSame('filters', $node->getName());
+        $this->assertFalse($node->hasDefaultValue());
+        $this->assertFalse($node->isRequired());
+
+        $section->addDefaultsIfNotSet();
+        $node = $section->getNode(true);
+        $this->assertTrue($node->hasDefaultValue());
+        $this->assertFalse($node->isRequired());
+
         /** @var array $defaults */
         $defaults = $node->getDefaultValue();
         $this->assertCount(2, $defaults);
@@ -92,14 +109,12 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
      */
     public function testLoggerSection()
     {
-        $node = $this->getNode('getLoggerSection', 'logger');
+        $node = $this->getNode('configLoggerSection', 'logger');
+        $this->assertTrue($node->hasDefaultValue());
         /** @var array $defaults */
         $defaults = $node->getDefaultValue();
-        $this->assertCount(2, $defaults);
-        $this->assertArrayHasKey('enabled', $defaults);
-        $this->assertArrayHasKey('handlers', $defaults);
-        $this->assertFalse($defaults['enabled']);
-        $this->assertSame(['logger.handler.stream'], $defaults['handlers']);
+        $this->assertInternalType('array', $defaults);
+        $this->assertEmpty($defaults);
     }
 
     /**
@@ -107,8 +122,16 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
      */
     public function testSourceSection()
     {
-        $node = $this->getNode('getSourceSection', 'source');
-        $sources = $node->finalize([[]]);
+        $section = $this->getSection('configSourceSection');
+        $node = $section->getNode(true);
+        $this->assertSame('source', $node->getName());
+        $this->assertTrue($node->hasDefaultValue());
+        $default = $node->getDefaultValue();
+        $this->assertInternalType('array', $default, 'Source section must be an array.');
+        $this->assertEmpty($default, 'By default source sections does not set.');
+
+        $section->addDefaultChildrenIfNoneSet();
+        $sources = $section->getNode(true)->getDefaultValue();
         $this->assertInternalType('array', $sources);
         $this->assertCount(1, $sources);
         $this->assertEquals(['in' => './tests', 'name' => '*Test.php', 'exclude' => [], 'notName' => []], $sources[0]);
@@ -122,7 +145,8 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
      */
     public function testEmptySourceSection()
     {
-        $node = $this->getNode('getSourceSection', 'source');
+        $node = $this->getNode('configSourceSection', 'source');
+        $this->assertTrue($node->hasDefaultValue());
         $this->assertSame([], $node->getDefaultValue(), 'By default source sections does not set.');
         $node->finalize([]);
     }
@@ -152,25 +176,15 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
         $this->assertSame([], $children['groups']->getDefaultValue(), 'By default group filter is switched off.');
     }
 
-    /**
-     * Test default suites configuration.
-     */
     public function testSuitesSection()
     {
-        $node = $this->getNode('getSuitesSection', 'suites');
+        /** @var ArrayNode $node */
+        $node = $this->getNode('configSuitesSection', 'suites');
+        $this->assertTrue($node->hasDefaultValue());
         /** @var array $defaults */
-        $defaults = $node->finalize([[]]);
+        $defaults = $node->getDefaultValue();
         $this->assertInternalType('array', $defaults);
-        $this->assertCount(1, $defaults);
-        $defaults = $defaults[0];
-        $this->assertInternalType('array', $defaults);
-        $this->assertCount(3, $defaults);
-        $this->assertArrayHasKey('report_dir', $defaults);
-        $this->assertArrayHasKey('groups', $defaults);
-        $this->assertArrayHasKey('source', $defaults);
-        $this->assertNull($defaults['report_dir'], 'By default report generation is switched off.');
-        $this->assertSame([], $defaults['source'], 'By default source does not set.');
-        $this->assertSame([], $defaults['groups'], 'By default group filter is switched off.');
+        $this->assertEmpty($defaults);
     }
 
     /**
@@ -178,12 +192,7 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
      */
     public function dpProcesses()
     {
-        return [
-            [1],
-            [2],
-            [9],
-            [10],
-        ];
+        return [[1], [2], [9], [10]];
     }
 
     /**
@@ -218,30 +227,6 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
                 'Invalid type for path "unteist.processes". Expected int, but got string.'
             ],
             [
-                ['report_dir' => ''],
-                'The path "unteist.report_dir" cannot contain an empty value, but got "".'
-            ],
-            [
-                ['report_dir' => false],
-                'The path "unteist.report_dir" cannot contain an empty value, but got false.'
-            ],
-            [
-                ['report_dir' => []],
-                'Invalid type for path "unteist.report_dir". Expected scalar, but got array.'
-            ],
-            [
-                ['listeners' => []],
-                'The path "unteist.listeners" should have at least 1 element(s) defined.'
-            ],
-            [
-                ['listeners' => ['']],
-                'The path "unteist.listeners.0" cannot contain an empty value, but got "".'
-            ],
-            [
-                ['listeners' => true],
-                'Invalid type for path "unteist.listeners". Expected array, but got boolean'
-            ],
-            [
                 ['groups' => []],
                 'The path "unteist.groups" should have at least 1 element(s) defined.'
             ],
@@ -254,16 +239,52 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
                 'Invalid type for path "unteist.groups". Expected array, but got boolean'
             ],
             [
-                ['logger' => ['handlers' => false]],
-                'Invalid type for path "unteist.logger.handlers". Expected array, but got boolean'
+                ['logger' => true],
+                'Invalid type for path "unteist.logger". Expected array, but got boolean'
             ],
             [
-                ['logger' => ['handlers' => []]],
-                'The path "unteist.logger.handlers" should have at least 1 element(s) defined.'
+                ['logger' => ''],
+                'Invalid type for path "unteist.logger". Expected array, but got string'
             ],
             [
-                ['logger' => ['handlers' => ['']]],
-                'The path "unteist.logger.handlers.0" cannot contain an empty value, but got "".'
+                ['logger' => []],
+                'The path "unteist.logger" should have at least 1 element(s) defined.'
+            ],
+            [
+                ['logger' => ['']],
+                'The path "unteist.logger.0" cannot contain an empty value, but got "".'
+            ],
+            [
+                ['suites' => true],
+                'Invalid type for path "unteist.suites". Expected array, but got boolean'
+            ],
+            [
+                ['suites' => ''],
+                'Invalid type for path "unteist.suites". Expected array, but got string'
+            ],
+            [
+                ['suites' => []],
+                'The path "unteist.suites" should have at least 1 element(s) defined.'
+            ],
+            [
+                ['suites' => ['']],
+                'Invalid type for path "unteist.suites.0". Expected array, but got string'
+            ],
+            [
+                ['source' => true],
+                'Invalid type for path "unteist.source". Expected array, but got boolean'
+            ],
+            [
+                ['source' => ''],
+                'Invalid type for path "unteist.source". Expected array, but got string'
+            ],
+            [
+                ['source' => []],
+                'The path "unteist.source" should have at least 1 element(s) defined.'
+            ],
+            [
+                ['source' => ['']],
+                'Invalid type for path "unteist.source.0". Expected array, but got string'
             ],
         ];
     }
@@ -287,6 +308,20 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * @param string $method
+     *
+     * @return ArrayNodeDefinition
+     */
+    private function getSection($method)
+    {
+        $method = new \ReflectionMethod(self::$validator, $method);
+        $method->setAccessible(true);
+        $node = new ArrayNodeDefinition('root');
+
+        return $method->invoke(self::$validator, $node);
+    }
+
+    /**
      * Get node definition from method.
      *
      * @param string $method Method name
@@ -296,11 +331,7 @@ class ConfigurationValidatorTest extends \PHPUnit_Framework_TestCase
      */
     private function getNode($method, $name)
     {
-        $method = new \ReflectionMethod(self::$validator, $method);
-        $method->setAccessible(true);
-        /** @var ArrayNodeDefinition $section */
-        $section = $method->invoke(self::$validator);
-        $node = $section->getNode(true);
+        $node = $this->getSection($method)->getNode(true);
         $this->assertEquals($name, $node->getName());
 
         return $node;
