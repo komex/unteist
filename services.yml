@@ -1,79 +1,73 @@
 parameters:
-    logger.handler.stream.output: unteist.log
-    logger.handler.stream.level: DEBUG
-    logger.name: unteist
-    connector.events: []
-    report.dir: null
+  logger.handler.stream.output: unteist.log
+  logger.handler.stream.level: DEBUG
+  connector.events: []
 
 services:
-    container:
-        synthetic: true
-    logger:
-        class: \Monolog\Logger
-        arguments: [ %logger.name% ]
-        synthetic: true
-    logger.handler.stream:
-        class: \Monolog\Handler\StreamHandler
-        arguments: [ %logger.handler.stream.output%, %logger.handler.stream.level% ]
-    logger.handler.null:
-        class: \Monolog\Handler\NullHandler
-    reporter:
-        class: \Unteist\Report\Twig\TwigReport
-        arguments: [ %report.dir% ]
-    reporter.cli:
-        class: \Unteist\Report\CLI\CliReport
-        synthetic: true
-    strategy.fail:
-        class: \Unteist\Strategy\TestFailStrategy
-    strategy.continue:
-        class: \Unteist\Strategy\ContinueStrategy
-    strategy.exception:
-        class: \Unteist\Strategy\ExceptionStrategy
-    filter.class.base:
-        class: \Unteist\Filter\ClassFilter
-    filter.methods.base:
-        class: \Unteist\Filter\MethodsFilter
-    filter.methods.group:
-        class: \Unteist\Filter\GroupMethodsFilter
-    context:
-        class: \Unteist\Strategy\Context
-        synthetic: true
-    dispatcher:
-        class: \Symfony\Component\EventDispatcher\EventDispatcher
-        calls:
-            - [ addSubscriber, [ @reporter.cli ] ]
-    storage.global:
-        class: \ArrayObject
-    connector:
-        class: \Unteist\Event\Connector
-        arguments: [ @dispatcher, %connector.events% ]
-    processor:
-        class: \Unteist\Processor\Processor
-        arguments: [ @container ]
-        synthetic: true
-    processor.multi:
-        class: \Unteist\Processor\MultiProcessor
-        arguments: [ @container ]
-        calls:
-            - [ setConnector, [ @connector ] ]
-        synthetic: true
-    runner:
-        class: \Unteist\Processor\Runner
-        arguments: [ @container ]
-        scope: prototype
-    controller:
-        class: \Unteist\Processor\Controller\Controller
-        arguments: [ @container ]
-    controller.run:
-        class: \Unteist\Processor\Controller\Run
-        arguments: [ @container ]
-    controller.skip:
-        class: \Unteist\Processor\Controller\Skip
-        calls:
-            - [ setDispatcher, [ @dispatcher ] ]
-    controller.skip.once:
-        class: \Unteist\Processor\Controller\SkipOnce
-        parent: controller.skip
-    event.method:
-        class: \Unteist\Event\MethodEvent
-        scope: prototype
+  logger:
+    class: Monolog\Logger
+    arguments: [ unteist ]
+  logger.handler.stream:
+    class: Monolog\Handler\StreamHandler
+    arguments: [ %logger.handler.stream.output%, %logger.handler.stream.level% ]
+    public: false
+  logger.handler.null:
+    class: Monolog\Handler\NullHandler
+    public: false
+
+  reporter.cli:
+    class: Unteist\Report\CLI\CliReporter
+    calls:
+      - [ setContainer, [ @service_container ] ]
+    tags:
+      - { name: listener }
+  strategy.fail:
+    class: Unteist\Strategy\TestFailStrategy
+  strategy.continue:
+    class: Unteist\Strategy\ContinueStrategy
+  strategy.exception:
+    class: Unteist\Strategy\ExceptionStrategy
+  filter.class.base:
+    class: Unteist\Filter\ClassFilter
+  filter.methods.base:
+    class: Unteist\Filter\MethodsFilter
+  filter.methods.group:
+    class: Unteist\Filter\GroupMethodsFilter
+  context:
+    class: Unteist\Strategy\Context
+  dispatcher:
+    class: Symfony\Component\EventDispatcher\EventDispatcher
+  storage.global:
+    class: ArrayObject
+  connector:
+    class: Unteist\Event\Connector
+    arguments: [ @dispatcher, %connector.events% ]
+  processor.single:
+    class: Unteist\Processor\Processor
+    arguments: [ @service_container ]
+  processor.multi:
+    class: Unteist\Processor\MultiProcessor
+    parent: processor.single
+    calls:
+      - [ setConnector, [ @connector ] ]
+      - [ setProcesses, [ %processes% ] ]
+  runner:
+    class: Unteist\Processor\Runner
+    arguments: [ @service_container ]
+    scope: prototype
+  controller:
+    class: Unteist\Processor\Controller\Controller
+    arguments: [ @service_container ]
+  controller.run:
+    class: Unteist\Processor\Controller\Run
+    arguments: [ @service_container ]
+  controller.skip:
+    class: Unteist\Processor\Controller\Skip
+    calls:
+      - [ setDispatcher, [ @dispatcher ] ]
+  controller.skip.once:
+    class: Unteist\Processor\Controller\SkipOnce
+    parent: controller.skip
+  event.method:
+    class: Unteist\Event\MethodEvent
+    scope: prototype

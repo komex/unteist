@@ -25,6 +25,14 @@ class GroupMethodsFilter implements MethodsFilterInterface
     private $neededGroups;
 
     /**
+     * @param array $neededGroups
+     */
+    public function __construct(array $neededGroups)
+    {
+        $this->neededGroups = $neededGroups;
+    }
+
+    /**
      * Condition for filter test methods.
      *
      * @param \ReflectionMethod $method Method to check
@@ -63,22 +71,6 @@ class GroupMethodsFilter implements MethodsFilterInterface
             $this->methodGroups = $annotations['groups'];
         } else {
             $this->methodGroups = null;
-        }
-    }
-
-    /**
-     * Set global configuration.
-     *
-     * @param array $config
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function setConfig(array $config)
-    {
-        if (empty($config['groups']) or !is_array($config['groups'])) {
-            throw new \InvalidArgumentException('The list of needed groups does not specified in configuration.');
-        } else {
-            $this->neededGroups = $config['groups'];
         }
     }
 }

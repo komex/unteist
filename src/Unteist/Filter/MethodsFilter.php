@@ -45,16 +45,6 @@ final class MethodsFilter implements MethodsFilterInterface
     }
 
     /**
-     * Set global configuration.
-     *
-     * @param array $config
-     */
-    public function setConfig(array $config)
-    {
-
-    }
-
-    /**
      * Get name of this methods filter.
      *
      * @return string

@@ -93,17 +93,15 @@ class Processor
     /**
      * Run all TestCases.
      *
-     * @param \ArrayObject $suites
-     *
      * @return int Exit code
      */
-    public function run(\ArrayObject $suites)
+    public function run()
     {
         $this->dispatcher = $this->container->get('dispatcher');
         $this->dispatcher->dispatch(EventStorage::EV_APP_STARTED);
         $this->logger->info('Run TestCases in single process.', ['pid' => getmypid()]);
         $exitCode = 0;
-        foreach ($suites as $suite) {
+        foreach ($this->container->getParameter('suites') as $suite) {
             $this->backupGlobals();
             if ($this->executor($suite)) {
                 $exitCode = 1;
