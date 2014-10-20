@@ -7,8 +7,7 @@
 
 namespace Tests\Unteist\Processor;
 
-use Delusion\Configurator;
-use Delusion\Suggestible;
+use Influence\RemoteControl;
 use Monolog\Logger;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Unteist\Event\EventStorage;
@@ -28,11 +27,11 @@ class RunnerTest extends \PHPUnit_Framework_TestCase
      */
     protected $runner;
     /**
-     * @var Suggestible
+     * @var Controller
      */
     protected $controller;
     /**
-     * @var Suggestible
+     * @var Logger
      */
     protected $logger;
 
@@ -41,13 +40,14 @@ class RunnerTest extends \PHPUnit_Framework_TestCase
      */
     public function testConstructor()
     {
-        $this->assertCount(2, Configurator::getAllInvokes($this->controller));
+        $manifest = RemoteControl::control($this->controller);
+        $this->assertCount(2, $manifest);
 
-        $invokes = Configurator::getInvokes($this->controller, 'setRunner');
+        $invokes = $manifest->getCalls('setRunner');
         $this->assertCount(1, $invokes);
         $this->assertSame([$this->runner], $invokes[0]);
 
-        $invokes = Configurator::getInvokes($this->controller, 'switchTo');
+        $invokes = $manifest->getCalls('switchTo');
         $this->assertCount(1, $invokes);
         $this->assertSame(['controller.run'], $invokes[0]);
     }
@@ -100,7 +100,7 @@ class RunnerTest extends \PHPUnit_Framework_TestCase
         $method->invoke($this->runner, 'invalid.event', 'precondition');
 
         $this->assertCount(0, $this->runner->getPrecondition()->getListeners());
-        $this->assertCount(0, Configurator::getAllInvokes($this->logger));
+        $this->assertCount(0, RemoteControl::control($this->logger));
     }
 
     /**
@@ -131,7 +131,7 @@ class RunnerTest extends \PHPUnit_Framework_TestCase
         $method->invoke($this->runner, $annotation, 'precondition');
 
         $listeners = $this->runner->getPrecondition()->getListeners();
-        $this->assertCount(1, Configurator::getAllInvokes($this->logger));
+        $this->assertCount(1, RemoteControl::control($this->logger));
         $this->assertCount(1, $listeners);
         $this->assertArrayHasKey($event, $listeners);
     }
@@ -142,16 +142,16 @@ class RunnerTest extends \PHPUnit_Framework_TestCase
     protected function setUp()
     {
         $container = new ContainerBuilder;
-        /** @var Suggestible $controller */
         $controller = new Controller($container);
-        Configurator::setCustomBehavior($controller, 'setRunner', null);
-        Configurator::setCustomBehavior($controller, 'switchTo', null);
-        Configurator::storeInvokes($controller, true);
+        $manifest = RemoteControl::control($controller);
+        $manifest->setReturn('setRunner', null);
+        $manifest->setReturn('switchTo', null);
+        $manifest->registerCalls(true);
         $container->set('controller', $controller);
-        /** @var Suggestible $logger */
         $logger = new Logger('test');
-        Configurator::setCustomBehavior($logger, 'debug', null);
-        Configurator::storeInvokes($logger, true);
+        $manifest = RemoteControl::control($logger);
+        $manifest->setReturn('debug', null);
+        $manifest->registerCalls(true);
         $container->set('logger', $logger);
         $this->runner = new Runner($container);
         $this->controller = $controller;
