@@ -6,5 +6,5 @@
  */
 
 require 'vendor/autoload.php';
-$delusion = \Delusion\Delusion::injection();
-$delusion->addToBlackList('PHPUnit');
+
+\Influence\Influence::affect();
