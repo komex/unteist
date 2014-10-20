@@ -7,8 +7,7 @@
 
 namespace Tests\Unteist\Processor;
 
-use Delusion\Configurator;
-use Delusion\Suggestible;
+use Influence\RemoteControl;
 use Monolog\Logger;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -28,19 +27,18 @@ class ProcessorTest extends \PHPUnit_Framework_TestCase
      */
     public function testConstructor()
     {
-        /** @var Suggestible|ContainerBuilder $container */
         $container = new ContainerBuilder();
+        $manifest = RemoteControl::control($container);
+        $manifest->registerCalls(true);
         $self = $this;
-        Configurator::setCustomBehavior(
-            $container,
+        $manifest->setReturn(
             'get',
             function ($id) use ($self) {
                 $self->assertSame('logger', $id);
             }
         );
-        Configurator::storeInvokes($container, true);
         new Processor($container);
-        $this->assertCount(1, Configurator::getAllInvokes($container));
+        $this->assertCount(1, $manifest);
     }
 
     /**
@@ -50,9 +48,8 @@ class ProcessorTest extends \PHPUnit_Framework_TestCase
     {
         $this->assertArrayNotHasKey('Unteist', $GLOBALS);
         $GLOBALS['Unteist'] = 'ok';
-        /** @var Suggestible|ContainerBuilder $container */
         $container = new ContainerBuilder();
-        Configurator::setCustomBehavior($container, 'get', null);
+        RemoteControl::control($container)->setReturn('get', null);
         $processor = new Processor($container);
         $method = new \ReflectionMethod($processor, 'backupGlobals');
         $method->setAccessible(true);
@@ -89,32 +86,30 @@ class ProcessorTest extends \PHPUnit_Framework_TestCase
      */
     public function testRun(\ArrayObject $suites, $executor, $statusCode)
     {
-        /** @var Suggestible|ContainerBuilder $container */
         $container = new ContainerBuilder();
         $container->setParameter('suites', $suites);
-        /** @var Suggestible $logger */
         $logger = new Logger('test');
-        Configurator::setCustomBehavior($logger, 'info', null);
+        RemoteControl::control($logger)->setReturn('info', null);
         $container->set('logger', $logger);
-        /** @var Suggestible $dispatcher */
         $dispatcher = new EventDispatcher();
-        Configurator::storeInvokes($dispatcher, true);
+        $dispatcherManifest = RemoteControl::control($dispatcher);
+        $dispatcherManifest->registerCalls(true);
         $container->set('dispatcher', $dispatcher);
-        /** @var Suggestible|Processor $processor */
         $processor = new Processor($container);
-        Configurator::storeInvokes($processor, true);
-        Configurator::setCustomBehavior($processor, 'executor', $executor);
+        $processorManifest = RemoteControl::control($processor);
+        $processorManifest->registerCalls(true);
+        $processorManifest->setReturn('executor', $executor);
         $this->assertSame($statusCode, $processor->run());
 
         $this->assertSame(
-            [[EventStorage::EV_APP_STARTED], [EventStorage::EV_APP_FINISHED]],
-            Configurator::getInvokes($dispatcher, 'dispatch'),
+            [['dispatch', [EventStorage::EV_APP_STARTED]], ['dispatch', [EventStorage::EV_APP_FINISHED]]],
+            $dispatcherManifest->getAllCalls(),
             'Dispatcher did not send application events.'
         );
 
-        $this->assertSame(1, Configurator::getInvokesCount($processor, 'run'));
-        $this->assertSame($suites->count(), Configurator::getInvokesCount($processor, 'backupGlobals'));
-        $this->assertSame($suites->count(), Configurator::getInvokesCount($processor, 'executor'));
-        $this->assertSame($suites->count(), Configurator::getInvokesCount($processor, 'restoreGlobals'));
+        $this->assertSame(1, $processorManifest->getCallsCount('run'));
+        $this->assertSame($suites->count(), $processorManifest->getCallsCount('backupGlobals'));
+        $this->assertSame($suites->count(), $processorManifest->getCallsCount('executor'));
+        $this->assertSame($suites->count(), $processorManifest->getCallsCount('restoreGlobals'));
     }
 }
