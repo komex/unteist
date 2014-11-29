@@ -7,11 +7,12 @@
 
 namespace Tests\Unteist\Processor;
 
-use Influence\RemoteControl;
+use Influence\RemoteControlUtils as RC;
+use Influence\ReturnStrategy\Value;
 use Monolog\Logger;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Unteist\Event\EventStorage;
 use Unteist\Processor\Controller\Controller;
+use Unteist\Processor\Controller\ControllerParentInterface;
 use Unteist\Processor\Runner;
 
 /**
@@ -40,16 +41,25 @@ class RunnerTest extends \PHPUnit_Framework_TestCase
      */
     public function testConstructor()
     {
-        $manifest = RemoteControl::control($this->controller);
-        $this->assertCount(2, $manifest);
+        $container = new ContainerBuilder();
+        $controller = new Controller($container);
+        $container->set('logger', new Logger('log'));
+        $container->set('controller', $controller);
 
-        $invokes = $manifest->getCalls('setRunner');
-        $this->assertCount(1, $invokes);
-        $this->assertSame([$this->runner], $invokes[0]);
+        $manifest = RC::getObject($controller);
+        $manifest->getMethod('setRunner')->setLog(true);
+        $manifest->getMethod('switchTo')->setLog(true);
+        $manifest->getMethod('switchTo')->setValue(new Value(null));
 
-        $invokes = $manifest->getCalls('switchTo');
-        $this->assertCount(1, $invokes);
-        $this->assertSame(['controller.run'], $invokes[0]);
+        $runner = new Runner($container);
+        $runnerLogs = $manifest->getMethod('setRunner')->getLogs();
+        $switchLogs = $manifest->getMethod('switchTo')->getLogs();
+        $this->assertCount(1, $runnerLogs);
+        $this->assertSame([$runner], $runnerLogs[0]);
+        $this->assertCount(1, $switchLogs);
+        $this->assertSame([ControllerParentInterface::CONTROLLER_RUN], $switchLogs[0]);
+
+        RC::removeObject($controller);
     }
 
     /**
@@ -88,74 +98,6 @@ class RunnerTest extends \PHPUnit_Framework_TestCase
     public function testGetAnnotations($comments, array $expected)
     {
         $this->assertSame($expected, Runner::getAnnotations($comments), 'Error while parsing annotations.');
-    }
-
-    /**
-     * Test finter invalid event listeners.
-     */
-    public function testRegisterInvalidEventListener()
-    {
-        $method = new \ReflectionMethod($this->runner, 'registerEventListener');
-        $method->setAccessible(true);
-        $method->invoke($this->runner, 'invalid.event', 'precondition');
-
-        $this->assertCount(0, $this->runner->getPrecondition()->getListeners());
-        $this->assertCount(0, RemoteControl::control($this->logger));
-    }
-
-    /**
-     * @return array
-     */
-    public function dpRegisterEventListener()
-    {
-        return [
-            ['beforeTest', EventStorage::EV_BEFORE_TEST],
-            ['afterTest', EventStorage::EV_AFTER_TEST],
-            ['beforeCase', EventStorage::EV_BEFORE_CASE],
-            ['afterCase', EventStorage::EV_AFTER_CASE],
-        ];
-    }
-
-    /**
-     * Test filter invalid event listeners.
-     *
-     * @param $annotation
-     * @param $event
-     *
-     * @dataProvider dpRegisterEventListener
-     */
-    public function testRegisterEventListener($annotation, $event)
-    {
-        $method = new \ReflectionMethod($this->runner, 'registerEventListener');
-        $method->setAccessible(true);
-        $method->invoke($this->runner, $annotation, 'precondition');
-
-        $listeners = $this->runner->getPrecondition()->getListeners();
-        $this->assertCount(1, RemoteControl::control($this->logger));
-        $this->assertCount(1, $listeners);
-        $this->assertArrayHasKey($event, $listeners);
-    }
-
-    /**
-     * Prepare tests.
-     */
-    protected function setUp()
-    {
-        $container = new ContainerBuilder;
-        $controller = new Controller($container);
-        $manifest = RemoteControl::control($controller);
-        $manifest->setReturn('setRunner', null);
-        $manifest->setReturn('switchTo', null);
-        $manifest->registerCalls(true);
-        $container->set('controller', $controller);
-        $logger = new Logger('test');
-        $manifest = RemoteControl::control($logger);
-        $manifest->setReturn('debug', null);
-        $manifest->registerCalls(true);
-        $container->set('logger', $logger);
-        $this->runner = new Runner($container);
-        $this->controller = $controller;
-        $this->logger = $logger;
     }
 
     /**

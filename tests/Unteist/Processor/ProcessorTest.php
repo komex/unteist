@@ -7,7 +7,9 @@
 
 namespace Tests\Unteist\Processor;
 
-use Influence\RemoteControl;
+use Influence\RemoteControlUtils as RC;
+use Influence\ReturnStrategy\Callback;
+use Influence\ReturnStrategy\Value;
 use Monolog\Logger;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -28,17 +30,19 @@ class ProcessorTest extends \PHPUnit_Framework_TestCase
     public function testConstructor()
     {
         $container = new ContainerBuilder();
-        $manifest = RemoteControl::control($container);
-        $manifest->registerCalls(true);
+        $manifest = RC::getObject($container)->getMethod('get');
+        $manifest->setLog(true);
         $self = $this;
-        $manifest->setReturn(
-            'get',
-            function ($id) use ($self) {
-                $self->assertSame('logger', $id);
-            }
+        $manifest->setValue(
+            new Callback(
+                function ($id) use ($self) {
+                    $self->assertSame('logger', $id);
+                }
+            )
         );
         new Processor($container);
-        $this->assertCount(1, $manifest);
+        $this->assertCount(1, $manifest->getLogs());
+        RC::removeObject($container);
     }
 
     /**
@@ -49,7 +53,7 @@ class ProcessorTest extends \PHPUnit_Framework_TestCase
         $this->assertArrayNotHasKey('Unteist', $GLOBALS);
         $GLOBALS['Unteist'] = 'ok';
         $container = new ContainerBuilder();
-        RemoteControl::control($container)->setReturn('get', null);
+        RC::getObject($container)->getMethod('get')->setValue(new Value(null));
         $processor = new Processor($container);
         $method = new \ReflectionMethod($processor, 'backupGlobals');
         $method->setAccessible(true);
@@ -61,6 +65,7 @@ class ProcessorTest extends \PHPUnit_Framework_TestCase
         $method->setAccessible(true);
         $method->invoke($processor);
         $this->assertSame('ok', $GLOBALS['Unteist']);
+        RC::removeObject($container);
     }
 
     /**
@@ -89,27 +94,40 @@ class ProcessorTest extends \PHPUnit_Framework_TestCase
         $container = new ContainerBuilder();
         $container->setParameter('suites', $suites);
         $logger = new Logger('test');
-        RemoteControl::control($logger)->setReturn('info', null);
+        RC::getObject($logger)->getMethod('info')->setValue(new Value(null));
         $container->set('logger', $logger);
         $dispatcher = new EventDispatcher();
-        $dispatcherManifest = RemoteControl::control($dispatcher);
-        $dispatcherManifest->registerCalls(true);
+        $dispatcherManifest = RC::getObject($dispatcher)->getMethod('dispatch');
+        $dispatcherManifest->setLog(true);
         $container->set('dispatcher', $dispatcher);
         $processor = new Processor($container);
-        $processorManifest = RemoteControl::control($processor);
-        $processorManifest->registerCalls(true);
-        $processorManifest->setReturn('executor', $executor);
+
+        $processorManifest = RC::getObject($processor);
+        $processorRunManifest = $processorManifest->getMethod('run');
+        $processorRunManifest->setLog(true);
+        $processorBackupManifest = $processorManifest->getMethod('backupGlobals');
+        $processorBackupManifest->setLog(true);
+        $processorRestoreManifest = $processorManifest->getMethod('restoreGlobals');
+        $processorRestoreManifest->setLog(true);
+
+        $processorExecutorManifest = $processorManifest->getMethod('executor');
+        $processorExecutorManifest->setLog(true);
+        $processorExecutorManifest->setValue(new Value($executor));
         $this->assertSame($statusCode, $processor->run());
 
         $this->assertSame(
-            [['dispatch', [EventStorage::EV_APP_STARTED]], ['dispatch', [EventStorage::EV_APP_FINISHED]]],
-            $dispatcherManifest->getAllCalls(),
+            [[EventStorage::EV_APP_STARTED], [EventStorage::EV_APP_FINISHED]],
+            $dispatcherManifest->getLogs(),
             'Dispatcher did not send application events.'
         );
 
-        $this->assertSame(1, $processorManifest->getCallsCount('run'));
-        $this->assertSame($suites->count(), $processorManifest->getCallsCount('backupGlobals'));
-        $this->assertSame($suites->count(), $processorManifest->getCallsCount('executor'));
-        $this->assertSame($suites->count(), $processorManifest->getCallsCount('restoreGlobals'));
+        $this->assertCount(1, $processorRunManifest->getLogs());
+        $this->assertCount($suites->count(), $processorBackupManifest->getLogs());
+        $this->assertCount($suites->count(), $processorExecutorManifest->getLogs());
+        $this->assertCount($suites->count(), $processorRestoreManifest->getLogs());
+
+        RC::removeObject($logger);
+        RC::removeObject($dispatcher);
+        RC::removeObject($processor);
     }
 }
